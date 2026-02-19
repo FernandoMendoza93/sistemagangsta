@@ -1,22 +1,17 @@
-# Dependencias de Node
+# Dependencias
 node_modules
-npm-debug.log
-yarn-error.log
-package-lock.json
+*/node_modules
 
 # Archivos de entorno
 .env
 .env.local
 .env.*.local
 
-# Archivos de build
-dist
-build
+# Archivos de build (se generan dentro del contenedor)
+client/dist
 .vite
-.next
-out
 
-# Archivos de sistema
+# Archivos de sistema y IDE
 .DS_Store
 Thumbs.db
 .idea
@@ -32,15 +27,23 @@ Thumbs.db
 
 # Testing
 coverage
-*.test.js
 __tests__
+*.test.js
+*.test.jsx
 
 # Logs
 logs
 *.log
+npm-debug.log
+yarn-error.log
 
-# Otros
-README.md
-.dockerignore
+# Docker (evitar recursión)
 Dockerfile
 docker-compose.yml
+
+# Portable y temporales
+dist_temp
+BarberShop_Portable_FINAL
+
+# Documentación
+README.md

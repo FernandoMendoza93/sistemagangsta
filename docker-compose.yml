@@ -1,0 +1,23 @@
+# ============================================
+# Docker Compose — Para pruebas locales
+# The Gangsta Barber Shop
+# ============================================
+# Uso: docker-compose up --build
+# Esto NO se usa en Railway, solo para pruebas locales con Docker.
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      # Volumen persistente para SQLite (los datos sobreviven reinicios)
+      - sqlite-data:/app/server
+    restart: unless-stopped
+
+volumes:
+  sqlite-data:
+    driver: local
