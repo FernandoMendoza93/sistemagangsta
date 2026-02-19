@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Swal from 'sweetalert2';
 import { usuariosService, barberosService } from '../services/api';
 import Icon from '../components/Icon';
 
@@ -8,7 +9,9 @@ export default function PersonalPage() {
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [form, setForm] = useState({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo' });
+    const [editForm, setEditForm] = useState({ id: null, nombre: '', email: '', password: '', id_rol: 3 });
 
     useEffect(() => { loadData(); }, []);
 
@@ -35,7 +38,40 @@ export default function PersonalPage() {
             setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo' });
             loadData();
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al crear usuario');
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al crear usuario', confirmButtonColor: '#c9a227' });
+        }
+    };
+
+    const openEditModal = (usuario) => {
+        setEditForm({
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            password: '',
+            id_rol: usuario.id_rol
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const data = {
+                nombre: editForm.nombre,
+                email: editForm.email,
+                id_rol: editForm.id_rol
+            };
+            // Solo enviar password si se escribió una nueva
+            if (editForm.password.trim()) {
+                data.password = editForm.password;
+            }
+            await usuariosService.update(editForm.id, data);
+            setShowEditModal(false);
+            setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3 });
+            loadData();
+            Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Usuario actualizado correctamente', confirmButtonColor: '#c9a227' });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al actualizar usuario', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -44,7 +80,7 @@ export default function PersonalPage() {
             await usuariosService.update(id, { activo: activo ? 0 : 1 });
             loadData();
         } catch (error) {
-            alert('Error al actualizar');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al actualizar', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -74,14 +110,20 @@ export default function PersonalPage() {
                         <tbody>
                             {usuarios.map(u => (
                                 <tr key={u.id}>
-                                    <td><strong>{u.nombre}</strong></td>
-                                    <td>{u.email}</td>
+                                    <td><strong style={{ color: '#1a1a1a' }}>{u.nombre}</strong></td>
+                                    <td style={{ color: '#1a1a1a' }}>{u.email}</td>
                                     <td><span className={`badge ${u.rol === 'Admin' ? 'badge-warning' : u.rol === 'Encargado' ? 'badge-info' : 'badge-success'}`}>{u.rol}</span></td>
                                     <td><span className={`badge ${u.activo ? 'badge-success' : 'badge-danger'}`}>{u.activo ? 'Activo' : 'Inactivo'}</span></td>
                                     <td>
-                                        <button className="btn btn-secondary btn-sm" onClick={() => toggleActivo(u.id, u.activo)}>
-                                            {u.activo ? 'Desactivar' : 'Activar'}
-                                        </button>
+                                        <div className="acciones-cell">
+                                            <button className="btn btn-primary btn-sm" onClick={() => openEditModal(u)} title="Editar usuario">
+                                                <Icon name="edit" size={14} color="white" />
+                                                <span>Editar</span>
+                                            </button>
+                                            <button className="btn btn-secondary btn-sm" onClick={() => toggleActivo(u.id, u.activo)}>
+                                                {u.activo ? 'Desactivar' : 'Activar'}
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -90,6 +132,7 @@ export default function PersonalPage() {
                 </div>
             </div>
 
+            {/* Modal Nuevo Usuario */}
             {showModal && createPortal(
                 <div className="custom-modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="custom-modal" onClick={e => e.stopPropagation()}>
@@ -131,6 +174,54 @@ export default function PersonalPage() {
                             <div className="custom-modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Crear Usuario</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Modal Editar Usuario */}
+            {showEditModal && createPortal(
+                <div className="custom-modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="custom-modal" onClick={e => e.stopPropagation()}>
+                        <div className="custom-modal-header">
+                            <h3 className="custom-modal-title">Editar Usuario</h3>
+                            <button className="custom-modal-close" onClick={() => setShowEditModal(false)}>×</button>
+                        </div>
+                        <form onSubmit={handleEditSubmit}>
+                            <div className="custom-modal-body">
+                                <div className="form-group">
+                                    <label className="form-label">Nombre</label>
+                                    <input className="form-input" required value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Email</label>
+                                    <input type="email" className="form-input" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Rol</label>
+                                    <select className="form-select" value={editForm.id_rol} onChange={e => setEditForm({ ...editForm, id_rol: parseInt(e.target.value) })}>
+                                        {roles.map(r => <option key={r.id} value={r.id}>{r.nombre_rol}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Nueva Contraseña</label>
+                                    <input
+                                        type="password"
+                                        className="form-input"
+                                        value={editForm.password}
+                                        onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                                        placeholder="Dejar vacío para no cambiar"
+                                    />
+                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+                                        Solo llenar si deseas cambiar la contraseña
+                                    </small>
+                                </div>
+                            </div>
+                            <div className="custom-modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">Guardar Cambios</button>
                             </div>
                         </form>
                     </div>

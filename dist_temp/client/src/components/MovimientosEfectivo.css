@@ -1,0 +1,99 @@
+.movimientos-professional {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.movimientos-section-pro {
+    margin-bottom: 2rem;
+}
+
+.movimientos-section-pro:last-child {
+    margin-bottom: 0;
+}
+
+.section-title-mov {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.section-title-mov h3 {
+    color: #111827;
+    margin: 0;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+}
+
+.mov-table-pro {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.mov-table-pro th {
+    background: #f9fafb;
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 0.875rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.mov-table-pro td {
+    padding: 0.875rem 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9375rem;
+}
+
+.mov-table-pro tbody tr:hover {
+    background: #f9fafb;
+}
+
+.hora-header,
+.monto-header {
+    width: 100px;
+}
+
+.hora-cell {
+    color: #6b7280;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.desc-cell {
+    color: #111827;
+    font-weight: 500;
+}
+
+.monto-cell {
+    text-align: right;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.entrada-amount {
+    color: #16a34a;
+}
+
+.salida-amount {
+    color: #dc2626;
+}
+
+.no-movimientos-pro {
+    text-align: center;
+    color: #9ca3af;
+    padding: 2rem 0;
+    font-style: italic;
+}

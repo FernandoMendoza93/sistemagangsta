@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { corteCajaService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
@@ -16,7 +17,6 @@ export default function CorteCajaPage() {
     const [desglose, setDesglose] = useState(null);
     const [loading, setLoading] = useState(true);
     const [montoInicial, setMontoInicial] = useState('');
-    const [modoCierre, setModoCierre] = useState('transparente');
 
     // Modals
     const [showEntradaModal, setShowEntradaModal] = useState(false);
@@ -44,7 +44,7 @@ export default function CorteCajaPage() {
             }
         } catch (error) {
             console.error('Error cargando datos:', error);
-            alert('Error al cargar los datos del corte');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al cargar los datos del corte', confirmButtonColor: '#c9a227' });
         } finally {
             setLoading(false);
         }
@@ -52,84 +52,101 @@ export default function CorteCajaPage() {
 
     const handleAbrirTurno = async () => {
         if (!montoInicial || parseFloat(montoInicial) < 0) {
-            alert('Ingresa un monto inicial válido');
+            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa un monto inicial válido', confirmButtonColor: '#c9a227' });
             return;
         }
 
         try {
-            await corteCajaService.abrir(parseFloat(montoInicial), modoCierre);
-            alert(`Turno abierto con $${montoInicial} (Modo: ${modoCierre})`);
+            await corteCajaService.abrir(parseFloat(montoInicial), 'transparente');
+            Swal.fire({ icon: 'success', title: '¡Turno Abierto!', text: `Turno abierto con $${montoInicial}`, confirmButtonColor: '#c9a227' });
             setMontoInicial('');
             cargarDatos();
         } catch (error) {
             console.error(error);
-            alert('Error al abrir el turno');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al abrir el turno', confirmButtonColor: '#c9a227' });
         }
     };
 
     const handleRegistrarEntrada = async () => {
         const { monto, descripcion } = entradaForm;
         if (!monto || !descripcion) {
-            alert('Completa todos los campos');
+            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Completa todos los campos', confirmButtonColor: '#c9a227' });
             return;
         }
 
         try {
             await corteCajaService.registrarEntrada(parseFloat(monto), descripcion);
-            alert('Entrada registrada');
+            Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Entrada registrada correctamente', confirmButtonColor: '#c9a227' });
             setEntradaForm({ monto: '', descripcion: '' });
             setShowEntradaModal(false);
             cargarDatos();
         } catch (error) {
             console.error(error);
-            alert('Error al registrar entrada');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al registrar entrada', confirmButtonColor: '#c9a227' });
         }
     };
 
     const handleRegistrarSalida = async () => {
         const { monto, descripcion } = salidaForm;
         if (!monto || !descripcion) {
-            alert('Completa todos los campos');
+            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Completa todos los campos', confirmButtonColor: '#c9a227' });
             return;
         }
 
         try {
             await corteCajaService.registrarGasto(parseFloat(monto), descripcion);
-            alert('Salida registrada');
+            Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Salida registrada correctamente', confirmButtonColor: '#c9a227' });
             setSalidaForm({ monto: '', descripcion: '' });
             setShowSalidaModal(false);
             cargarDatos();
         } catch (error) {
             console.error(error);
-            alert('Error al registrar salida');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al registrar salida', confirmButtonColor: '#c9a227' });
         }
     };
 
     const handleCerrarTurno = async () => {
         const { montoReal, notas } = cierreForm;
         if (montoReal === '' || parseFloat(montoReal) < 0) {
-            alert('Ingresa un monto real válido');
+            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa un monto real válido', confirmButtonColor: '#c9a227' });
             return;
         }
 
-        if (!window.confirm('¿Estás seguro de cerrar el turno?')) return;
+        const confirmResult = await Swal.fire({
+            icon: 'question',
+            title: '¿Cerrar turno?',
+            text: '¿Estás seguro de que deseas cerrar el turno?',
+            showCancelButton: true,
+            confirmButtonColor: '#c9a227',
+            cancelButtonColor: '#6e7681',
+            confirmButtonText: 'Sí, cerrar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!confirmResult.isConfirmed) return;
 
         try {
             const res = await corteCajaService.cerrar(parseFloat(montoReal), notas);
             const { resumen } = res.data;
 
-            let mensaje = `Turno cerrado\n\n`;
-            mensaje += `Esperado: $${resumen.esperado.toFixed(2)}\n`;
-            mensaje += `Real: $${resumen.monto_real_fisico.toFixed(2)}\n`;
-            mensaje += `Diferencia: $${resumen.diferencia.toFixed(2)}`;
-
-            alert(mensaje);
+            Swal.fire({
+                icon: 'success',
+                title: 'Turno Cerrado',
+                html: `
+                    <div style="text-align: left; font-size: 1rem;">
+                        <p><strong>💰 Esperado:</strong> $${resumen.esperado.toFixed(2)}</p>
+                        <p><strong>🧮 Real:</strong> $${resumen.monto_real_fisico.toFixed(2)}</p>
+                        <p><strong>📊 Diferencia:</strong> $${resumen.diferencia.toFixed(2)}</p>
+                    </div>
+                `,
+                confirmButtonColor: '#c9a227'
+            });
             setCierreForm({ montoReal: '', notas: '' });
             setShowCierreModal(false);
             cargarDatos();
         } catch (error) {
             console.error(error);
-            alert('Error al cerrar el turno');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al cerrar el turno', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -145,7 +162,7 @@ export default function CorteCajaPage() {
             link.remove();
         } catch (error) {
             console.error(error);
-            alert('Error al exportar');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al exportar', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -163,8 +180,8 @@ export default function CorteCajaPage() {
                             <Icon name="cash" size={28} color="#2563eb" />
                         </div>
                         <div>
-                            <h1>Corte de Caja</h1>
-                            <p>Abre un nuevo turno para comenzar</p>
+                            <h1 className="corte-title">Corte de Caja</h1>
+                            <p className="corte-subtitle">Abre un nuevo turno para comenzar</p>
                         </div>
                     </div>
                 </div>
@@ -181,20 +198,6 @@ export default function CorteCajaPage() {
                             min="0"
                             step="0.01"
                         />
-                    </div>
-
-                    <div className="form-group-pro">
-                        <label>Modo de Cierre</label>
-                        <select value={modoCierre} onChange={(e) => setModoCierre(e.target.value)}>
-                            <option value="transparente">Transparente (mostrar esperado)</option>
-                            <option value="ciego">Ciego (ocultar esperado)</option>
-                        </select>
-                        {modoCierre === 'ciego' && (
-                            <div className="alert-warning-pro">
-                                <Icon name="alert-circle" size={16} color="#f59e0b" />
-                                <span>En modo ciego, deberás contar el efectivo sin ver el monto esperado</span>
-                            </div>
-                        )}
                     </div>
 
                     <button className="btn-primary-pro" onClick={handleAbrirTurno}>
@@ -225,10 +228,10 @@ export default function CorteCajaPage() {
                         <Icon name="cash" size={28} color="#2563eb" />
                     </div>
                     <div>
-                        <h1>Corte de {encargado || user?.nombre}</h1>
-                        <p className="turno-info-pro">
+                        <h1 className="corte-title">Corte de Caja</h1>
+                        <p className="turno-info-pro corte-subtitle">
                             <Icon name="clock" size={16} color="#6b7280" />
-                            <span>Turno iniciado el {fechaInicio} a las {hora_apertura || 'N/A'}</span>
+                            <span>Encargado: {encargado || user?.nombre} • Inicio: {fechaInicio} {hora_apertura || ''}</span>
                         </p>
                     </div>
                 </div>
@@ -345,7 +348,7 @@ export default function CorteCajaPage() {
                             />
                         </div>
                         <div className="modal-actions-pro">
-                            <button className="`btn-secondary-pro" onClick={() => setShowSalidaModal(false)}>Cancelar</button>
+                            <button className="btn-secondary-pro" onClick={() => setShowSalidaModal(false)}>Cancelar</button>
                             <button className="btn-danger-pro" onClick={handleRegistrarSalida}>
                                 <Icon name="check-circle" size={18} color="white" />
                                 <span>Registrar</span>
@@ -374,9 +377,11 @@ export default function CorteCajaPage() {
                             </div>
                         )}
 
-                        <CashDenominationCounter
-                            onTotalChange={(total) => setCierreForm({ ...cierreForm, montoReal: total })}
-                        />
+                        <div style={{ marginBottom: '0.5rem' }}>
+                            <CashDenominationCounter
+                                onTotalChange={(total) => setCierreForm({ ...cierreForm, montoReal: total })}
+                            />
+                        </div>
 
                         <div className="form-group-pro">
                             <label>Monto Real Físico Contado</label>
@@ -387,16 +392,6 @@ export default function CorteCajaPage() {
                                 placeholder="0.00"
                                 min="0"
                                 step="0.01"
-                            />
-                        </div>
-
-                        <div className="form-group-pro">
-                            <label>Notas (Opcional)</label>
-                            <textarea
-                                value={cierreForm.notas}
-                                onChange={e => setCierreForm({ ...cierreForm, notas: e.target.value })}
-                                placeholder="Observaciones del cierre..."
-                                rows="3"
                             />
                         </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Swal from 'sweetalert2';
 import { productosService } from '../services/api';
 
 export default function InventarioPage() {
@@ -85,7 +86,7 @@ export default function InventarioPage() {
 
     const handleSaveProduct = async () => {
         if (!formData.nombre.trim()) {
-            alert('El nombre es requerido');
+            Swal.fire({ icon: 'warning', title: 'Atención', text: 'El nombre es requerido', confirmButtonColor: '#c9a227' });
             return;
         }
 
@@ -98,7 +99,7 @@ export default function InventarioPage() {
             setShowProductModal(false);
             loadData();
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al guardar producto');
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al guardar producto', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -107,7 +108,7 @@ export default function InventarioPage() {
             await productosService.update(producto.id, { activo: producto.activo ? 0 : 1 });
             loadData();
         } catch (error) {
-            alert('Error al cambiar estado');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al cambiar estado', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -127,7 +128,7 @@ export default function InventarioPage() {
             setMovimiento({ tipo: 'Entrada', cantidad: 1, motivo: '' });
             loadData();
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al registrar movimiento');
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al registrar movimiento', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -250,9 +251,9 @@ export default function InventarioPage() {
                                 filteredProducts.map(p => (
                                     <tr key={p.id} style={{ opacity: p.activo ? 1 : 0.5 }}>
                                         <td>
-                                            <strong>{p.nombre}</strong>
+                                            <strong style={{ color: '#1a1a1a' }}>{p.nombre}</strong>
                                             {p.descripcion && (
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                                     {p.descripcion}
                                                 </div>
                                             )}
@@ -270,8 +271,8 @@ export default function InventarioPage() {
                                                 <span style={{ marginLeft: '0.5rem', color: 'var(--danger)' }}>⚠️ Bajo</span>
                                             )}
                                         </td>
-                                        <td>${p.precio_costo?.toFixed(2) || '0.00'}</td>
-                                        <td style={{ fontWeight: 600 }}>
+                                        <td style={{ color: '#1a1a1a' }}>${p.precio_costo?.toFixed(2) || '0.00'}</td>
+                                        <td style={{ fontWeight: 600, color: '#1a1a1a' }}>
                                             {p.categoria === 'Venta' ? `$${p.precio_venta?.toFixed(2) || '0.00'}` : '-'}
                                         </td>
                                         <td>
@@ -529,7 +530,7 @@ export default function InventarioPage() {
                                     <tbody>
                                         {historial.map(mov => (
                                             <tr key={mov.id}>
-                                                <td style={{ fontSize: '0.85rem' }}>
+                                                <td style={{ fontSize: '0.85rem', color: '#1a1a1a' }}>
                                                     {new Date(mov.fecha).toLocaleString('es-MX', {
                                                         dateStyle: 'short',
                                                         timeStyle: 'short'
@@ -542,11 +543,11 @@ export default function InventarioPage() {
                                                         {mov.tipo === 'Entrada' ? '📥' : mov.tipo === 'Salida' ? '📤' : '🔄'} {mov.tipo}
                                                     </span>
                                                 </td>
-                                                <td><strong>{mov.cantidad}</strong></td>
-                                                <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                <td><strong style={{ color: '#1a1a1a' }}>{mov.cantidad}</strong></td>
+                                                <td style={{ fontSize: '0.85rem', color: '#555' }}>
                                                     {mov.motivo || '-'}
                                                 </td>
-                                                <td style={{ fontSize: '0.85rem' }}>{mov.usuario || '-'}</td>
+                                                <td style={{ fontSize: '0.85rem', color: '#1a1a1a' }}>{mov.usuario || '-'}</td>
                                             </tr>
                                         ))}
                                     </tbody>

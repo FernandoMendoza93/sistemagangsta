@@ -1,0 +1,86 @@
+.dinero-caja-professional {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.header-icon {
+    width: 32px;
+    height: 32px;
+    background: #eef2ff;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.desglose-table-pro {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.desglose-table-pro td {
+    padding: 0.875rem 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9375rem;
+}
+
+.label-cell {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.amount-cell {
+    text-align: right;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+}
+
+.positive-row .amount-cell.positive {
+    color: #16a34a;
+}
+
+.negative-row .amount-cell.negative {
+    color: #dc2626;
+}
+
+.total-row {
+    background: #f9fafb;
+    border-top: 2px solid #e5e7eb;
+    border-bottom: none;
+}
+
+.total-row td {
+    padding: 1rem 0.5rem;
+    font-size: 1rem;
+}
+
+.total-amount {
+    color: #111827;
+    font-size: 1.125rem;
+}

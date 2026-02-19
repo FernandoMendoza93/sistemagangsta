@@ -68,6 +68,20 @@
     line-height: 1.2;
 }
 
+@media (max-width: 1194px) {
+    .corte-resumen-professional {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+    }
+
+    .metric-card {
+        padding: 1.15rem;
+    }
+}
+
 @media (max-width: 768px) {
     .corte-resumen-professional {
         grid-template-columns: 1fr;

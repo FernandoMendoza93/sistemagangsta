@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -10,7 +11,7 @@ router.get('/', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
 
         const usuarios = db.prepare(`
       SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
-             r.nombre_rol as rol
+             r.nombre_rol as rol, u.id_rol
       FROM usuarios u
       JOIN roles r ON u.id_rol = r.id
       ORDER BY u.id
@@ -49,11 +50,17 @@ router.get('/:id', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req,
 });
 
 // PUT /api/usuarios/:id - Actualizar usuario (Solo Admin)
-router.put('/:id', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
+router.put('/:id', verifyToken, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
-        const { nombre, email, id_rol, activo } = req.body;
+        const { nombre, email, id_rol, activo, password } = req.body;
+
+        // Si se envió password, hashearla y actualizarla
+        if (password && password.trim()) {
+            const passwordHash = await bcrypt.hash(password, 10);
+            db.prepare('UPDATE usuarios SET password_hash = ? WHERE id = ?').run(passwordHash, id);
+        }
 
         db.prepare(`
       UPDATE usuarios 

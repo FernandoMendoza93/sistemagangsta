@@ -69,7 +69,7 @@ export default function VentasPage() {
                 />
             </div>
 
-            <div className="card-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '1.5rem' }}>
+            <div className="card-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '1.5rem' }}>
                 <div className="stat-card stat-card-revenue">
                     <div className="stat-icon">
                         <Icon name="dollar-circle" size={32} color="#2563eb" />
@@ -85,16 +85,7 @@ export default function VentasPage() {
                     </div>
                     <div className="stat-info">
                         <div className="stat-value">{ventas.length}</div>
-                        <div className="stat-label">Ventas</div>
-                    </div>
-                </div>
-                <div className="stat-card stat-card-cash">
-                    <div className="stat-icon">
-                        <Icon name="trending-up" size={32} color="#0891b2" />
-                    </div>
-                    <div className="stat-info">
-                        <div className="stat-value">${ventas.length > 0 ? (getTotal() / ventas.length).toFixed(2) : '0.00'}</div>
-                        <div className="stat-label">Ticket Promedio</div>
+                        <div className="stat-label">Ventas Realizadas</div>
                     </div>
                 </div>
             </div>
@@ -131,9 +122,9 @@ export default function VentasPage() {
                                             <tr key={v.id} style={{
                                                 background: selectedVenta?.id === v.id ? 'rgba(201, 162, 39, 0.1)' : undefined
                                             }}>
-                                                <td>{v.id}</td>
-                                                <td>{new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
-                                                <td>{v.barbero || '-'}</td>
+                                                <td style={{ color: '#1a1a1a' }}>{v.id}</td>
+                                                <td style={{ color: '#1a1a1a' }}>{new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
+                                                <td style={{ color: '#1a1a1a' }}>{v.barbero || '-'}</td>
                                                 <td>
                                                     <span className={`badge ${v.metodo_pago === 'Efectivo' ? 'badge-success' :
                                                         v.metodo_pago === 'Tarjeta' ? 'badge-info' : 'badge-warning'
@@ -141,7 +132,7 @@ export default function VentasPage() {
                                                         {v.metodo_pago}
                                                     </span>
                                                 </td>
-                                                <td style={{ textAlign: 'right', fontWeight: 600 }}>${v.total_venta.toFixed(2)}</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 600, color: '#1a1a1a' }}>${v.total_venta.toFixed(2)}</td>
                                                 <td>
                                                     <button
                                                         className="btn btn-secondary btn-sm"
@@ -199,8 +190,8 @@ export default function VentasPage() {
                                         marginBottom: '0.5rem'
                                     }}>
                                         <div>
-                                            <strong>{d.nombre_servicio || d.producto}</strong>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                            <strong style={{ color: 'var(--text-primary)' }}>{d.nombre_servicio || d.producto}</strong>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                                 {d.cantidad} x ${d.precio_unitario.toFixed(2)}
                                             </div>
                                         </div>
@@ -221,7 +212,7 @@ export default function VentasPage() {
                             fontSize: '1.1rem',
                             fontWeight: 700
                         }}>
-                            <span>Total:</span>
+                            <span style={{ color: 'var(--text-primary)' }}>Total:</span>
                             <span style={{ color: 'var(--primary)' }}>${selectedVenta.total_venta.toFixed(2)}</span>
                         </div>
                     </div>

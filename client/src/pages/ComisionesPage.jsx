@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { barberosService } from '../services/api';
 
 export default function ComisionesPage() {
@@ -6,6 +7,7 @@ export default function ComisionesPage() {
     const [loading, setLoading] = useState(true);
     const [selectedBarbero, setSelectedBarbero] = useState(null);
     const [comisiones, setComisiones] = useState(null);
+    const [historialPagos, setHistorialPagos] = useState([]);
     const [paying, setPaying] = useState(false);
 
     useEffect(() => { loadBarberos(); }, []);
@@ -23,8 +25,12 @@ export default function ComisionesPage() {
 
     const loadComisiones = async (id) => {
         try {
-            const res = await barberosService.getComisiones(id);
-            setComisiones(res.data);
+            const [comRes, histRes] = await Promise.all([
+                barberosService.getComisiones(id),
+                barberosService.getHistorialPagos(id)
+            ]);
+            setComisiones(comRes.data);
+            setHistorialPagos(histRes.data);
             setSelectedBarbero(barberos.find(b => b.id === id));
         } catch (error) {
             console.error('Error:', error);
@@ -36,10 +42,10 @@ export default function ComisionesPage() {
         setPaying(true);
         try {
             const res = await barberosService.pagarComisiones(selectedBarbero.id, 'Pago de comisiones');
-            alert(`Pago realizado: $${res.data.monto.toFixed(2)}`);
+            Swal.fire({ icon: 'success', title: '¡Pago Realizado!', text: `Se pagaron $${res.data.monto.toFixed(2)}`, confirmButtonColor: '#c9a227' });
             loadComisiones(selectedBarbero.id);
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al pagar');
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al pagar', confirmButtonColor: '#c9a227' });
         } finally {
             setPaying(false);
         }
@@ -53,7 +59,7 @@ export default function ComisionesPage() {
                 <h1 className="page-title">💎 Comisiones</h1>
             </div>
 
-            <div className="card-grid" style={{ gridTemplateColumns: '300px 1fr' }}>
+            <div className="card-grid comisiones-layout">
                 {/* Lista de Barberos */}
                 <div className="card">
                     <h2 className="card-title" style={{ marginBottom: '1rem' }}>Barberos</h2>
@@ -70,7 +76,7 @@ export default function ComisionesPage() {
                                 border: selectedBarbero?.id === b.id ? '1px solid var(--primary)' : '1px solid transparent'
                             }}
                         >
-                            <strong style={{ color: 'var(--text-primary)' }}>{b.nombre}</strong>
+                            <strong style={{ color: '#ffffff' }}>{b.nombre}</strong>
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                 Comisión: {(b.porcentaje_comision * 100).toFixed(0)}%
                             </div>
@@ -95,7 +101,7 @@ export default function ComisionesPage() {
                                 )}
                             </div>
 
-                            <div className="card-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '1rem' }}>
+                            <div className="card-grid comisiones-summary-grid">
                                 <div style={{
                                     background: 'var(--bg-input)',
                                     border: '1px solid var(--border-color)',
@@ -122,6 +128,7 @@ export default function ComisionesPage() {
                                 </div>
                             </div>
 
+                            {/* Tabla de comisiones individuales */}
                             <div className="table-container" style={{ maxHeight: '300px', overflow: 'auto' }}>
                                 <table className="table">
                                     <thead>
@@ -130,8 +137,8 @@ export default function ComisionesPage() {
                                     <tbody>
                                         {comisiones?.comisiones?.map(c => (
                                             <tr key={c.id}>
-                                                <td>{new Date(c.fecha).toLocaleDateString('es-MX')}</td>
-                                                <td style={{ fontWeight: 600 }}>${c.monto.toFixed(2)}</td>
+                                                <td style={{ color: '#1a1a1a' }}>{new Date(c.fecha).toLocaleDateString('es-MX')}</td>
+                                                <td style={{ fontWeight: 600, color: '#1a1a1a' }}>${c.monto.toFixed(2)}</td>
                                                 <td>
                                                     <span className={`badge ${c.pagado ? 'badge-success' : 'badge-warning'}`}>
                                                         {c.pagado ? 'Pagado' : 'Pendiente'}
@@ -142,6 +149,63 @@ export default function ComisionesPage() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Historial de Pagos */}
+                            {historialPagos.length > 0 && (
+                                <div style={{ marginTop: '1.5rem' }}>
+                                    <h3 style={{
+                                        fontSize: '1.1rem',
+                                        fontWeight: '600',
+                                        color: 'var(--text-primary)',
+                                        marginBottom: '1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                    }}>
+                                        📋 Historial de Pagos
+                                    </h3>
+                                    <div className="table-container" style={{ maxHeight: '300px', overflow: 'auto' }}>
+                                        <table className="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha de Pago</th>
+                                                    <th>Monto</th>
+                                                    <th>Pagado por</th>
+                                                    <th>Notas</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {historialPagos.map(p => (
+                                                    <tr key={p.id}>
+                                                        <td style={{ color: '#1a1a1a' }}>
+                                                            {new Date(p.fecha_pago).toLocaleDateString('es-MX', {
+                                                                year: 'numeric',
+                                                                month: 'short',
+                                                                day: 'numeric'
+                                                            })}
+                                                            <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                                                                {new Date(p.fecha_pago).toLocaleTimeString('es-MX', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ fontWeight: 700, color: 'var(--success)', fontSize: '1rem' }}>
+                                                            ${p.monto.toFixed(2)}
+                                                        </td>
+                                                        <td style={{ color: '#1a1a1a' }}>
+                                                            {p.pagado_por || 'Admin'}
+                                                        </td>
+                                                        <td style={{ color: '#555', fontSize: '0.85rem' }}>
+                                                            {p.notas || '—'}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

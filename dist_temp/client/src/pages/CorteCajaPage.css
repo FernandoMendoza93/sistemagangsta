@@ -1,0 +1,358 @@
+/* ===================================
+   CORTE DE CAJA - PROFESSIONAL DESIGN
+   =================================== */
+
+.corte-caja-page-pro {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    font-size: 1.25rem;
+    color: #6b7280;
+}
+
+/* Page Header */
+.page-header-pro {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.header-title-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.title-icon {
+    width: 56px;
+    height: 56px;
+    background: #eff6ff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.page-header-pro h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.page-header-pro p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9375rem;
+}
+
+.turno-info-pro {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-actions-pro {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Buttons - Professional Style */
+.btn-primary-pro,
+.btn-secondary-pro,
+.btn-entrada-pro,
+.btn-salida-pro,
+.btn-danger-pro {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-pro {
+    background: #2563eb;
+    color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary-pro:hover {
+    background: #1d4ed8;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.btn-secondary-pro {
+    background: white;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary-pro:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.btn-entrada-pro {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.btn-entrada-pro:hover {
+    background: #dcfce7;
+}
+
+.btn-salida-pro {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.btn-salida-pro:hover {
+    background: #fee2e2;
+}
+
+.btn-danger-pro {
+    background: #dc2626;
+    color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-danger-pro:hover {
+    background: #b91c1c;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Card: Abrir Turno */
+.abrir-turno-card-pro {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+}
+
+.abrir-turno-card-pro h2 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Form Groups */
+.form-group-pro {
+    margin-bottom: 1.5rem;
+}
+
+.form-group-pro label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9375rem;
+}
+
+.form-group-pro input,
+.form-group-pro select,
+.form-group-pro textarea {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    font-family: 'Inter', sans-serif;
+    color: #111827;
+    background: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group-pro input:focus,
+.form-group-pro select:focus,
+.form-group-pro textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group-pro textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.alert-warning-pro {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    color: #92400e;
+    font-size: 0.875rem;
+}
+
+/* Info Box */
+.info-box-pro {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.info-box-pro strong {
+    display: block;
+    color: #166534;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.info-box-pro p {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #16a34a;
+    margin: 0;
+}
+
+/* Desglose Grid */
+.desglose-grid-pro {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.desglose-left,
+.desglose-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Acciones */
+.acciones-secundarias-pro {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.acciones-cierre-pro {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+/* Modals */
+.modal-overlay-pro {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-content-pro {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-large-pro {
+    max-width: 700px;
+}
+
+.modal-header-pro {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.modal-header-pro h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.modal-actions-pro {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .corte-caja-page-pro {
+        padding: 1rem;
+    }
+
+    .page-header-pro {
+        flex-direction: column;
+    }
+
+    .header-actions-pro {
+        width: 100%;
+    }
+
+    .header-actions-pro button {
+        flex: 1;
+    }
+
+    .desglose-grid-pro {
+        grid-template-columns: 1fr;
+    }
+
+    .acciones-cierre-pro {
+        justify-content: stretch;
+    }
+
+    .acciones-cierre-pro button {
+        width: 100%;
+    }
+}

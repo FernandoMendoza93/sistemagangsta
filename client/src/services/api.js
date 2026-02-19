@@ -53,7 +53,8 @@ export const barberosService = {
     getById: (id) => api.get(`/barberos/${id}`),
     update: (id, data) => api.put(`/barberos/${id}`, data),
     getComisiones: (id, desde, hasta) => api.get(`/barberos/${id}/comisiones`, { params: { desde, hasta } }),
-    pagarComisiones: (id, notas) => api.post(`/barberos/${id}/pagar-comisiones`, { notas })
+    pagarComisiones: (id, notas) => api.post(`/barberos/${id}/pagar-comisiones`, { notas }),
+    getHistorialPagos: (id) => api.get(`/barberos/${id}/historial-pagos`)
 };
 
 // Servicios

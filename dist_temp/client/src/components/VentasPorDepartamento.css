@@ -1,0 +1,90 @@
+.ventas-dept-professional {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.dept-section {
+    margin-bottom: 1.5rem;
+}
+
+.dept-section:last-child {
+    margin-bottom: 0;
+}
+
+.dept-subtitle {
+    color: #374151;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+}
+
+.dept-table-pro {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dept-table-pro thead th {
+    background: #f9fafb;
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 0.875rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.dept-table-pro tbody td {
+    padding: 0.875rem 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9375rem;
+}
+
+.dept-table-pro tbody tr:hover {
+    background: #f9fafb;
+}
+
+.dept-name {
+    font-weight: 500;
+    color: #111827;
+}
+
+.centered {
+    text-align: center;
+    color: #6b7280;
+}
+
+.right-align {
+    text-align: right;
+}
+
+.amount-cell {
+    text-align: right;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+}
+
+.ganancia-cell {
+    text-align: right;
+    color: #16a34a;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.dept-badge-pro {
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+}

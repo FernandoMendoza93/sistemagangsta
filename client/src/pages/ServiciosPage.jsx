@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Swal from 'sweetalert2';
 import { serviciosService } from '../services/api';
 import Icon from '../components/Icon';
 
@@ -45,7 +46,7 @@ export default function ServiciosPage() {
             setShowModal(false);
             loadData();
         } catch (error) {
-            alert(error.response?.data?.error || 'Error');
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al guardar', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -54,7 +55,7 @@ export default function ServiciosPage() {
             await serviciosService.update(id, { activo: activo ? 0 : 1 });
             loadData();
         } catch (error) {
-            alert('Error');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al actualizar estado', confirmButtonColor: '#c9a227' });
         }
     };
 
@@ -84,9 +85,9 @@ export default function ServiciosPage() {
                         <tbody>
                             {servicios.map(s => (
                                 <tr key={s.id}>
-                                    <td><strong>{s.nombre_servicio}</strong></td>
+                                    <td><strong style={{ color: '#1a1a1a' }}>{s.nombre_servicio}</strong></td>
                                     <td style={{ color: 'var(--primary)', fontWeight: 600 }}>${s.precio.toFixed(2)}</td>
-                                    <td>{s.duracion_aprox} min</td>
+                                    <td style={{ color: '#1a1a1a' }}>{s.duracion_aprox} min</td>
                                     <td><span className={`badge ${s.activo ? 'badge-success' : 'badge-danger'}`}>{s.activo ? 'Activo' : 'Inactivo'}</span></td>
                                     <td style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button className="btn btn-secondary btn-sm" onClick={() => openModal(s)}>Editar</button>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
@@ -16,6 +17,8 @@ import './index.css';
 
 // Layout con Sidebar
 function AppLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const appStyle = {
     backgroundImage: `url(${bodyBg})`,
     backgroundSize: 'cover',
@@ -27,7 +30,7 @@ function AppLayout() {
   return (
     <div className="app-container" style={appStyle}>
       <div className="app-overlay"></div>
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onToggle={setSidebarOpen} />
       <main className="main-content">
         <Outlet />
       </main>

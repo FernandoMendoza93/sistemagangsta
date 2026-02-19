@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { reportesService } from '../services/api';
 
 export default function ReportesPage() {
@@ -42,7 +43,7 @@ export default function ReportesPage() {
             link.click();
             link.remove();
         } catch (error) {
-            alert('Error al exportar');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al exportar', confirmButtonColor: '#c9a227' });
         } finally {
             setExporting(false);
         }
@@ -67,7 +68,7 @@ export default function ReportesPage() {
                 </div>
             </div>
 
-            <div className="card-grid" style={{ marginBottom: '1.5rem' }}>
+            <div className="card-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '1.5rem' }}>
                 <div className="stat-card">
                     <div className="stat-value">${totalIngresos.toFixed(2)}</div>
                     <div className="stat-label">Ingresos Totales</div>
@@ -75,10 +76,6 @@ export default function ReportesPage() {
                 <div className="stat-card">
                     <div className="stat-value">${totalComisiones.toFixed(2)}</div>
                     <div className="stat-label">Comisiones Generadas</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-value">{ventas.reduce((sum, v) => sum + v.total_ventas, 0)}</div>
-                    <div className="stat-label">Total de Ventas</div>
                 </div>
             </div>
 
@@ -94,9 +91,9 @@ export default function ReportesPage() {
                             <tbody>
                                 {comisiones.map((c, i) => (
                                     <tr key={i}>
-                                        <td><strong>{c.barbero}</strong></td>
-                                        <td>{c.servicios}</td>
-                                        <td>${c.total_comision?.toFixed(2)}</td>
+                                        <td><strong style={{ color: '#1a1a1a' }}>{c.barbero}</strong></td>
+                                        <td style={{ color: '#1a1a1a' }}>{c.servicios}</td>
+                                        <td style={{ color: '#1a1a1a' }}>${c.total_comision?.toFixed(2)}</td>
                                         <td><span className="badge badge-warning">${c.pendiente?.toFixed(2)}</span></td>
                                     </tr>
                                 ))}
@@ -116,9 +113,9 @@ export default function ReportesPage() {
                             <tbody>
                                 {servicios.map((s, i) => (
                                     <tr key={i}>
-                                        <td><strong>{s.nombre_servicio}</strong></td>
-                                        <td>{s.cantidad}</td>
-                                        <td className="cart-item-price">${s.ingresos?.toFixed(2)}</td>
+                                        <td><strong style={{ color: '#1a1a1a' }}>{s.nombre_servicio}</strong></td>
+                                        <td style={{ color: '#1a1a1a' }}>{s.cantidad}</td>
+                                        <td className="cart-item-price" style={{ color: '#1a1a1a' }}>${s.ingresos?.toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>

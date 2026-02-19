@@ -190,4 +190,34 @@ router.post('/:id/pagar-comisiones', verifyToken, requireRole(ROLES.ADMIN), (req
     }
 });
 
+// GET /api/barberos/:id/historial-pagos - Historial de pagos de comisiones
+router.get('/:id/historial-pagos', verifyToken, (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+
+        // Verificar que el barbero puede ver solo su propio historial
+        if (req.user.rol === ROLES.BARBERO) {
+            const barbero = db.prepare('SELECT id FROM barberos WHERE id_usuario = ?').get(req.user.id);
+            if (!barbero || barbero.id !== parseInt(id)) {
+                return res.status(403).json({ error: 'No puedes ver el historial de otros barberos' });
+            }
+        }
+
+        const pagos = db.prepare(`
+      SELECT cp.id, cp.monto, cp.fecha_pago, cp.notas,
+             u.nombre as pagado_por
+      FROM comisiones_pagadas cp
+      LEFT JOIN usuarios u ON cp.id_usuario_admin = u.id
+      WHERE cp.id_barbero = ?
+      ORDER BY cp.fecha_pago DESC
+    `).all(id);
+
+        res.json(pagos);
+    } catch (error) {
+        console.error('Error obteniendo historial de pagos:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 export default router;

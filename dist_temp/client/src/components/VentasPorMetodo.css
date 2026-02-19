@@ -1,0 +1,61 @@
+.ventas-metodo-professional {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.no-data-pro {
+    text-align: center;
+    color: #9ca3af;
+    padding: 2rem 0;
+    font-style: italic;
+    font-size: 0.9375rem;
+}
+
+.metodo-table-pro {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.metodo-table-pro td {
+    padding: 0.875rem 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-family: 'Inter', sans-serif;
+}
+
+.metodo-name-cell {
+    font-weight: 500;
+    color: #111827;
+    font-size: 0.9375rem;
+}
+
+.metodo-count-cell {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.metodo-amount-cell {
+    text-align: right;
+    color: #16a34a;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.total-row-metodo {
+    background: #f9fafb;
+    border-top: 2px solid #e5e7eb;
+    border-bottom: none;
+}
+
+.total-row-metodo td {
+    padding: 1rem 0.5rem;
+    font-size: 1rem;
+}
+
+.total-label {
+    font-weight: 600;
+    color: #111827;
+}

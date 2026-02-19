@@ -421,6 +421,30 @@
    Responsive Design
    ======================================== */
 
+@media (max-width: 1194px) {
+    .login-page {
+        grid-template-columns: 55% 45%;
+    }
+
+    .login-glass-card {
+        max-width: 420px;
+        padding: 2.5rem 2rem;
+    }
+
+    .hero-title {
+        font-size: 2.15rem;
+    }
+
+    .hero-description {
+        font-size: 1rem;
+    }
+
+    .feature-item {
+        padding: 0.75rem 1.15rem;
+        font-size: 0.9rem;
+    }
+}
+
 @media (max-width: 1024px) {
     .login-page {
         grid-template-columns: 50% 50%;
@@ -431,7 +455,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 834px) {
     .login-page {
         grid-template-columns: 1fr;
     }
@@ -445,11 +469,12 @@
     }
 
     .login-glass-card {
+        max-width: 480px;
         padding: 2.5rem 2rem;
     }
 
     .login-title {
-        font-size: 1.75rem;
+        font-size: 1.85rem;
     }
 }
 
