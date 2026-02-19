@@ -44,6 +44,9 @@ COPY --from=builder /app/client/dist ./client/dist/
 # Copiar script SQL inicial
 COPY database/ ./database/
 
+# Crear carpeta para la base de datos (punto de montaje del volumen en Railway)
+RUN mkdir -p /app/server/data
+
 # Variables de entorno
 ENV NODE_ENV=production
 ENV PORT=3000

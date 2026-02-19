@@ -61,7 +61,7 @@ async function initializeDatabase() {
         const Database = (await import('better-sqlite3')).default;
         const { readFileSync } = await import('fs');
 
-        const sqliteDb = new Database(join(__dirname, 'database.sqlite'));
+        const sqliteDb = new Database(join(__dirname, 'data', 'database.sqlite'));
         sqliteDb.pragma('journal_mode = WAL');
 
         // Verificar si necesita inicialización
@@ -176,6 +176,7 @@ app.use((err, req, res, next) => {
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
+    console.log('Servidor activo en puerto:', PORT);
     console.log(`
   ╔════════════════════════════════════════════╗
   ║   🏪 SISTEMA DE GESTIÓN PARA BARBERÍA      ║

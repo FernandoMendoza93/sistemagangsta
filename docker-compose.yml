@@ -14,8 +14,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
     volumes:
-      # Volumen persistente para SQLite (los datos sobreviven reinicios)
-      - sqlite-data:/app/server
+      # Volumen persistente para SQLite (solo la carpeta data, NO todo el server)
+      - sqlite-data:/app/server/data
     restart: unless-stopped
 
 volumes:
