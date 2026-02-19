@@ -52,8 +52,8 @@ ENV PORT=3000
 EXPOSE ${PORT}
 
 
-# Directorio de trabajo del servidor
-WORKDIR /app/server
+# Directorio de trabajo
+WORKDIR /app
 
 # Arrancar el servidor
-CMD ["node", "index.js"]
+CMD ["node", "server/index.js"]
