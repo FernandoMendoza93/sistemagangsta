@@ -1,209 +1,263 @@
--- ============================================
--- SCHEMA DE BASE DE DATOS - SISTEMA DE BARBERÍA
--- ============================================
+-- =============================================
+-- SISTEMA DE GESTIÓN PARA BARBERÍA
+-- Script de inicialización SQLite
+-- Coincide con server/schema.sql
+-- =============================================
 
--- Crear base de datos si no existe
-CREATE DATABASE IF NOT EXISTS barberia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE barberia;
+-- =============================================
+-- TABLAS DE SEGURIDAD (RBAC)
+-- =============================================
 
--- ============================================
--- TABLAS
--- ============================================
-
--- Tabla de Roles
 CREATE TABLE IF NOT EXISTS roles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_rol VARCHAR(50) NOT NULL UNIQUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre_rol TEXT NOT NULL UNIQUE
+);
 
--- Tabla de Usuarios
 CREATE TABLE IF NOT EXISTS usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    id_rol INT NOT NULL,
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    id_rol INTEGER NOT NULL,
+    fecha_creacion TEXT DEFAULT (datetime('now', 'localtime')),
+    activo INTEGER DEFAULT 1,
     FOREIGN KEY (id_rol) REFERENCES roles(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
--- Tabla de Barberos
+-- =============================================
+-- TABLAS DE PERSONAL Y COMISIONES
+-- =============================================
+
 CREATE TABLE IF NOT EXISTS barberos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT NOT NULL,
-    turno VARCHAR(50),
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Tabla de Servicios
-CREATE TABLE IF NOT EXISTS servicios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_servicio VARCHAR(100) NOT NULL,
-    precio DECIMAL(10,2) NOT NULL,
-    duracion_aprox INT,
-    activo BOOLEAN DEFAULT TRUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Tabla de Categorías
-CREATE TABLE IF NOT EXISTS categorias (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_categoria VARCHAR(100) NOT NULL UNIQUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Tabla de Productos
-CREATE TABLE IF NOT EXISTS productos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_producto VARCHAR(100) NOT NULL,
-    id_categoria INT,
-    precio_venta DECIMAL(10,2) NOT NULL,
-    precio_compra DECIMAL(10,2),
-    stock_actual INT DEFAULT 0,
-    stock_minimo INT DEFAULT 5,
-    activo BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (id_categoria) REFERENCES categorias(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Tabla de Ventas
-CREATE TABLE IF NOT EXISTS ventas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    id_barbero INT,
-    metodo_pago VARCHAR(50) NOT NULL,
-    total_venta DECIMAL(10,2) NOT NULL,
-    id_usuario INT,
-    FOREIGN KEY (id_barbero) REFERENCES barberos(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_usuario INTEGER NOT NULL UNIQUE,
+    porcentaje_comision REAL DEFAULT 0.50,
+    estado TEXT DEFAULT 'Activo' CHECK(estado IN ('Activo', 'Inactivo')),
+    turno TEXT DEFAULT 'Completo',
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
--- Tabla de Detalle de Ventas
-CREATE TABLE IF NOT EXISTS detalle_ventas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_venta INT NOT NULL,
-    id_servicio INT,
-    id_producto INT,
-    cantidad INT NOT NULL,
-    precio_unitario DECIMAL(10,2) NOT NULL,
-    subtotal DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (id_venta) REFERENCES ventas(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS comisiones_pendientes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_barbero INTEGER NOT NULL,
+    id_venta_detalle INTEGER NOT NULL,
+    monto REAL NOT NULL,
+    fecha TEXT DEFAULT (datetime('now', 'localtime')),
+    pagado INTEGER DEFAULT 0,
+    FOREIGN KEY (id_barbero) REFERENCES barberos(id)
+);
+
+CREATE TABLE IF NOT EXISTS comisiones_pagadas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_barbero INTEGER NOT NULL,
+    monto REAL NOT NULL,
+    fecha_pago TEXT DEFAULT (datetime('now', 'localtime')),
+    id_usuario_admin INTEGER NOT NULL,
+    notas TEXT,
+    FOREIGN KEY (id_barbero) REFERENCES barberos(id),
+    FOREIGN KEY (id_usuario_admin) REFERENCES usuarios(id)
+);
+
+-- =============================================
+-- TABLAS DE SERVICIOS
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS servicios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre_servicio TEXT NOT NULL,
+    precio REAL NOT NULL,
+    duracion_aprox INTEGER DEFAULT 30,
+    activo INTEGER DEFAULT 1
+);
+
+-- =============================================
+-- TABLAS DE VENTAS
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS ventas_cabecera (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha TEXT DEFAULT (datetime('now', 'localtime')),
+    id_cliente INTEGER,
+    id_barbero INTEGER,
+    total_venta REAL NOT NULL,
+    metodo_pago TEXT DEFAULT 'Efectivo' CHECK(metodo_pago IN ('Efectivo', 'Tarjeta', 'Transferencia')),
+    estado_corte_caja INTEGER DEFAULT 0,
+    notas TEXT,
+    FOREIGN KEY (id_barbero) REFERENCES barberos(id)
+);
+
+CREATE TABLE IF NOT EXISTS ventas_detalle (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_venta_cabecera INTEGER NOT NULL,
+    id_servicio INTEGER,
+    id_producto INTEGER,
+    cantidad INTEGER DEFAULT 1,
+    precio_unitario REAL NOT NULL,
+    subtotal REAL NOT NULL,
+    FOREIGN KEY (id_venta_cabecera) REFERENCES ventas_cabecera(id),
     FOREIGN KEY (id_servicio) REFERENCES servicios(id),
     FOREIGN KEY (id_producto) REFERENCES productos(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
--- Tabla de Cortes de Caja
-CREATE TABLE IF NOT EXISTS cortes_caja (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_encargado INT NOT NULL,
-    fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_cierre TIMESTAMP NULL,
-    monto_inicial DECIMAL(10,2) NOT NULL,
-    monto_final DECIMAL(10,2),
-    estado VARCHAR(20) DEFAULT 'abierto',
-    FOREIGN KEY (id_encargado) REFERENCES usuarios(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLAS DE INVENTARIO
+-- =============================================
 
--- Tabla de Movimientos de Efectivo
-CREATE TABLE IF NOT EXISTS movimientos_efectivo (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_corte_caja INT NOT NULL,
-    tipo VARCHAR(20) NOT NULL,
-    concepto VARCHAR(255) NOT NULL,
-    monto DECIMAL(10,2) NOT NULL,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_corte_caja) REFERENCES cortes_caja(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS categorias (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL UNIQUE,
+    descripcion TEXT
+);
 
--- Tabla de Movimientos de Stock
-CREATE TABLE IF NOT EXISTS movimientos_stock (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_producto INT NOT NULL,
-    tipo_movimiento VARCHAR(20) NOT NULL,
-    cantidad INT NOT NULL,
-    motivo VARCHAR(255),
-    id_usuario INT,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE IF NOT EXISTS productos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    descripcion TEXT,
+    stock_actual INTEGER DEFAULT 0,
+    stock_minimo INTEGER DEFAULT 5,
+    precio_costo REAL DEFAULT 0,
+    precio_venta REAL NOT NULL,
+    id_categoria INTEGER,
+    activo INTEGER DEFAULT 1,
+    FOREIGN KEY (id_categoria) REFERENCES categorias(id)
+);
+
+CREATE TABLE IF NOT EXISTS movimientos_inventario (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_producto INTEGER NOT NULL,
+    tipo TEXT NOT NULL CHECK(tipo IN ('Entrada', 'Salida', 'Ajuste')),
+    cantidad INTEGER NOT NULL,
+    motivo TEXT,
+    fecha TEXT DEFAULT (datetime('now', 'localtime')),
+    id_usuario INTEGER,
     FOREIGN KEY (id_producto) REFERENCES productos(id),
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
--- Tabla de Comisiones
-CREATE TABLE IF NOT EXISTS comisiones (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_barbero INT NOT NULL,
-    periodo VARCHAR(50) NOT NULL,
-    total_ventas DECIMAL(10,2) NOT NULL,
-    total_comision DECIMAL(10,2) NOT NULL,
-    pagado BOOLEAN DEFAULT FALSE,
-    fecha_calculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_barbero) REFERENCES barberos(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA DE AUDITORÍA - CORTES DE CAJA
+-- =============================================
 
--- ============================================
--- ÍNDICES
--- ============================================
+CREATE TABLE IF NOT EXISTS cortes_caja (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha_apertura TEXT DEFAULT (datetime('now', 'localtime')),
+    hora_apertura TEXT,
+    fecha_cierre TEXT,
+    hora_cierre TEXT,
+    monto_inicial REAL DEFAULT 0,
+    ingresos_calculados REAL DEFAULT 0,
+    monto_real_fisico REAL,
+    diferencia REAL,
+    id_encargado INTEGER NOT NULL,
+    notas TEXT,
+    modo_cierre TEXT DEFAULT 'transparente',
+    total_ventas REAL DEFAULT 0,
+    total_ganancias REAL DEFAULT 0,
+    abonos_efectivo REAL DEFAULT 0,
+    devoluciones_efectivo REAL DEFAULT 0,
+    entradas_efectivo_total REAL DEFAULT 0,
+    FOREIGN KEY (id_encargado) REFERENCES usuarios(id)
+);
 
-CREATE INDEX idx_ventas_fecha ON ventas(fecha);
-CREATE INDEX idx_ventas_barbero ON ventas(id_barbero);
-CREATE INDEX idx_detalle_ventas_venta ON detalle_ventas(id_venta);
-CREATE INDEX idx_movimientos_stock_producto ON movimientos_stock(id_producto);
-CREATE INDEX idx_cortes_caja_encargado ON cortes_caja(id_encargado);
+CREATE TABLE IF NOT EXISTS gastos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    monto REAL NOT NULL,
+    descripcion TEXT NOT NULL,
+    fecha TEXT DEFAULT (datetime('now', 'localtime')),
+    id_usuario INTEGER NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+);
 
--- ============================================
+CREATE TABLE IF NOT EXISTS entradas_efectivo (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    monto REAL NOT NULL,
+    descripcion TEXT NOT NULL,
+    fecha TEXT DEFAULT (datetime('now', 'localtime')),
+    id_usuario INTEGER NOT NULL,
+    id_corte INTEGER,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
+    FOREIGN KEY (id_corte) REFERENCES cortes_caja(id)
+);
+
+-- =============================================
 -- DATOS INICIALES
--- ============================================
+-- =============================================
 
--- Roles
-INSERT INTO roles (nombre_rol) VALUES 
-('Admin'),
-('Encargado'),
-('Barbero');
+-- Roles del sistema
+INSERT OR IGNORE INTO roles (id, nombre_rol) VALUES (1, 'Admin');
+INSERT OR IGNORE INTO roles (id, nombre_rol) VALUES (2, 'Encargado');
+INSERT OR IGNORE INTO roles (id, nombre_rol) VALUES (3, 'Barbero');
 
--- Usuarios (Password: admin123 - hash bcrypt)
-INSERT INTO usuarios (nombre, email, password, id_rol, activo) VALUES 
-('Administrador', 'admin@barberia.com', '$2a$10$kFtAPSsJe5Y14MZh5qHEmObm0Dfd0Efm76Dx2XDNnmtJg9VHF11hC', 1, TRUE),
-('Carlos García', 'carlos@barberia.com', '$2a$10$kFtAPSsJe5Y14MZh5qHEmObm0Dfd0Efm76Dx2XDNnmtJg9VHF11hC', 2, TRUE),
-('Juan Pérez', 'juan@barberia.com', '$2a$10$kFtAPSsJe5Y14MZh5qHEmObm0Dfd0Efm76Dx2XDNnmtJg9VHF11hC', 3, TRUE),
-('Miguel Torres', 'miguel@barberia.com', '$2a$10$kFtAPSsJe5Y14MZh5qHEmObm0Dfd0Efm76Dx2XDNnmtJg9VHF11hC', 3, TRUE);
+-- Usuarios (password: admin123 para todos)
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (1, 'Administrador', 'admin@barberia.com', '$2a$10$LSqZn7RarDawowdFon0BKOv2klo6Y13HCwU8Wf8INmVFFwSDdaSJi', 1, 1);
+
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (2, 'Fernando Mendoza', 'fernando.mendoza@gmail.com', '$2a$10$1S38OljW9Bof4rKFKCIEjuT6P2Ynu6XwA2pOD9C6F4rGmLqCZzFXO', 3, 1);
+
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (3, 'Eliza Acevedo', 'elizabarber@gmail.com', '$2a$10$nsQc1sIeypGNMkwbv0pzveb2yUYuTYGGbl0.dSsxkt34j8Vu1zX6i', 3, 1);
+
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (4, 'Alejandro Lopez', 'alejandro.lopez@gmail.com', '$2a$10$2iSma5hK.glYPKseoI5bCea6UV31oJCi945zVggXNqEMzmAHe/TvG', 1, 1);
 
 -- Barberos
-INSERT INTO barberos (id_usuario, turno) VALUES 
-(3, 'Mañana'),
-(4, 'Tarde');
+INSERT OR IGNORE INTO barberos (id, id_usuario, porcentaje_comision, estado, turno)
+VALUES (1, 2, 0.50, 'Activo', 'Completo');
+
+INSERT OR IGNORE INTO barberos (id, id_usuario, porcentaje_comision, estado, turno)
+VALUES (2, 3, 0.50, 'Activo', 'Completo');
 
 -- Servicios
-INSERT INTO servicios (nombre_servicio, precio, duracion_aprox, activo) VALUES 
-('Corte Clásico', 150.00, 30, TRUE),
-('Corte + Barba', 250.00, 45, TRUE),
-('Degradado Moderno', 200.00, 40, TRUE),
-('Rasura Tradicional', 100.00, 25, TRUE),
-('Diseño de Barba', 180.00, 35, TRUE),
-('Tinte de Cabello', 300.00, 60, TRUE);
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo)
+VALUES (1, 'Corte', 200.00, 30, 1);
+
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo)
+VALUES (2, 'Barba', 200.00, 60, 1);
+
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo)
+VALUES (3, 'Corte + Barba', 300.00, 90, 1);
+
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo)
+VALUES (4, 'Tinte', 120.00, 60, 1);
+
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo)
+VALUES (5, 'Diseño de Cejas', 50.00, 20, 1);
+
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo)
+VALUES (6, 'Corte Escolar', 150.00, 30, 1);
 
 -- Categorías
-INSERT INTO categorias (nombre_categoria) VALUES 
-('Cuidado del Cabello'),
-('Cuidado de la Barba'),
-('Estilizado'),
-('Accesorios');
+INSERT OR IGNORE INTO categorias (id, nombre, descripcion)
+VALUES (1, 'Venta', 'Productos para venta al cliente');
+
+INSERT OR IGNORE INTO categorias (id, nombre, descripcion)
+VALUES (2, 'Insumo Limpieza', 'Productos de limpieza y desinfección');
+
+INSERT OR IGNORE INTO categorias (id, nombre, descripcion)
+VALUES (3, 'Herramientas', 'Instrumentos de trabajo');
 
 -- Productos
-INSERT INTO productos (nombre_producto, id_categoria, precio_venta, precio_compra, stock_actual, stock_minimo, activo) VALUES 
-('Shampoo Premium', 1, 120.00, 60.00, 25, 10, TRUE),
-('Cera para Cabello', 3, 90.00, 45.00, 30, 8, TRUE),
-('Aceite de Barba', 2, 150.00, 75.00, 15, 5, TRUE),
-('Navaja Profesional', 4, 450.00, 220.00, 8, 3, TRUE),
-('Gel Extra Fuerte', 3, 85.00, 40.00, 35, 10, TRUE),
-('Bálsamo para Barba', 2, 130.00, 65.00, 20, 5, TRUE),
-('Pomada Mate', 3, 95.00, 48.00, 3, 8, TRUE),
-('Espuma de Afeitar', 2, 70.00, 35.00, 40, 12, TRUE);
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (1, 'Cera para Cabello', 'Cera de fijación fuerte', 12, 5, 40.00, 80.00, 1, 1);
 
--- Corte de caja inicial
-INSERT INTO cortes_caja (id_encargado, monto_inicial, estado) VALUES 
-(2, 500.00, 'abierto');
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (2, 'Minoxidil', 'Tratamiento para crecimiento de barba', 8, 3, 80.00, 150.00, 1, 1);
 
--- ============================================
--- INFORMACIÓN
--- ============================================
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (3, 'Aceite para Barba', 'Aceite hidratante', 1, 5, 50.00, 100.00, 1, 1);
 
-SELECT 'Base de datos inicializada correctamente' AS status;
-SELECT 'Credenciales: admin@barberia.com / admin123' AS credentials;
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (4, 'Alcohol Gel', 'Desinfectante de manos', 10, 3, 25.00, 0, 2, 1);
+
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (5, 'Toallas Desechables', 'Paquete de 100 toallas', 5, 2, 60.00, 0, 2, 1);
+
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (6, 'Desinfectante Barbacide', 'Para herramientas', 8, 2, 120.00, 0, 2, 1);
+
+-- =============================================
+-- INFORMACIÓN DE ACCESO
+-- =============================================
+-- Credenciales: admin@barberia.com / admin123
+-- Credenciales: alejandro.lopez@gmail.com / admin123

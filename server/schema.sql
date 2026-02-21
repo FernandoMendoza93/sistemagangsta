@@ -189,35 +189,61 @@ INSERT OR IGNORE INTO roles (id, nombre_rol) VALUES (1, 'Admin');
 INSERT OR IGNORE INTO roles (id, nombre_rol) VALUES (2, 'Encargado');
 INSERT OR IGNORE INTO roles (id, nombre_rol) VALUES (3, 'Barbero');
 
+-- Usuarios (password: admin123 para todos)
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (1, 'Administrador', 'admin@barberia.com', '$2a$10$LSqZn7RarDawowdFon0BKOv2klo6Y13HCwU8Wf8INmVFFwSDdaSJi', 1, 1);
+
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (2, 'Fernando Mendoza', 'fernando.mendoza@gmail.com', '$2a$10$1S38OljW9Bof4rKFKCIEjuT6P2Ynu6XwA2pOD9C6F4rGmLqCZzFXO', 3, 1);
+
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (3, 'Eliza Acevedo', 'elizabarber@gmail.com', '$2a$10$nsQc1sIeypGNMkwbv0pzveb2yUYuTYGGbl0.dSsxkt34j8Vu1zX6i', 3, 1);
+
+INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol, activo)
+VALUES (4, 'Alejandro Lopez', 'alejandro.lopez@gmail.com', '$2a$10$2iSma5hK.glYPKseoI5bCea6UV31oJCi945zVggXNqEMzmAHe/TvG', 1, 1);
+
+-- Barberos
+INSERT OR IGNORE INTO barberos (id, id_usuario, porcentaje_comision, estado, turno)
+VALUES (1, 2, 0.50, 'Activo', 'Completo');
+
+INSERT OR IGNORE INTO barberos (id, id_usuario, porcentaje_comision, estado, turno)
+VALUES (2, 3, 0.50, 'Activo', 'Completo');
+
 -- Categorías de productos
 INSERT OR IGNORE INTO categorias (id, nombre, descripcion) VALUES (1, 'Venta', 'Productos para venta al cliente');
 INSERT OR IGNORE INTO categorias (id, nombre, descripcion) VALUES (2, 'Insumo Limpieza', 'Productos de limpieza y desinfección');
 INSERT OR IGNORE INTO categorias (id, nombre, descripcion) VALUES (3, 'Herramientas', 'Instrumentos de trabajo');
 
--- Servicios iniciales
-INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox) VALUES (1, 'Corte Clásico', 100.00, 30);
-INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox) VALUES (2, 'Barba', 50.00, 20);
-INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox) VALUES (3, 'Corte + Barba', 140.00, 45);
-INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox) VALUES (4, 'Tinte', 200.00, 60);
-INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox) VALUES (5, 'Diseño de Cejas', 30.00, 10);
+-- Servicios
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo) VALUES (1, 'Corte', 200.00, 30, 1);
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo) VALUES (2, 'Barba', 200.00, 60, 1);
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo) VALUES (3, 'Corte + Barba', 300.00, 90, 1);
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo) VALUES (4, 'Tinte', 120.00, 60, 1);
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo) VALUES (5, 'Diseño de Cejas', 50.00, 20, 1);
+INSERT OR IGNORE INTO servicios (id, nombre_servicio, precio, duracion_aprox, activo) VALUES (6, 'Corte Escolar', 150.00, 30, 1);
 
 -- Productos de venta
-INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria) 
-VALUES (1, 'Cera para Cabello', 'Cera de fijación fuerte', 20, 5, 40.00, 80.00, 1);
-INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria) 
-VALUES (2, 'Minoxidil', 'Tratamiento para crecimiento de barba', 10, 3, 80.00, 150.00, 1);
-INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria) 
-VALUES (3, 'Aceite para Barba', 'Aceite hidratante', 15, 5, 50.00, 100.00, 1);
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (1, 'Cera para Cabello', 'Cera de fijación fuerte', 12, 5, 40.00, 80.00, 1, 1);
+
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (2, 'Minoxidil', 'Tratamiento para crecimiento de barba', 8, 3, 80.00, 150.00, 1, 1);
+
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (3, 'Aceite para Barba', 'Aceite hidratante', 1, 5, 50.00, 100.00, 1, 1);
 
 -- Insumos de limpieza
-INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria) 
-VALUES (4, 'Alcohol Gel', 'Desinfectante de manos', 10, 3, 25.00, 0, 2);
-INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria) 
-VALUES (5, 'Toallas Desechables', 'Paquete de 100 toallas', 5, 2, 60.00, 0, 2);
-INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria) 
-VALUES (6, 'Desinfectante Barbacide', 'Para herramientas', 8, 2, 120.00, 0, 2);
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (4, 'Alcohol Gel', 'Desinfectante de manos', 10, 3, 25.00, 0, 2, 1);
 
--- Usuario Admin (password: admin123)
--- Hash generado con bcryptjs
-INSERT OR IGNORE INTO usuarios (id, nombre, email, password_hash, id_rol) 
-VALUES (1, 'Administrador', 'admin@barberia.com', '$2a$10$LSqZn7RarDawowdFon0BKOv2klo6Y13HCwU8Wf8INmVFFwSDdaSJi', 1);
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (5, 'Toallas Desechables', 'Paquete de 100 toallas', 5, 2, 60.00, 0, 2, 1);
+
+INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo)
+VALUES (6, 'Desinfectante Barbacide', 'Para herramientas', 8, 2, 120.00, 0, 2, 1);
+
+-- =============================================
+-- INFORMACIÓN DE ACCESO
+-- =============================================
+-- Credenciales: admin@barberia.com / admin123
+-- Credenciales: alejandro.lopez@gmail.com / admin123
