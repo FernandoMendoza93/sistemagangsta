@@ -62,14 +62,6 @@ async function initializeDatabase() {
         const { readFileSync, existsSync, copyFileSync, rmSync } = await import('fs');
 
         const dbPath = join(__dirname, 'data', 'database.sqlite');
-        const seedPath = join(__dirname, 'data_seed', 'database.sqlite.seed');
-
-        // Mecanismo de Autoencendido
-        if (!existsSync(dbPath) && existsSync(seedPath)) {
-            console.log('🌱 Inicializando base de datos desde seed (Autoencendido)...');
-            copyFileSync(seedPath, dbPath);
-            console.log('✅ Base de datos inicializada desde el seed correctamente');
-        }
 
         const sqliteDb = new Database(dbPath);
         sqliteDb.pragma('journal_mode = WAL');
@@ -99,6 +91,22 @@ async function initializeDatabase() {
             }
         } catch (e) {
             // La tabla podría no existir aún, se creará con el schema
+        }
+
+        // Autoencendido: Poblar datos iniciales si 'clientes' está vacía
+        try {
+            const count = sqliteDb.prepare("SELECT COUNT(*) AS count FROM clientes").get().count;
+            if (count === 0) {
+                const initDataPath = join(__dirname, 'data_seed', 'init_data.sql');
+                if (existsSync(initDataPath)) {
+                    console.log('🌱 Poblando base de datos desde init_data.sql...');
+                    const initSql = readFileSync(initDataPath, 'utf-8');
+                    sqliteDb.exec(initSql);
+                    console.log('✅ Sincronización de datos mediante SQL Dump completada');
+                }
+            }
+        } catch (e) {
+            console.error('⚠️ Error al poblar base de datos inicial:', e.message);
         }
 
         console.log('✅ SQLite inicializado correctamente');

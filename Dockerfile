@@ -35,6 +35,9 @@ RUN npm ci --omit=dev
 # Volver a /app
 WORKDIR /app
 
+# Invalida el cache de Docker a partir de aquí (Railway Cache Busting)
+ARG CACHE_BUST=1
+
 # Copiar código del servidor
 COPY server/ ./server/
 
