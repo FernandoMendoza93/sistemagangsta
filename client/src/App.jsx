@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import POSPage from './pages/POSPage';
 import VentasPage from './pages/VentasPage';
+import CitasPage from './pages/CitasPage';
 import InventarioPage from './pages/InventarioPage';
 import CorteCajaPage from './pages/CorteCajaPage';
 import ReportesPage from './pages/ReportesPage';
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/pos" element={<POSPage />} />
         <Route path="/ventas" element={<VentasPage />} />
+        <Route path="/citas" element={<CitasPage />} />
 
         {/* Rutas para Encargado y Admin */}
         <Route path="/inventario" element={

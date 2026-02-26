@@ -72,6 +72,11 @@ export default function Sidebar({ isOpen, onToggle }) {
                             <span>Ventas del Día</span>
                         </NavLink>
 
+                        <NavLink to="/citas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                            <i className="bi bi-calendar-check"></i>
+                            <span>Citas</span>
+                        </NavLink>
+
                         {isEncargado() && (
                             <>
                                 <div className="nav-section-title">Gestión</div>
