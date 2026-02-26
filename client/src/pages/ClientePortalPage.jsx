@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { citasService } from '../services/api';
+import { citasService, loyaltyService } from '../services/api';
 import Swal from 'sweetalert2';
 import Icon from '../components/Icon';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import './ClientePortalPage.css';
 
 export default function ClientePortalPage() {
@@ -14,6 +15,7 @@ export default function ClientePortalPage() {
     const [servicios, setServicios] = useState([]);
     const [barberos, setBarberos] = useState([]);
     const [showAgendarModal, setShowAgendarModal] = useState(false);
+    const [showScannerModal, setShowScannerModal] = useState(false);
     const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '1', fecha: '', hora: '', notas: '' });
     const [loading, setLoading] = useState(true);
     const [horasOcupadas, setHorasOcupadas] = useState([]);
@@ -37,6 +39,80 @@ export default function ClientePortalPage() {
             setLoading(false);
         }
     }
+
+    // --- LÓGICA DEL ESCÁNER DE SELLOS ---
+    const handleStampClick = (index) => {
+        const puntos = perfil?.puntos_lealtad || 0;
+        const currentStamps = puntos % 10;
+
+        // Solo el siguiente sello vacío es clickeable
+        if (index === currentStamps) {
+            Swal.fire({
+                title: '¿Canjear visita actual?',
+                text: "Abre la cámara para escanear el código QR del barbero",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#c9a227',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, abrir cámara',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    setShowScannerModal(true);
+                }
+            });
+        }
+    };
+
+    const handleScan = async (detectedCodes) => {
+        if (detectedCodes && detectedCodes.length > 0) {
+            const qrValue = detectedCodes[0].rawValue;
+            setShowScannerModal(false); // Cerrar cámara inmediatamente
+
+            // Extraer token de la URL si es que escaneó una ruta completa
+            const match = qrValue.match(/\/sello\/(.+)$/);
+            const tokenToClaim = match ? match[1] : qrValue;
+
+            Swal.fire({
+                title: 'Reclamando sello...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                await loyaltyService.claim(tokenToClaim);
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Sello Reclamado! 🎉',
+                    text: 'Se ha agregado un punto a tu tarjeta',
+                    timer: 2500,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                loadData(); // Recargar el perfil para mostrar el nuevo sello
+            } catch (err) {
+                const data = err.response?.data;
+                let errorMsg = 'Error al reclamar sello';
+                if (data?.expired) errorMsg = 'Este QR ya expiró ⏰';
+                else if (data?.already_used) errorMsg = 'Este QR ya fue canjeado ✅';
+                else if (data?.error) errorMsg = data.error;
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No se pudo canjear',
+                    text: errorMsg,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
+        }
+    };
+    // ------------------------------------
 
     async function openAgendarModal() {
         try {
@@ -158,17 +234,25 @@ export default function ClientePortalPage() {
                     )}
                 </div>
                 <div className="stamps-grid">
-                    {[...Array(maxStamps)].map((_, i) => (
-                        <div key={i} className={`stamp-circle ${i < currentStamps ? 'filled' : ''}`}>
-                            {i < currentStamps ? (
-                                <Icon name="scissors" size={18} color="#0a0a1a" />
-                            ) : i === maxStamps - 1 ? (
-                                <span className="stamp-gift">🎁</span>
-                            ) : (
-                                <span className="stamp-number">{i + 1}</span>
-                            )}
-                        </div>
-                    ))}
+                    {[...Array(maxStamps)].map((_, i) => {
+                        const isNextEmpty = i === currentStamps;
+                        return (
+                            <div
+                                key={i}
+                                className={`stamp-circle ${i < currentStamps ? 'filled' : ''} ${isNextEmpty ? 'next-stamp' : ''}`}
+                                onClick={() => isNextEmpty ? handleStampClick(i) : null}
+                                style={{ cursor: isNextEmpty ? 'pointer' : 'default' }}
+                            >
+                                {i < currentStamps ? (
+                                    <Icon name="scissors" size={18} color="#0a0a1a" />
+                                ) : i === maxStamps - 1 ? (
+                                    <span className="stamp-gift">🎁</span>
+                                ) : (
+                                    <span className="stamp-number">{i + 1}</span>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
                 <div className="loyalty-progress">
                     <div className="progress-bar">
@@ -311,6 +395,51 @@ export default function ClientePortalPage() {
                                 Confirmar Cita 💈
                             </button>
                         </form>
+                        {/* Modal Scanner QR - FINISH */}
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Scanner QR */}
+            {showScannerModal && (
+                <div className="portal-modal-overlay" onClick={() => setShowScannerModal(false)}>
+                    <div className="portal-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="portal-modal-header">
+                            <h3>📸 Escanear Visita</h3>
+                            <button onClick={() => setShowScannerModal(false)}>
+                                <Icon name="x-lg" />
+                            </button>
+                        </div>
+                        <div style={{ padding: '1.5rem', textAlign: 'center' }}>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                                Apunta la cámara al QR que te muestra el barbero.
+                            </p>
+
+                            <div style={{
+                                borderRadius: '16px',
+                                overflow: 'hidden',
+                                border: '2px solid rgba(201, 162, 39, 0.3)',
+                                backgroundColor: '#000',
+                                marginBottom: '1.5rem'
+                            }}>
+                                <Scanner
+                                    onScan={handleScan}
+                                    formats={['qr_code']}
+                                    components={{
+                                        audio: false,
+                                        finder: true,
+                                    }}
+                                />
+                            </div>
+
+                            <button
+                                className="portal-submit-btn"
+                                style={{ width: '100%', backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+                                onClick={() => setShowScannerModal(false)}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

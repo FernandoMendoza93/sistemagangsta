@@ -59,7 +59,7 @@ router.post('/', verifyToken, (req, res) => {
 
         if (existingCita) {
             return res.status(409).json({
-                error: 'Este horario ya está reservado',
+                error: 'Este horario ya ha sido reservado',
                 detalles: `Ya existe una cita a las ${hora} el día ${fecha}`
             });
         }

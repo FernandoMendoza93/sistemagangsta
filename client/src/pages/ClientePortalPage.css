@@ -140,6 +140,32 @@
     }
 }
 
+.next-stamp {
+    border-color: #c9a227;
+    background: rgba(201, 162, 39, 0.1);
+    animation: pulseStamp 2s infinite;
+    cursor: pointer;
+}
+
+.next-stamp:hover {
+    background: rgba(201, 162, 39, 0.2);
+    transform: scale(1.05);
+}
+
+@keyframes pulseStamp {
+    0% {
+        box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(201, 162, 39, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(201, 162, 39, 0);
+    }
+}
+
 .stamp-number {
     color: rgba(255, 255, 255, 0.15);
     font-size: 0.75rem;
