@@ -1,0 +1,85 @@
+/* =============================================
+   CITAS PAGE - Mobile Responsiveness
+   ============================================= */
+
+@media (max-width: 768px) {
+
+    /* Ocultar el thead en móviles */
+    .custom-table thead {
+        display: none;
+    }
+
+    /* Convertir tabla en block (tarjetas) */
+    .custom-table,
+    .custom-table tbody,
+    .custom-table tr,
+    .custom-table td {
+        display: block;
+        width: 100%;
+    }
+
+    /* Estilos para cada fila (nuestra tarjeta en móvil) */
+    .custom-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 0.5rem;
+    }
+
+    /* Estilos de las celdas individuales */
+    .custom-table td {
+        text-align: right;
+        padding-left: 45%;
+        position: relative;
+        border: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        min-height: 40px;
+        /* Asegura un tamaño mínimo aunque el contenido sea vacío */
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    /* Quitar el borde al último elemento de la tarjeta */
+    .custom-table td:last-child {
+        border-bottom: none;
+    }
+
+    /* Etiquetas antes del contenido de la celda */
+    .custom-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40%;
+        padding-left: 10px;
+        font-weight: 600;
+        text-align: left;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.85rem;
+    }
+
+    /* Contenedores de botones (Acciones) al final */
+    .custom-table td.acciones-mobile {
+        text-align: center !important;
+        padding-left: 10px !important;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding-top: 15px;
+        padding-bottom: 10px;
+    }
+
+    /* Ocultar el ::before de "Acciones" porque los botones se explican solos */
+    .custom-table td.acciones-mobile::before {
+        display: none;
+    }
+
+    /* Ajustar los badge de Estado */
+    .custom-table td[data-label="Estado"] {
+        justify-content: flex-end;
+    }
+}

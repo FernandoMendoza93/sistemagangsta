@@ -3,7 +3,7 @@ import { citasService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 import Icon from '../components/Icon';
-import './ClientesPage.css'; // Reutilizamos estilos de tabla
+import './CitasPage.css';
 
 export default function CitasPage() {
     const [citas, setCitas] = useState([]);
@@ -130,11 +130,11 @@ export default function CitasPage() {
                                 ) : (
                                     citas.map(cita => (
                                         <tr key={cita.id}>
-                                            <td>
+                                            <td data-label="Fecha y Hora">
                                                 <div className="fw-bold">{cita.fecha}</div>
                                                 <div className="text-warning">{cita.hora}</div>
                                             </td>
-                                            <td>
+                                            <td data-label="Cliente">
                                                 <div className="fw-bold fs-6">{cita.cliente_nombre}</div>
                                                 {cita.notas && (
                                                     <div className="text-secondary small mt-1">
@@ -142,23 +142,23 @@ export default function CitasPage() {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td>
+                                            <td data-label="Servicio">
                                                 {cita.nombre_servicio || <span className="text-muted">No especificado</span>}
                                             </td>
                                             {!isBarbero() && (
-                                                <td>{cita.barbero_nombre || <span className="text-muted">Cualquiera</span>}</td>
+                                                <td data-label="Barbero Solicitado">{cita.barbero_nombre || <span className="text-muted">Cualquiera</span>}</td>
                                             )}
-                                            <td>
+                                            <td data-label="Contacto">
                                                 <a href={`https://wa.me/52${cita.cliente_telefono}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-success">
                                                     <Icon name="whatsapp" className="me-1" />
                                                     {cita.cliente_telefono}
                                                 </a>
                                             </td>
-                                            <td>{getEstadoBadge(cita.estado)}</td>
-                                            <td className="text-end">
+                                            <td data-label="Estado">{getEstadoBadge(cita.estado)}</td>
+                                            <td className="text-end acciones-mobile">
                                                 {cita.estado === 'Pendiente' && (
                                                     <button
-                                                        className="btn btn-sm btn-info me-2"
+                                                        className="btn btn-sm btn-info me-2 mb-1"
                                                         onClick={() => handleConfirmar(cita.id)}
                                                         title="Confirmar Cita"
                                                     >
@@ -169,14 +169,14 @@ export default function CitasPage() {
                                                 {(cita.estado === 'Pendiente' || cita.estado === 'Confirmada') && (
                                                     <>
                                                         <button
-                                                            className="btn btn-sm btn-success me-2"
+                                                            className="btn btn-sm btn-success me-2 mb-1"
                                                             onClick={() => handleCompletar(cita.id)}
                                                             title="Marcar como Completada"
                                                         >
                                                             <Icon name="check-all" />
                                                         </button>
                                                         <button
-                                                            className="btn btn-sm btn-outline-danger"
+                                                            className="btn btn-sm btn-outline-danger mb-1"
                                                             onClick={() => handleCancelar(cita.id)}
                                                             title="Cancelar Cita"
                                                         >
