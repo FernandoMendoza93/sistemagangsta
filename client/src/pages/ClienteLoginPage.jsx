@@ -5,11 +5,11 @@ import Icon from '../components/Icon';
 import './ClienteLoginPage.css';
 
 export default function ClienteLoginPage() {
+    const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
     const [telefono, setTelefono] = useState('');
     const [nombre, setNombre] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [step, setStep] = useState('phone'); // 'phone' | 'register' | 'setPassword'
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { loginCliente, user } = useAuth();
@@ -43,20 +43,19 @@ export default function ClienteLoginPage() {
         try {
             await loginCliente(
                 digits,
-                step === 'register' ? nombre : undefined,
-                password || undefined
+                activeTab === 'register' ? nombre : undefined,
+                password
             );
             navigate('/mi-perfil/portal');
         } catch (err) {
             const data = err.response?.data;
             if (data?.needsRegistration) {
-                setStep('register');
-                setPassword('');
-                setError('');
-            } else if (data?.needsPassword) {
-                setStep('setPassword');
-                setPassword('');
-                setError('');
+                if (activeTab === 'login') {
+                    setError('No encontramos tu cuenta. Por favor regístrate primero.');
+                    setActiveTab('register');
+                } else {
+                    setError(data?.error || 'Error de conexión');
+                }
             } else {
                 setError(data?.error || 'Error de conexión');
             }
@@ -64,24 +63,6 @@ export default function ClienteLoginPage() {
             setLoading(false);
         }
     }
-
-    const titles = {
-        phone: '¿Qué onda? 💈',
-        register: '¡Bienvenido!',
-        setPassword: '🔒 Protege tu cuenta'
-    };
-
-    const subtitles = {
-        phone: 'Ingresa tu número y contraseña',
-        register: 'Regístrate para activar tu tarjeta',
-        setPassword: 'Crea una contraseña para tu cuenta'
-    };
-
-    const buttonLabels = {
-        phone: 'Entrar',
-        register: '¡Crear Mi Cuenta!',
-        setPassword: 'Guardar Contraseña'
-    };
 
     return (
         <div className="cliente-login-page">
@@ -95,10 +76,29 @@ export default function ClienteLoginPage() {
                     <p className="tagline">Barber Shop</p>
                 </div>
 
+                {/* Tabs */}
+                <div className="cliente-tabs">
+                    <button
+                        className={`cliente-tab ${activeTab === 'login' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('login'); setError(''); }}
+                    >
+                        Iniciar Sesión
+                    </button>
+                    <button
+                        className={`cliente-tab ${activeTab === 'register' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('register'); setError(''); }}
+                    >
+                        Registrarme
+                    </button>
+                </div>
+
                 {/* Welcome */}
                 <div className="cliente-login-welcome">
-                    <h2>{titles[step]}</h2>
-                    <p>{subtitles[step]}</p>
+                    {activeTab === 'login' ? (
+                        <p>Ingresa para ver tus puntos y citas</p>
+                    ) : (
+                        <p>Regístrate para activar tu tarjeta de lealtad</p>
+                    )}
                 </div>
 
                 {/* Error */}
@@ -111,49 +111,45 @@ export default function ClienteLoginPage() {
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="cliente-login-form">
+                    {/* Name Input (only for new registration) */}
+                    {activeTab === 'register' && (
+                        <div className="cliente-input-group slide-in">
+                            <div className="cliente-input-icon">👤</div>
+                            <input
+                                type="text"
+                                className="cliente-input"
+                                placeholder="Tu nombre y apellido"
+                                value={nombre}
+                                onChange={(e) => setNombre(e.target.value)}
+                                required={activeTab === 'register'}
+                            />
+                        </div>
+                    )}
+
                     {/* Phone Input */}
                     <div className="cliente-input-group">
                         <div className="cliente-input-icon">📱</div>
                         <input
                             type="tel"
                             className="cliente-input"
-                            placeholder="55-1234-5678"
+                            placeholder="Teléfono (10 dígitos)"
                             value={telefono}
                             onChange={(e) => setTelefono(formatPhone(e.target.value))}
                             required
-                            autoFocus={step === 'phone'}
                             inputMode="numeric"
-                            disabled={step !== 'phone'}
                         />
                     </div>
 
-                    {/* Name Input (only for new registration) */}
-                    {step === 'register' && (
-                        <div className="cliente-input-group slide-in">
-                            <div className="cliente-input-icon">👤</div>
-                            <input
-                                type="text"
-                                className="cliente-input"
-                                placeholder="Tu nombre"
-                                value={nombre}
-                                onChange={(e) => setNombre(e.target.value)}
-                                required
-                                autoFocus
-                            />
-                        </div>
-                    )}
-
                     {/* Password Input */}
-                    <div className="cliente-input-group slide-in">
+                    <div className="cliente-input-group">
                         <div className="cliente-input-icon">🔒</div>
                         <input
                             type={showPassword ? 'text' : 'password'}
                             className="cliente-input"
-                            placeholder={step === 'register' || step === 'setPassword' ? 'Crea una contraseña' : 'Tu contraseña'}
+                            placeholder={activeTab === 'register' ? 'Crea una contraseña' : 'Tu contraseña'}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            autoFocus={step === 'setPassword'}
                             minLength={4}
                         />
                         <button
@@ -166,6 +162,12 @@ export default function ClienteLoginPage() {
                         </button>
                     </div>
 
+                    {activeTab === 'login' && (
+                        <p className="login-hint">
+                            Si eres cliente antiguo, ingresa tu número y crea una contraseña nueva en este espacio.
+                        </p>
+                    )}
+
                     {/* Submit */}
                     <button
                         type="submit"
@@ -175,26 +177,10 @@ export default function ClienteLoginPage() {
                         {loading ? (
                             <div className="cliente-spinner"></div>
                         ) : (
-                            buttonLabels[step]
+                            activeTab === 'login' ? 'Entrar al Portal' : 'Crear Mi Cuenta'
                         )}
                     </button>
-
-                    {/* Back button if on register/setPassword step */}
-                    {step !== 'phone' && (
-                        <button
-                            type="button"
-                            className="cliente-back-btn"
-                            onClick={() => { setStep('phone'); setPassword(''); setError(''); }}
-                        >
-                            ← Cambiar número
-                        </button>
-                    )}
                 </form>
-
-                {/* Footer */}
-                <p className="cliente-login-footer">
-                    Tu cuenta está protegida con contraseña 🔐
-                </p>
 
                 {/* Staff Login Link */}
                 <a href="/login" className="staff-login-link" onClick={(e) => {

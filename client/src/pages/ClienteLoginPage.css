@@ -27,6 +27,42 @@
     margin-bottom: 1.5rem;
 }
 
+/* --- Tabs --- */
+.cliente-tabs {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 0.3rem;
+    margin-bottom: 1.5rem;
+}
+
+.cliente-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 0.7rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cliente-tab.active {
+    background: rgba(201, 162, 39, 0.15);
+    color: #c9a227;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.login-hint {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0.5rem 0 1rem;
+    line-height: 1.4;
+    text-align: center;
+}
+
 .logo-ring {
     width: 70px;
     height: 70px;

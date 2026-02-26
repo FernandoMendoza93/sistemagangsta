@@ -61,8 +61,8 @@ router.post('/', verifyToken, (req, res) => {
     }
 });
 
-// GET /api/citas - Todas las citas (Admin/Encargado)
-router.get('/', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+// GET /api/citas - Todas las citas (Admin/Encargado/Barbero)
+router.get('/', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { fecha, estado } = req.query;
@@ -81,6 +81,16 @@ router.get('/', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, re
 
         const conditions = [];
         const params = [];
+
+        // Filtro restrictivo para Barberos
+        if (req.user.rol === 'Barbero') {
+            const barbero = db.prepare('SELECT id FROM barberos WHERE id_usuario = ?').get(req.user.id);
+            if (!barbero) {
+                return res.json([]); // No es un barbero registrado
+            }
+            conditions.push('c.id_barbero = ?');
+            params.push(barbero.id);
+        }
 
         if (fecha) {
             conditions.push('c.fecha = ?');
@@ -106,8 +116,8 @@ router.get('/', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, re
     }
 });
 
-// PUT /api/citas/:id/estado - Cambiar estado (Admin/Encargado)
-router.put('/:id/estado', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+// PUT /api/citas/:id/estado - Cambiar estado (Admin/Encargado/Barbero)
+router.put('/:id/estado', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
