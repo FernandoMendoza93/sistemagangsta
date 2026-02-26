@@ -40,23 +40,66 @@ router.post('/', verifyToken, (req, res) => {
             return res.status(403).json({ error: 'Solo los clientes pueden agendar citas' });
         }
 
-        const { id_servicio, id_barbero, fecha, hora, notas } = req.body;
+        let { id_servicio, id_barbero, fecha, hora, notas } = req.body;
 
         if (!fecha || !hora) {
             return res.status(400).json({ error: 'Fecha y hora son requeridas' });
         }
 
+        // Asignar por defecto a Fernando Mendoza (id_barbero: 1) si no viene uno
+        if (!id_barbero) {
+            id_barbero = 1;
+        }
+
+        // Validación: Revisar si ya existe una cita en esa fecha y hora para ese barbero
+        const existingCita = db.prepare(`
+            SELECT id FROM citas 
+            WHERE id_barbero = ? AND fecha = ? AND hora = ? AND estado != 'Cancelada'
+        `).get(id_barbero, fecha, hora);
+
+        if (existingCita) {
+            return res.status(409).json({
+                error: 'Este horario ya está reservado',
+                detalles: `Ya existe una cita a las ${hora} el día ${fecha}`
+            });
+        }
+
         const result = db.prepare(`
             INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas)
             VALUES (?, ?, ?, ?, ?, ?)
-        `).run(req.user.id, id_servicio || null, id_barbero || null, fecha, hora, notas || null);
+        `).run(req.user.id, id_servicio || null, id_barbero, fecha, hora, notas || null);
 
         res.status(201).json({
-            message: 'Cita agendada',
+            message: 'Cita agendada exitosamente',
             id: result.lastInsertRowid
         });
     } catch (error) {
         console.error('Error creando cita:', error);
+        res.status(500).json({ error: 'Error en el servidor al crear la cita' });
+    }
+});
+// GET /api/citas/disponibilidad - Horas ocupadas por fecha y barbero
+router.get('/disponibilidad', verifyToken, (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { fecha, id_barbero = 1 } = req.query; // Por defecto Fernando (id=1)
+
+        if (!fecha) {
+            return res.status(400).json({ error: 'Fecha requerida' });
+        }
+
+        // Obtener solo las horas que están ocupadas (no canceladas)
+        const citasOcupadas = db.prepare(`
+            SELECT hora FROM citas 
+            WHERE id_barbero = ? AND fecha = ? AND estado != 'Cancelada'
+        `).all(id_barbero, fecha);
+
+        // Mapear solo los strings de hora ["10:00", "13:00"...]
+        const horasOcupadas = citasOcupadas.map(c => c.hora);
+
+        res.json({ ocupadas: horasOcupadas });
+    } catch (error) {
+        console.error('Error obteniendo disponibilidad:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });

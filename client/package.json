@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@yudiel/react-qr-scanner": "^2.5.1",
     "axios": "^1.13.4",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",

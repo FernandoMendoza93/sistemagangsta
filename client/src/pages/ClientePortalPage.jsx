@@ -14,8 +14,9 @@ export default function ClientePortalPage() {
     const [servicios, setServicios] = useState([]);
     const [barberos, setBarberos] = useState([]);
     const [showAgendarModal, setShowAgendarModal] = useState(false);
-    const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '', fecha: '', hora: '', notas: '' });
+    const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '1', fecha: '', hora: '', notas: '' });
     const [loading, setLoading] = useState(true);
+    const [horasOcupadas, setHorasOcupadas] = useState([]);
 
     useEffect(() => {
         loadData();
@@ -67,6 +68,22 @@ export default function ClientePortalPage() {
             loadData();
         } catch (error) {
             Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'No se pudo agendar' });
+        }
+    }
+    async function handleFechaChange(fecha) {
+        setCitaForm({ ...citaForm, fecha, hora: '' }); // Limpia la hora si cambia de día
+        if (!fecha) {
+            setHorasOcupadas([]);
+            return;
+        }
+
+        try {
+            // El id_barbero por defecto es 1 (Fernando Mendoza)
+            const res = await citasService.getDisponibilidad(fecha, 1);
+            setHorasOcupadas(res.data.ocupadas || []);
+        } catch (error) {
+            console.error('Error obteniendo disponibilidad:', error);
+            setHorasOcupadas([]);
         }
     }
 
@@ -248,7 +265,7 @@ export default function ClientePortalPage() {
                                 <input
                                     type="date"
                                     value={citaForm.fecha}
-                                    onChange={(e) => setCitaForm({ ...citaForm, fecha: e.target.value })}
+                                    onChange={(e) => handleFechaChange(e.target.value)}
                                     min={getMinDate()}
                                     required
                                 />
@@ -258,16 +275,24 @@ export default function ClientePortalPage() {
                             <div className="portal-form-group">
                                 <label>🕐 Hora</label>
                                 <div className="time-chips">
-                                    {horasDisponibles.map(hora => (
-                                        <button
-                                            key={hora}
-                                            type="button"
-                                            className={`time-chip ${citaForm.hora === hora ? 'selected' : ''}`}
-                                            onClick={() => setCitaForm({ ...citaForm, hora })}
-                                        >
-                                            {hora}
-                                        </button>
-                                    ))}
+                                    {horasDisponibles.map(hora => {
+                                        const estaOcupada = horasOcupadas.includes(hora);
+                                        return (
+                                            <button
+                                                key={hora}
+                                                type="button"
+                                                disabled={estaOcupada}
+                                                className={`time-chip 
+                                                    ${citaForm.hora === hora ? 'selected' : ''}
+                                                    ${estaOcupada ? 'occupied' : ''}
+                                                `}
+                                                onClick={() => setCitaForm({ ...citaForm, hora })}
+                                            >
+                                                {hora}
+                                                {estaOcupada && <span className="occupied-text">Ocupado</span>}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 

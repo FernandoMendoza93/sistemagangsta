@@ -478,8 +478,8 @@
     transition: all 0.2s;
 }
 
-.service-chip:hover,
-.time-chip:hover {
+.service-chip:hover:not(.occupied),
+.time-chip:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
 }
@@ -490,6 +490,24 @@
     border-color: #c9a227;
     color: #c9a227;
     font-weight: 600;
+}
+
+.time-chip.occupied {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.01);
+    border-color: rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.5rem;
+}
+
+.occupied-text {
+    font-size: 0.6rem;
+    color: #ff5555;
+    margin-top: 2px;
 }
 
 .time-chip {

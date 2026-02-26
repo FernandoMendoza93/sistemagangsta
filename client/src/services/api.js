@@ -131,6 +131,7 @@ export const citasService = {
     getMisCitas: () => api.get('/citas/mis-citas'),
     getMiPerfil: () => api.get('/citas/perfil'),
     crear: (data) => api.post('/citas', data),
+    getDisponibilidad: (fecha, id_barbero = 1) => api.get('/citas/disponibilidad', { params: { fecha, id_barbero } }),
     getAll: (fecha, estado) => api.get('/citas', { params: { fecha, estado } }),
     cambiarEstado: (id, estado) => api.put(`/citas/${id}/estado`, { estado }),
     getServiciosActivos: () => api.get('/servicios/activos'),
