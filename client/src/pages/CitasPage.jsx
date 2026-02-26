@@ -175,14 +175,17 @@ export default function CitasPage() {
                                                         >
                                                             <Icon name="check-all" />
                                                         </button>
-                                                        <button
-                                                            className="btn btn-sm btn-outline-danger mb-1"
-                                                            onClick={() => handleCancelar(cita.id)}
-                                                            title="Cancelar Cita"
-                                                        >
-                                                            <Icon name="x-lg" />
-                                                        </button>
                                                     </>
+                                                )}
+                                                {/* Se permite cancelar citas completadas para limpiar pruebas fallidas */}
+                                                {(cita.estado === 'Pendiente' || cita.estado === 'Confirmada' || cita.estado === 'Completada') && (
+                                                    <button
+                                                        className="btn btn-sm btn-outline-danger mb-1"
+                                                        onClick={() => handleCancelar(cita.id)}
+                                                        title="Cancelar Cita"
+                                                    >
+                                                        <Icon name="x-lg" />
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
