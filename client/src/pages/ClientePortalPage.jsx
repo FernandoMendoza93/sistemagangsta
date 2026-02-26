@@ -19,6 +19,7 @@ export default function ClientePortalPage() {
     const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '1', fecha: '', hora: '', notas: '' });
     const [loading, setLoading] = useState(true);
     const [horasOcupadas, setHorasOcupadas] = useState([]);
+    const [horarioLaboral, setHorarioLaboral] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -150,6 +151,7 @@ export default function ClientePortalPage() {
         setCitaForm({ ...citaForm, fecha, hora: '' }); // Limpia la hora si cambia de día
         if (!fecha) {
             setHorasOcupadas([]);
+            setHorarioLaboral(null);
             return;
         }
 
@@ -157,9 +159,11 @@ export default function ClientePortalPage() {
             // El id_barbero por defecto es 1 (Fernando Mendoza)
             const res = await citasService.getDisponibilidad(fecha, 1);
             setHorasOcupadas(res.data.ocupadas || []);
+            setHorarioLaboral(res.data.horario || null);
         } catch (error) {
             console.error('Error obteniendo disponibilidad:', error);
             setHorasOcupadas([]);
+            setHorarioLaboral(null);
         }
     }
 
@@ -186,12 +190,52 @@ export default function ClientePortalPage() {
         return new Date().toISOString().split('T')[0];
     }
 
-    const horasDisponibles = [
-        '09:00', '10:00', '11:00',
-        '12:00', '13:00', '14:00',
-        '15:00', '16:00', '17:00',
-        '18:00', '19:00', '20:00'
-    ];
+    // Funciones para Calendario Dinámico (Tetris)
+    function generarSlots() {
+        if (!citaForm.fecha || !citaForm.id_servicio || !horarioLaboral) return [];
+
+        const servicio = servicios.find(s => s.id === parseInt(citaForm.id_servicio));
+        if (!servicio) return [];
+
+        const duracionTotal = servicio.duracion_aprox + 15; // duración + 15 min colchón
+
+        const slots = [];
+        let [curH, curM] = horarioLaboral.apertura.split(':').map(Number);
+        const [endH, endM] = horarioLaboral.cierre.split(':').map(Number);
+
+        const endMinutesOfDay = endH * 60 + endM;
+
+        while ((curH * 60 + curM) + duracionTotal <= endMinutesOfDay) {
+            const slotStartStr = `${String(curH).padStart(2, '0')}:${String(curM).padStart(2, '0')}`;
+            const slotEndMins = (curH * 60 + curM) + duracionTotal;
+            const slotEndStr = `${String(Math.floor(slotEndMins / 60)).padStart(2, '0')}:${String(slotEndMins % 60).padStart(2, '0')}`;
+
+            // Comprobar solapamiento
+            let solapa = false;
+            for (const oc of horasOcupadas) {
+                // Solapamiento verdadero: A_inicio < B_fin y A_fin > B_inicio
+                if (slotStartStr < oc.fin && slotEndStr > oc.inicio) {
+                    solapa = true;
+                    break;
+                }
+            }
+
+            if (!solapa) {
+                slots.push(slotStartStr);
+            }
+
+            // Avanzamos 15 minutos para la siguiente opción dinámica
+            curM += 15;
+            if (curM >= 60) {
+                curH += 1;
+                curM -= 60;
+            }
+        }
+
+        return slots;
+    }
+
+    const horasDisponibles = generarSlots();
 
     if (loading) {
         return (
@@ -330,7 +374,11 @@ export default function ClientePortalPage() {
                                             key={s.id}
                                             type="button"
                                             className={`service-chip ${citaForm.id_servicio == s.id ? 'selected' : ''}`}
-                                            onClick={() => setCitaForm({ ...citaForm, id_servicio: s.id })}
+                                            onClick={() => {
+                                                setCitaForm({ ...citaForm, id_servicio: s.id, fecha: '', hora: '' });
+                                                setHorarioLaboral(null);
+                                                setHorasOcupadas([]);
+                                            }}
                                         >
                                             {s.nombre_servicio} · ${s.precio}
                                         </button>
@@ -359,24 +407,26 @@ export default function ClientePortalPage() {
                             <div className="portal-form-group">
                                 <label>🕐 Hora</label>
                                 <div className="time-chips">
-                                    {horasDisponibles.map(hora => {
-                                        const estaOcupada = horasOcupadas.includes(hora);
-                                        return (
+                                    {(!citaForm.fecha || !citaForm.id_servicio) ? (
+                                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                                            Selecciona el servicio y la fecha primero para ver los espacios.
+                                        </p>
+                                    ) : horasDisponibles.length === 0 ? (
+                                        <p style={{ color: '#ff6b6b', fontSize: '0.9rem' }}>
+                                            No hay espacios disponibles para este servicio hoy.
+                                        </p>
+                                    ) : (
+                                        horasDisponibles.map(hora => (
                                             <button
                                                 key={hora}
                                                 type="button"
-                                                disabled={estaOcupada}
-                                                className={`time-chip 
-                                                    ${citaForm.hora === hora ? 'selected' : ''}
-                                                    ${estaOcupada ? 'occupied' : ''}
-                                                `}
+                                                className={`time-chip ${citaForm.hora === hora ? 'selected' : ''}`}
                                                 onClick={() => setCitaForm({ ...citaForm, hora })}
                                             >
                                                 {hora}
-                                                {estaOcupada && <span className="occupied-text">Ocupado</span>}
                                             </button>
-                                        );
-                                    })}
+                                        ))
+                                    )}
                                 </div>
                             </div>
 
