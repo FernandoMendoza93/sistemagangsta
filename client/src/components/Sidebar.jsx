@@ -90,6 +90,11 @@ export default function Sidebar({ isOpen, onToggle }) {
                                     <i className="bi bi-graph-up-arrow"></i>
                                     <span>Reportes</span>
                                 </NavLink>
+
+                                <NavLink to="/clientes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                    <i className="bi bi-people-fill"></i>
+                                    <span>Clientes</span>
+                                </NavLink>
                             </>
                         )}
 

@@ -1,0 +1,382 @@
+/* =============================================
+   CLIENTES PAGE - The Gangsta Barber Shop
+   ============================================= */
+
+.clientes-page {
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- Controls --- */
+.clientes-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.search-box:focus-within {
+    border-color: var(--color-primary, #c8a96e);
+    box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.15);
+}
+
+.search-box i {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.9rem;
+}
+
+.search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.search-clear {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.search-clear:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.filter-tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.filter-tab.active {
+    background: linear-gradient(135deg, var(--color-primary, #c8a96e), #b8944e);
+    color: #1a1a2e;
+    border-color: transparent;
+    font-weight: 600;
+}
+
+/* --- Client Avatar --- */
+.client-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.client-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary, #c8a96e), #9a7b4a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1a1a2e;
+    flex-shrink: 0;
+}
+
+.client-notes {
+    display: block;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.78rem;
+    margin-top: 2px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Phone --- */
+.phone-display {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+.no-phone {
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* --- Visit Badges --- */
+.badge-visit {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-new {
+    background: rgba(100, 200, 255, 0.15);
+    color: #64c8ff;
+}
+
+.badge-recent {
+    background: rgba(80, 200, 120, 0.15);
+    color: #50c878;
+}
+
+.badge-normal {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
+.badge-inactive {
+    background: rgba(255, 80, 80, 0.15);
+    color: #ff5555;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* --- Loyalty Stamps --- */
+.loyalty-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.loyalty-stamps {
+    display: flex;
+    gap: 1px;
+    font-size: 0.7rem;
+}
+
+.stamp {
+    color: rgba(255, 255, 255, 0.15);
+    transition: all 0.3s;
+}
+
+.stamp.filled {
+    color: #ffc107;
+    text-shadow: 0 0 6px rgba(255, 193, 7, 0.5);
+}
+
+.loyalty-count {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+.loyalty-cards {
+    font-size: 0.75rem;
+    color: #50c878;
+    font-weight: 600;
+}
+
+/* --- Action Buttons --- */
+.action-buttons {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.btn-icon {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.25s ease;
+}
+
+.btn-edit {
+    background: rgba(100, 200, 255, 0.1);
+    color: #64c8ff;
+}
+
+.btn-edit:hover {
+    background: rgba(100, 200, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-whatsapp {
+    background: rgba(37, 211, 102, 0.1);
+    color: #25d366;
+}
+
+.btn-whatsapp:hover {
+    background: rgba(37, 211, 102, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-delete {
+    background: rgba(255, 80, 80, 0.1);
+    color: #ff5555;
+}
+
+.btn-delete:hover {
+    background: rgba(255, 80, 80, 0.25);
+    transform: translateY(-1px);
+}
+
+/* --- Inactive Row --- */
+.row-inactive {
+    background: rgba(255, 80, 80, 0.03) !important;
+}
+
+.row-inactive td {
+    border-left-color: rgba(255, 80, 80, 0.3);
+}
+
+/* --- Empty State --- */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.empty-state h3 {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+}
+
+/* --- Modal textarea --- */
+.modal-content-pro textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.modal-content-pro textarea:focus {
+    outline: none;
+    border-color: var(--color-primary, #c8a96e);
+}
+
+.modal-content-pro textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .clientes-page {
+        padding: 1rem;
+    }
+
+    .clientes-controls {
+        flex-direction: column;
+    }
+
+    .search-box {
+        min-width: 100%;
+    }
+
+    .filter-tabs {
+        width: 100%;
+    }
+
+    .filter-tab {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .loyalty-stamps {
+        display: none;
+    }
+
+    .client-notes {
+        max-width: 120px;
+    }
+
+    .table-pro th:nth-child(3),
+    .table-pro td:nth-child(3) {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .table-pro th:nth-child(2),
+    .table-pro td:nth-child(2) {
+        display: none;
+    }
+
+    .client-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+}

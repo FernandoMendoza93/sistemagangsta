@@ -83,7 +83,9 @@ export const ventasService = {
     getAll: (params) => api.get('/ventas', { params }),
     getById: (id) => api.get(`/ventas/${id}`),
     create: (data) => api.post('/ventas', data),
-    getResumenHoy: () => api.get('/ventas/resumen/hoy')
+    getResumenHoy: () => api.get('/ventas/resumen/hoy'),
+    confirmar: (id) => api.post(`/ventas/${id}/confirmar`),
+    cancelar: (id) => api.post(`/ventas/${id}/cancelar`)
 };
 
 // Corte de Caja
@@ -107,6 +109,37 @@ export const reportesService = {
         params: { desde, hasta },
         responseType: 'blob'
     })
+};
+
+// Clientes
+export const clientesService = {
+    getAll: (q) => api.get('/clientes', { params: { q } }),
+    getInactivos: () => api.get('/clientes/inactivos'),
+    getById: (id) => api.get(`/clientes/${id}`),
+    create: (data) => api.post('/clientes', data),
+    update: (id, data) => api.put(`/clientes/${id}`, data),
+    delete: (id) => api.delete(`/clientes/${id}`)
+};
+
+// Auth del Cliente (por teléfono)
+export const clienteAuthService = {
+    login: (telefono, nombre, password) => api.post('/auth/cliente', { telefono, nombre, password })
+};
+
+// Citas
+export const citasService = {
+    getMisCitas: () => api.get('/citas/mis-citas'),
+    getMiPerfil: () => api.get('/citas/perfil'),
+    crear: (data) => api.post('/citas', data),
+    getAll: (fecha, estado) => api.get('/citas', { params: { fecha, estado } }),
+    cambiarEstado: (id, estado) => api.put(`/citas/${id}/estado`, { estado }),
+    getServiciosActivos: () => api.get('/servicios/activos'),
+    getBarberos: () => api.get('/barberos')
+};
+
+// Loyalty (QR)
+export const loyaltyService = {
+    claim: (token) => api.post('/loyalty/claim', { token })
 };
 
 export default api;

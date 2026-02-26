@@ -15,7 +15,7 @@ router.get('/ventas', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (r
              SUM(v.total_venta) as ingresos,
              SUM(CASE WHEN v.metodo_pago = 'Efectivo' THEN v.total_venta ELSE 0 END) as efectivo,
              SUM(CASE WHEN v.metodo_pago = 'Tarjeta' THEN v.total_venta ELSE 0 END) as tarjeta
-      FROM ventas_cabecera v WHERE 1=1
+      FROM ventas_cabecera v WHERE v.estado = 'completada'
     `;
         const params = [];
         if (desde) { query += ' AND date(v.fecha) >= ?'; params.push(desde); }
@@ -66,7 +66,7 @@ router.get('/servicios', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO),
              SUM(vd.subtotal) as ingresos
       FROM ventas_detalle vd
       JOIN servicios s ON vd.id_servicio = s.id
-      JOIN ventas_cabecera v ON vd.id_venta_cabecera = v.id WHERE vd.id_servicio IS NOT NULL
+      JOIN ventas_cabecera v ON vd.id_venta_cabecera = v.id WHERE v.estado = 'completada' AND vd.id_servicio IS NOT NULL
     `;
         const params = [];
         if (desde) { query += ' AND date(v.fecha) >= ?'; params.push(desde); }
@@ -89,7 +89,7 @@ router.get('/excel', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (re
         // Ventas
         let ventasQuery = `SELECT v.id, v.fecha, u.nombre as barbero, v.total_venta, v.metodo_pago
       FROM ventas_cabecera v LEFT JOIN barberos b ON v.id_barbero = b.id
-      LEFT JOIN usuarios u ON b.id_usuario = u.id WHERE 1=1`;
+      LEFT JOIN usuarios u ON b.id_usuario = u.id WHERE v.estado = 'completada'`;
         const params = [];
         if (desde) { ventasQuery += ' AND date(v.fecha) >= ?'; params.push(desde); }
         if (hasta) { ventasQuery += ' AND date(v.fecha) <= ?'; params.push(hasta); }

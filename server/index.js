@@ -78,6 +78,19 @@ async function initializeDatabase() {
 
         db = sqliteDb;
         dbType = 'sqlite';
+
+        // Migración: agregar columna 'estado' a ventas_cabecera si no existe
+        try {
+            const colCheck = sqliteDb.prepare("PRAGMA table_info(ventas_cabecera)").all();
+            const hasEstado = colCheck.some(c => c.name === 'estado');
+            if (!hasEstado) {
+                sqliteDb.exec("ALTER TABLE ventas_cabecera ADD COLUMN estado TEXT DEFAULT 'completada'");
+                console.log('🔄 Migración: columna estado agregada a ventas_cabecera');
+            }
+        } catch (e) {
+            // La tabla podría no existir aún, se creará con el schema
+        }
+
         console.log('✅ SQLite inicializado correctamente');
 
     } catch (error) {
@@ -136,6 +149,9 @@ const productosRoutes = (await import('./routes/productos.js')).default;
 const ventasRoutes = (await import('./routes/ventas.js')).default;
 const corteCajaRoutes = (await import('./routes/corteCaja.js')).default;
 const reportesRoutes = (await import('./routes/reportes.js')).default;
+const clientesRoutes = (await import('./routes/clientes.js')).default;
+const citasRoutes = (await import('./routes/citas.js')).default;
+const loyaltyRoutes = (await import('./routes/loyalty.js')).default;
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
@@ -146,6 +162,9 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/ventas', ventasRoutes);
 app.use('/api/corte-caja', corteCajaRoutes);
 app.use('/api/reportes', reportesRoutes);
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/citas', citasRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {

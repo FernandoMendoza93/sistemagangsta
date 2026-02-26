@@ -70,6 +70,40 @@ CREATE TABLE IF NOT EXISTS servicios (
 );
 
 -- =============================================
+-- TABLAS DE CLIENTES
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS clientes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    telefono TEXT,
+    puntos_lealtad INTEGER DEFAULT 0,
+    ultima_visita TEXT,
+    fecha_registro TEXT DEFAULT (datetime('now', 'localtime')),
+    notas TEXT,
+    activo INTEGER DEFAULT 1
+);
+
+-- =============================================
+-- TABLAS DE CITAS
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS citas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_cliente INTEGER NOT NULL,
+    id_servicio INTEGER,
+    id_barbero INTEGER,
+    fecha TEXT NOT NULL,
+    hora TEXT NOT NULL,
+    estado TEXT DEFAULT 'Pendiente' CHECK(estado IN ('Pendiente', 'Confirmada', 'Cancelada', 'Completada')),
+    notas TEXT,
+    fecha_creacion TEXT DEFAULT (datetime('now', 'localtime')),
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id),
+    FOREIGN KEY (id_servicio) REFERENCES servicios(id),
+    FOREIGN KEY (id_barbero) REFERENCES barberos(id)
+);
+
+-- =============================================
 -- TABLAS DE VENTAS
 -- =============================================
 
@@ -81,6 +115,7 @@ CREATE TABLE IF NOT EXISTS ventas_cabecera (
     total_venta REAL NOT NULL,
     metodo_pago TEXT DEFAULT 'Efectivo' CHECK(metodo_pago IN ('Efectivo', 'Tarjeta', 'Transferencia')),
     estado_corte_caja INTEGER DEFAULT 0,
+    estado TEXT DEFAULT 'completada' CHECK(estado IN ('pendiente', 'completada', 'cancelada')),
     notas TEXT,
     FOREIGN KEY (id_barbero) REFERENCES barberos(id)
 );

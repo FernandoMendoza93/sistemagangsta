@@ -1,0 +1,523 @@
+/* =============================================
+   CLIENTE PORTAL PAGE - Mobile First
+   ============================================= */
+
+.cliente-portal {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%);
+    padding-bottom: 80px;
+    /* space for bottom bar */
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.portal-loading {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a1a;
+}
+
+/* --- Header --- */
+.portal-header {
+    background: linear-gradient(135deg, rgba(201, 162, 39, 0.15), rgba(201, 162, 39, 0.05));
+    padding: 1rem 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(201, 162, 39, 0.15);
+}
+
+.portal-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.portal-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #c9a227;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.portal-logout {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.3s;
+}
+
+.portal-logout:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.portal-greeting h1 {
+    color: #fff;
+    font-size: 1.35rem;
+    margin: 0 0 0.3rem;
+    font-weight: 700;
+}
+
+.portal-greeting p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* --- Loyalty Card --- */
+.loyalty-card {
+    margin: 1rem;
+    background: linear-gradient(145deg, rgba(201, 162, 39, 0.08), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(201, 162, 39, 0.2);
+    border-radius: 20px;
+    padding: 1.25rem;
+}
+
+.loyalty-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: #c9a227;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.loyalty-badge {
+    font-size: 0.75rem;
+    background: rgba(80, 200, 120, 0.15);
+    color: #50c878;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+}
+
+.stamps-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.stamp-circle {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s ease;
+}
+
+.stamp-circle.filled {
+    background: linear-gradient(135deg, #c9a227, #a88420);
+    border: 2px solid #c9a227;
+    box-shadow: 0 2px 10px rgba(201, 162, 39, 0.3);
+    animation: stampPop 0.3s ease;
+}
+
+@keyframes stampPop {
+    0% {
+        transform: scale(0.8);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.stamp-number {
+    color: rgba(255, 255, 255, 0.15);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stamp-gift {
+    font-size: 1.1rem;
+}
+
+.loyalty-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #c9a227, #ffd700);
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+.progress-text {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.78rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.loyalty-redeem {
+    margin-top: 0.75rem;
+}
+
+.redeem-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #50c878, #3da85c);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.redeem-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(80, 200, 120, 0.3);
+}
+
+/* --- Citas Section --- */
+.portal-section {
+    padding: 0 1rem;
+    margin-top: 0.5rem;
+}
+
+.section-header {
+    margin-bottom: 0.75rem;
+}
+
+.section-header h2 {
+    color: #fff;
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.empty-citas {
+    text-align: center;
+    padding: 1.5rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.empty-citas p {
+    margin: 0.25rem 0;
+}
+
+.empty-hint {
+    font-size: 0.85rem;
+}
+
+.citas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cita-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 0.75rem;
+    transition: all 0.3s;
+}
+
+.cita-date {
+    text-align: center;
+    min-width: 50px;
+    padding: 0.4rem;
+    background: rgba(201, 162, 39, 0.1);
+    border-radius: 10px;
+}
+
+.cita-day {
+    color: #c9a227;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: capitalize;
+}
+
+.cita-month {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.cita-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.cita-info strong {
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.cita-info span {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.78rem;
+}
+
+.cita-status {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-pendiente {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
+.status-confirmada {
+    background: rgba(80, 200, 120, 0.15);
+    color: #50c878;
+}
+
+.status-completada {
+    background: rgba(100, 200, 255, 0.15);
+    color: #64c8ff;
+}
+
+.status-cancelada {
+    background: rgba(255, 80, 80, 0.15);
+    color: #ff5555;
+}
+
+/* --- Bottom Actions Fixed Bar --- */
+.portal-bottom-actions {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(10, 10, 26, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bottom-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-wa {
+    background: rgba(37, 211, 102, 0.15);
+    color: #25d366;
+    border: 1px solid rgba(37, 211, 102, 0.2);
+}
+
+.btn-wa:hover {
+    background: rgba(37, 211, 102, 0.25);
+}
+
+.btn-agendar {
+    background: linear-gradient(135deg, #c9a227, #a88420);
+    color: #0a0a1a;
+}
+
+.btn-agendar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(201, 162, 39, 0.3);
+}
+
+/* --- Modal --- */
+.portal-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.portal-modal {
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    background: #1a1a2e;
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.portal-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: sticky;
+    top: 0;
+    background: #1a1a2e;
+    z-index: 1;
+}
+
+.portal-modal-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.portal-modal-header button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.portal-modal-form {
+    padding: 1rem 1.25rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.portal-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.portal-form-group label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.portal-form-group input[type="date"],
+.portal-form-group input[type="text"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #fff;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.portal-form-group input:focus {
+    border-color: #c9a227;
+}
+
+.service-chips,
+.time-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.service-chip,
+.time-chip {
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.service-chip:hover,
+.time-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.service-chip.selected,
+.time-chip.selected {
+    background: rgba(201, 162, 39, 0.2);
+    border-color: #c9a227;
+    color: #c9a227;
+    font-weight: 600;
+}
+
+.time-chip {
+    min-width: 55px;
+    text-align: center;
+    font-size: 0.78rem;
+}
+
+.portal-submit-btn {
+    background: linear-gradient(135deg, #c9a227, #a88420);
+    color: #0a0a1a;
+    border: none;
+    border-radius: 14px;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 0.5rem;
+}
+
+.portal-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(201, 162, 39, 0.3);
+}
+
+.portal-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}

@@ -45,14 +45,16 @@ export const requireRole = (...allowedRoles) => {
 export const ROLES = {
     ADMIN: 'Admin',
     ENCARGADO: 'Encargado',
-    BARBERO: 'Barbero'
+    BARBERO: 'Barbero',
+    CLIENTE: 'Cliente'
 };
 
 // Permisos por rol
 export const PERMISSIONS = {
-    [ROLES.ADMIN]: ['ver_caja', 'gestionar_personal', 'registrar_ventas', 'ver_reportes', 'editar_servicios', 'gestionar_inventario', 'pagar_comisiones'],
-    [ROLES.ENCARGADO]: ['ver_caja', 'registrar_ventas', 'ver_reportes', 'gestionar_inventario'],
-    [ROLES.BARBERO]: ['registrar_ventas_propias', 'ver_comisiones_propias']
+    [ROLES.ADMIN]: ['ver_caja', 'gestionar_personal', 'registrar_ventas', 'ver_reportes', 'editar_servicios', 'gestionar_inventario', 'pagar_comisiones', 'gestionar_citas'],
+    [ROLES.ENCARGADO]: ['ver_caja', 'registrar_ventas', 'ver_reportes', 'gestionar_inventario', 'gestionar_citas'],
+    [ROLES.BARBERO]: ['registrar_ventas_propias', 'ver_comisiones_propias'],
+    [ROLES.CLIENTE]: ['ver_perfil_propio', 'crear_cita']
 };
 
 // Middleware para verificar permisos específicos

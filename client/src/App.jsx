@@ -12,6 +12,10 @@ import ReportesPage from './pages/ReportesPage';
 import PersonalPage from './pages/PersonalPage';
 import ServiciosPage from './pages/ServiciosPage';
 import ComisionesPage from './pages/ComisionesPage';
+import ClientesPage from './pages/ClientesPage';
+import ClienteLoginPage from './pages/ClienteLoginPage';
+import ClientePortalPage from './pages/ClientePortalPage';
+import ClaimPointPage from './pages/ClaimPointPage';
 import bodyBg from './assets/body-bg.jpg';
 import './index.css';
 
@@ -38,7 +42,7 @@ function AppLayout() {
   );
 }
 
-// Ruta protegida
+// Ruta protegida (solo staff — bloquea Cliente)
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
 
@@ -48,6 +52,11 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Cliente NUNCA puede acceder al panel admin
+  if (user.rol === 'Cliente') {
+    return <Navigate to="/mi-perfil/portal" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.rol)) {
@@ -60,13 +69,30 @@ function ProtectedRoute({ children, allowedRoles }) {
 function AppRoutes() {
   const { user, loading } = useAuth();
 
+  function ClienteProtectedRoute({ children }) {
+    if (loading) return <div className="loading"><div className="spinner"></div></div>;
+    if (!user || user.rol !== 'Cliente') return <Navigate to="/mi-perfil" replace />;
+    return children;
+  }
+
   if (loading) {
     return <div className="loading"><div className="spinner"></div></div>;
   }
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/login" element={
+        user
+          ? <Navigate to={user.rol === 'Cliente' ? '/mi-perfil/portal' : '/'} replace />
+          : <LoginPage />
+      } />
+
+      {/* Portal del Cliente — rutas independientes sin sidebar */}
+      <Route path="/mi-perfil" element={<ClienteLoginPage />} />
+      <Route path="/mi-perfil/portal" element={
+        <ClienteProtectedRoute><ClientePortalPage /></ClienteProtectedRoute>
+      } />
+      <Route path="/mi-perfil/sello/:token" element={<ClaimPointPage />} />
 
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/" element={<DashboardPage />} />
@@ -82,6 +108,9 @@ function AppRoutes() {
         } />
         <Route path="/reportes" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><ReportesPage /></ProtectedRoute>
+        } />
+        <Route path="/clientes" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><ClientesPage /></ProtectedRoute>
         } />
 
         {/* Rutas solo Admin */}

@@ -1,0 +1,240 @@
+/* =============================================
+   CLIENTE LOGIN PAGE - Mobile First
+   ============================================= */
+
+.cliente-login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+    padding: 1rem;
+}
+
+.cliente-login-card {
+    width: 100%;
+    max-width: 380px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 2rem 1.5rem;
+    backdrop-filter: blur(20px);
+    text-align: center;
+}
+
+/* --- Logo --- */
+.cliente-login-logo {
+    margin-bottom: 1.5rem;
+}
+
+.logo-ring {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 2px solid rgba(201, 162, 39, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    background: rgba(201, 162, 39, 0.08);
+}
+
+.cliente-login-logo h1 {
+    font-size: 1.6rem;
+    color: #c9a227;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.cliente-login-logo .tagline {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+/* --- Welcome --- */
+.cliente-login-welcome {
+    margin-bottom: 1.25rem;
+}
+
+.cliente-login-welcome h2 {
+    color: #fff;
+    font-size: 1.3rem;
+    margin: 0 0 0.3rem;
+}
+
+.cliente-login-welcome p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* --- Error --- */
+.cliente-login-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
+    color: #ff6b6b;
+    font-size: 0.85rem;
+}
+
+/* --- Form --- */
+.cliente-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cliente-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.cliente-input-group:focus-within {
+    border-color: #c9a227;
+    box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+}
+
+.cliente-input-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.cliente-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+    outline: none;
+    letter-spacing: 1px;
+}
+
+.cliente-input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+/* --- Submit Button --- */
+.cliente-submit-btn {
+    background: linear-gradient(135deg, #c9a227, #a88420);
+    color: #0a0a1a;
+    border: none;
+    border-radius: 14px;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 0.25rem;
+}
+
+.cliente-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(201, 162, 39, 0.3);
+}
+
+.cliente-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cliente-spinner {
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(10, 10, 26, 0.3);
+    border-top-color: #0a0a1a;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- Footer --- */
+.cliente-login-footer {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.78rem;
+    margin: 1.25rem 0 0.75rem;
+}
+
+.staff-login-link {
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.staff-login-link:hover {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Password Toggle --- */
+.password-toggle {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    padding: 0.25rem;
+    flex-shrink: 0;
+    transition: color 0.3s;
+}
+
+.password-toggle:hover {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* --- Back Button --- */
+.cliente-back-btn {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.4);
+    padding: 0.6rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.cliente-back-btn:hover {
+    color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* --- Animation --- */
+.slide-in {
+    animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

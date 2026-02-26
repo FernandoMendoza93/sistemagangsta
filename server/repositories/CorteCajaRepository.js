@@ -45,7 +45,7 @@ export class CorteCajaRepository {
         const result = await this.dbQuery.get(`
             SELECT COALESCE(SUM(CASE WHEN metodo_pago = 'Efectivo' THEN total_venta ELSE 0 END), 0) as efectivo
             FROM ventas_cabecera 
-            WHERE fecha >= ? AND estado_corte_caja = 0
+            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada'
         `, [fechaApertura]);
         return result?.efectivo || 0;
     }
@@ -54,7 +54,7 @@ export class CorteCajaRepository {
         return await this.dbQuery.run(`
             UPDATE ventas_cabecera 
             SET estado_corte_caja = 1 
-            WHERE fecha >= ? AND estado_corte_caja = 0
+            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada'
         `, [fechaApertura]);
     }
 
@@ -68,7 +68,7 @@ export class CorteCajaRepository {
                 COUNT(*) as cantidad_transacciones,
                 COALESCE(SUM(total_venta), 0) as total
             FROM ventas_cabecera 
-            WHERE fecha >= ? AND estado_corte_caja = 0
+            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada'
             GROUP BY metodo_pago
         `, [fechaApertura]);
     }
@@ -89,7 +89,7 @@ export class CorteCajaRepository {
             FROM ventas_detalle vd
             JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
             LEFT JOIN servicios s ON vd.id_servicio = s.id
-            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vd.id_servicio IS NOT NULL
+            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_servicio IS NOT NULL
             GROUP BY s.id, s.nombre_servicio
         `, [fechaApertura]);
 
@@ -105,7 +105,7 @@ export class CorteCajaRepository {
             JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
             LEFT JOIN productos p ON vd.id_producto = p.id
             LEFT JOIN categorias c ON p.id_categoria = c.id
-            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vd.id_producto IS NOT NULL
+            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_producto IS NOT NULL
             GROUP BY c.id, p.id, c.nombre, p.nombre
         `, [fechaApertura]);
 

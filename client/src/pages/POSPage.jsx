@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { serviciosService, productosService, barberosService, ventasService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { QRCodeSVG } from 'qrcode.react';
 import Icon from '../components/Icon';
 
 export default function POSPage() {
@@ -15,6 +16,11 @@ export default function POSPage() {
     const [processing, setProcessing] = useState(false);
     const [message, setMessage] = useState(null);
     const [tab, setTab] = useState('servicios');
+    // QR Fidelidad
+    const [qrData, setQrData] = useState(null);
+    const [qrTimeLeft, setQrTimeLeft] = useState(0);
+    const [ventaPendienteId, setVentaPendienteId] = useState(null);
+    const qrTimerRef = useRef(null);
 
     useEffect(() => {
         loadData();
@@ -101,15 +107,35 @@ export default function POSPage() {
                 precio_unitario: item.precio_unitario
             }));
 
-            await ventasService.create({
+            const res = await ventasService.create({
                 id_barbero: barberoId || null,
                 metodo_pago: metodoPago,
                 items
             });
 
-            setMessage({ type: 'success', text: `¡Venta registrada! Total: $${getTotal().toFixed(2)}` });
+            // Guardar el ID de la venta pendiente
+            setVentaPendienteId(res.data.id);
+            setMessage(null);
             setCart([]);
-            loadData(); // Recargar productos para actualizar stock
+
+            // Mostrar QR de fidelidad
+            if (res.data.qr_token) {
+                const qrUrl = `${window.location.origin}/mi-perfil/sello/${res.data.qr_token}`;
+                setQrData({ url: qrUrl, total: res.data.total });
+                setQrTimeLeft(300); // 5 minutos
+                if (qrTimerRef.current) clearInterval(qrTimerRef.current);
+                qrTimerRef.current = setInterval(() => {
+                    setQrTimeLeft(prev => {
+                        if (prev <= 1) {
+                            clearInterval(qrTimerRef.current);
+                            // Auto-cancelar al expirar
+                            cancelarVenta(res.data.id);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+            }
         } catch (error) {
             setMessage({ type: 'error', text: error.response?.data?.error || 'Error al registrar venta' });
         } finally {
@@ -117,11 +143,42 @@ export default function POSPage() {
         }
     };
 
+    // Cancelar venta pendiente (cerrar QR sin confirmar)
+    async function cancelarVenta(id) {
+        const ventaId = id || ventaPendienteId;
+        if (!ventaId) return;
+        try {
+            await ventasService.cancelar(ventaId);
+            setMessage({ type: 'error', text: 'Venta cancelada — no se confirmó el QR ❌' });
+        } catch (err) {
+            console.error('Error cancelando venta:', err);
+        }
+        setQrData(null);
+        setVentaPendienteId(null);
+        if (qrTimerRef.current) clearInterval(qrTimerRef.current);
+        loadData();
+    }
+
+    // Confirmar venta manualmente (sin QR)
+    async function confirmarSinQR() {
+        if (!ventaPendienteId) return;
+        try {
+            await ventasService.confirmar(ventaPendienteId);
+            setMessage({ type: 'success', text: '¡Venta confirmada exitosamente! ✅' });
+        } catch (err) {
+            setMessage({ type: 'error', text: err.response?.data?.error || 'Error confirmando venta' });
+        }
+        setQrData(null);
+        setVentaPendienteId(null);
+        if (qrTimerRef.current) clearInterval(qrTimerRef.current);
+        loadData();
+    }
+
     if (loading) {
         return <div className="loading"><div className="spinner"></div></div>;
     }
 
-    return (
+    const mainContent = (
         <div>
             <div className="page-header">
                 <div className="header-title-wrapper">
@@ -277,5 +334,74 @@ export default function POSPage() {
                 </div>
             </div>
         </div>
+    );
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // QR Modal
+    const qrModal = qrData && (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(5px)'
+        }}>
+            <div style={{
+                background: '#1a1a2e', borderRadius: 20, padding: '2rem',
+                maxWidth: 420, width: '90%', textAlign: 'center',
+                border: '2px solid rgba(201,162,39,0.3)', boxShadow: '0 0 40px rgba(201,162,39,0.15)'
+            }} onClick={e => e.stopPropagation()}>
+                <h2 style={{ color: '#c9a227', marginBottom: '0.25rem', fontSize: '1.3rem' }}>💈 ¡Sello de Fidelidad!</h2>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    El cliente escanea este QR para confirmar la venta
+                </p>
+                <div style={{
+                    background: 'white', borderRadius: 16, padding: '1.5rem',
+                    display: 'inline-block', marginBottom: '1.25rem'
+                }}>
+                    <QRCodeSVG value={qrData.url} size={220} level="H" />
+                </div>
+                <div style={{
+                    color: qrTimeLeft <= 60 ? '#ff6b6b' : '#c9a227',
+                    fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem',
+                    fontFamily: 'monospace'
+                }}>
+                    ⏱ {formatTime(qrTimeLeft)}
+                </div>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginBottom: '1.25rem' }}>
+                    Expira en {formatTime(qrTimeLeft)} — uso único
+                </p>
+
+                {/* Botón Confirmar sin QR */}
+                <button onClick={confirmarSinQR} style={{
+                    background: 'linear-gradient(135deg, #2ea043, #238636)',
+                    border: 'none', color: 'white', padding: '0.75rem 2rem',
+                    borderRadius: 12, cursor: 'pointer', fontSize: '0.95rem',
+                    fontWeight: 'bold', width: '100%', marginBottom: '0.75rem',
+                    transition: 'opacity 0.2s'
+                }}>
+                    ✅ Confirmar sin QR
+                </button>
+
+                {/* Botón Cancelar */}
+                <button onClick={() => cancelarVenta()} style={{
+                    background: 'none', border: '1px solid rgba(255,100,100,0.4)',
+                    color: 'rgba(255,100,100,0.7)', padding: '0.6rem 2rem',
+                    borderRadius: 10, cursor: 'pointer', fontSize: '0.9rem', width: '100%'
+                }}>
+                    ❌ Cancelar venta
+                </button>
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            {mainContent}
+            {qrModal}
+        </>
     );
 }
