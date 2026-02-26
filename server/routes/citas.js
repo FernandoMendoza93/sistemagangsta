@@ -15,7 +15,7 @@ function getHorarioDia(dayOfWeek) {
     // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
     if (dayOfWeek === 5) return { apertura: '17:00', cierre: '21:00' }; // Viernes
     if (dayOfWeek === 6) return { apertura: '10:00', cierre: '21:00' }; // Sabado
-    if (dayOfWeek === 0) return { apertura: '10:30', cierre: '19:00' }; // Domingo
+    if (dayOfWeek === 0) return { apertura: '10:30', cierre: '18:30' }; // Domingo
     return { apertura: '10:00', cierre: '20:00' }; // Lunes-Jueves (Genérico)
 }
 

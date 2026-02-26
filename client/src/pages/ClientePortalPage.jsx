@@ -197,7 +197,7 @@ export default function ClientePortalPage() {
         const servicio = servicios.find(s => s.id === parseInt(citaForm.id_servicio));
         if (!servicio) return [];
 
-        const duracionTotal = servicio.duracion_aprox + 15; // duración + 15 min colchón
+        const duracionTotal = servicio.duracion_aprox + 15; // duración real en backend + 15 min colchón
 
         const slots = [];
         let [curH, curM] = horarioLaboral.apertura.split(':').map(Number);
@@ -224,8 +224,10 @@ export default function ClientePortalPage() {
                 slots.push(slotStartStr);
             }
 
-            // Avanzamos 15 minutos para la siguiente opción dinámica
-            curM += 15;
+            // Cambiado a requerimiento del usuario:
+            // Avanzamos 30 minutos visualmente para la siguiente opción dinámica en lugar de 15
+            // (El sistema aún restringe la hora de fin real en el backend usando duracionTotal)
+            curM += 30;
             if (curM >= 60) {
                 curH += 1;
                 curM -= 60;
