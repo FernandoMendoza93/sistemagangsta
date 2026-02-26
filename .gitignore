@@ -12,6 +12,8 @@ node_modules/
 *.sqlite-shm
 *.sqlite-wal
 database.sqlite*
+!server/data_seed/
+!server/data_seed/*
 
 # Environment variables
 .env

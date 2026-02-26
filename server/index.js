@@ -59,9 +59,19 @@ async function initializeDatabase() {
     try {
         console.log('🔍 Inicializando SQLite para desarrollo local...');
         const Database = (await import('better-sqlite3')).default;
-        const { readFileSync } = await import('fs');
+        const { readFileSync, existsSync, copyFileSync, rmSync } = await import('fs');
 
-        const sqliteDb = new Database(join(__dirname, 'data', 'database.sqlite'));
+        const dbPath = join(__dirname, 'data', 'database.sqlite');
+        const seedPath = join(__dirname, 'data_seed', 'database.sqlite.seed');
+
+        // Mecanismo de Autoencendido
+        if (!existsSync(dbPath) && existsSync(seedPath)) {
+            console.log('🌱 Inicializando base de datos desde seed (Autoencendido)...');
+            copyFileSync(seedPath, dbPath);
+            console.log('✅ Base de datos inicializada desde el seed correctamente');
+        }
+
+        const sqliteDb = new Database(dbPath);
         sqliteDb.pragma('journal_mode = WAL');
 
         // Verificar si necesita inicialización
