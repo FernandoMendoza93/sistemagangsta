@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
 import './ClienteLoginPage.css';
@@ -17,8 +17,7 @@ export default function ClienteLoginPage() {
 
     // Si ya está logueado como cliente, ir al portal
     if (user && user.rol === 'Cliente') {
-        navigate('/mi-perfil/portal', { replace: true });
-        return null;
+        return <Navigate to="/mi-perfil/portal" replace />;
     }
 
     function formatPhone(value) {
