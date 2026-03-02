@@ -31,6 +31,9 @@ export function AuthProvider({ children }) {
         });
     }, []);
 
+    // Ref para el reset timer para evitar dependencias circulares
+    const resetTimerRef = useRef(null);
+
     const showWarning = useCallback(() => {
         if (warningShown.current) return;
         warningShown.current = true;
@@ -46,10 +49,10 @@ export function AuthProvider({ children }) {
         }).then((result) => {
             warningShown.current = false;
             if (result.isConfirmed) {
-                resetInactivityTimer();
+                if (resetTimerRef.current) resetTimerRef.current();
             }
         });
-    }, [resetInactivityTimer]);
+    }, []);
 
     // Reiniciar el timer de inactividad
     const resetInactivityTimer = useCallback(() => {
@@ -71,6 +74,11 @@ export function AuthProvider({ children }) {
         // Timer para logout
         inactivityTimer.current = setTimeout(logoutByInactivity, logoutTime);
     }, [user, showWarning, logoutByInactivity]);
+
+    // Actualizar la ref siempre al último resetInactivityTimer
+    useEffect(() => {
+        resetTimerRef.current = resetInactivityTimer;
+    }, [resetInactivityTimer]);
 
     // Escuchar actividad del usuario
     useEffect(() => {
