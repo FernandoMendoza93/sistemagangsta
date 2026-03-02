@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;600;700;800&display=swap');
+
 /* =============================================
-   CLIENTE LOGIN PAGE - Mobile First
+   CLIENTE LOGIN PAGE - Consumer Tech Premium
    ============================================= */
 
 .cliente-login-page {
@@ -7,199 +9,229 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+    background: #FBF9F6;
     padding: 1rem;
+    font-family: 'Inter', sans-serif;
 }
 
 .cliente-login-card {
     width: 100%;
     max-width: 380px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    padding: 2rem 1.5rem;
-    backdrop-filter: blur(20px);
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 2.5rem 1.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     text-align: center;
 }
 
-/* --- Logo --- */
-.cliente-login-logo {
-    margin-bottom: 1.5rem;
+/* --- Animación Fade In --- */
+.fade-in-on-load {
+    animation: fadeInRefined 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-/* --- Tabs --- */
+@keyframes fadeInRefined {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Logo & Headings --- */
+.cliente-login-logo {
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 107, 74, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.cliente-login-logo h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: #1A1A1A;
+    letter-spacing: -0.5px;
+}
+
+.tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #6B7280;
+    letter-spacing: 1px;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* Tabs / Acciones Secundarias minimalistas */
 .cliente-tabs {
     display: flex;
-    background: rgba(0, 0, 0, 0.2);
+    background: #F9F8F6;
     border-radius: 12px;
-    padding: 0.3rem;
-    margin-bottom: 1.5rem;
+    padding: 4px;
+    margin-bottom: 24px;
 }
 
 .cliente-tab {
     flex: 1;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.5);
-    padding: 0.7rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    color: #6B7280;
     font-weight: 600;
+    font-size: 0.95rem;
+    padding: 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .cliente-tab.active {
-    background: rgba(201, 162, 39, 0.15);
-    color: #c9a227;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: #FFFFFF;
+    color: #1A1A1A;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.login-hint {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0.5rem 0 1rem;
-    line-height: 1.4;
-    text-align: center;
-}
-
-.logo-ring {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    border: 2px solid rgba(201, 162, 39, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 0.75rem;
-    background: rgba(201, 162, 39, 0.08);
-}
-
-.cliente-login-logo h1 {
-    font-size: 1.6rem;
-    color: #c9a227;
-    font-weight: 800;
-    margin: 0;
-    letter-spacing: 1px;
-}
-
-.cliente-login-logo .tagline {
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 0.85rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin: 0;
-}
-
-/* --- Welcome --- */
 .cliente-login-welcome {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #6B7280;
+    font-size: 0.95rem;
 }
 
-.cliente-login-welcome h2 {
-    color: #fff;
-    font-size: 1.3rem;
-    margin: 0 0 0.3rem;
-}
-
-.cliente-login-welcome p {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.85rem;
-    margin: 0;
-}
-
-/* --- Error --- */
-.cliente-login-error {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: rgba(220, 38, 38, 0.1);
-    border: 1px solid rgba(220, 38, 38, 0.3);
-    border-radius: 10px;
-    padding: 0.6rem 1rem;
-    margin-bottom: 1rem;
-    color: #ff6b6b;
-    font-size: 0.85rem;
-}
-
-/* --- Form --- */
+/* Inputs Lineares Minimalistas */
 .cliente-login-form {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 16px;
 }
 
 .cliente-input-group {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    padding: 0.75rem 1rem;
+    background: #F9F8F6;
+    border-radius: 12px 12px 0 0;
+    border: none;
+    border-bottom: 2px solid transparent;
     transition: all 0.3s ease;
 }
 
 .cliente-input-group:focus-within {
-    border-color: #c9a227;
-    box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+    background: #FFFFFF;
+    border-bottom: 2px solid #FF6B4A;
 }
 
 .cliente-input-icon {
-    font-size: 1.3rem;
-    flex-shrink: 0;
+    padding-left: 16px;
+    color: #9CA3AF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s ease;
+}
+
+.cliente-input-group:focus-within .cliente-input-icon {
+    color: #FF6B4A;
 }
 
 .cliente-input {
-    flex: 1;
-    background: none;
+    width: 100%;
+    background: transparent;
     border: none;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 500;
+    padding: 16px 12px;
+    font-size: 0.95rem;
+    color: #1A1A1A;
     outline: none;
-    letter-spacing: 1px;
+    font-family: 'Inter', sans-serif;
 }
 
 .cliente-input::placeholder {
-    color: rgba(255, 255, 255, 0.25);
-    font-weight: 400;
-    letter-spacing: 0;
+    color: #9CA3AF;
 }
 
-/* --- Submit Button --- */
-.cliente-submit-btn {
-    background: linear-gradient(135deg, #c9a227, #a88420);
-    color: #0a0a1a;
+.password-toggle {
+    background: none;
     border: none;
-    border-radius: 14px;
-    padding: 0.85rem;
+    color: #9CA3AF;
+    cursor: pointer;
+    padding: 0 16px;
+    flex-shrink: 0;
+    transition: color 0.3s;
+}
+
+.password-toggle:hover {
+    color: #6B7280;
+}
+
+/* Botones de acción vibrantes */
+.cliente-submit-btn {
+    background: #FF6B4A;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 0.25rem;
+    transition: background 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    font-family: 'Inter', sans-serif;
+    box-shadow: none;
 }
 
 .cliente-submit-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(201, 162, 39, 0.3);
+    background: #FF5A36;
 }
 
 .cliente-submit-btn:disabled {
-    opacity: 0.7;
+    background: #ffb4a3;
     cursor: not-allowed;
-    transform: none;
+}
+
+.login-hint {
+    font-size: 0.85rem;
+    color: #6B7280;
+    margin-top: 4px;
+}
+
+/* Utilidades */
+.cliente-login-error {
+    background: #FEF2F2;
+    color: #DC2626;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    text-align: left;
 }
 
 .cliente-spinner {
-    width: 22px;
-    height: 22px;
-    border: 2px solid rgba(10, 10, 26, 0.3);
-    border-top-color: #0a0a1a;
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #FFF;
     border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin: 0 auto;
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -208,65 +240,25 @@
     }
 }
 
-/* --- Footer --- */
-.cliente-login-footer {
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 0.78rem;
-    margin: 1.25rem 0 0.75rem;
+@media (max-width: 480px) {
+    .cliente-login-page {
+        padding: 10px;
+    }
+
+    .cliente-login-card {
+        padding: 2.5rem 1.5rem;
+        border-radius: 20px;
+    }
 }
 
-.staff-login-link {
-    color: rgba(255, 255, 255, 0.25);
-    font-size: 0.75rem;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.staff-login-link:hover {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-/* --- Password Toggle --- */
-.password-toggle {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.3);
-    cursor: pointer;
-    padding: 0.25rem;
-    flex-shrink: 0;
-    transition: color 0.3s;
-}
-
-.password-toggle:hover {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-/* --- Back Button --- */
-.cliente-back-btn {
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.4);
-    padding: 0.6rem;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.cliente-back-btn:hover {
-    color: rgba(255, 255, 255, 0.7);
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* --- Animation --- */
 .slide-in {
-    animation: slideIn 0.4s ease-out;
+    animation: slideIn 0.3s ease-out;
 }
 
 @keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-5px);
     }
 
     to {

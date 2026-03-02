@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { loyaltyService, clienteAuthService } from '../services/api';
 import Icon from '../components/Icon';
 import { Scanner } from '@yudiel/react-qr-scanner';
+import { Gift, AlertCircle, CheckCircle, Clock, XCircle, QrCode, Smartphone, Lock, Scissors } from 'lucide-react';
 import './ClienteLoginPage.css';
 
 export default function ClaimPointPage() {
@@ -56,11 +57,11 @@ export default function ClaimPointPage() {
             const data = err.response?.data;
             setStatus('error');
             if (data?.expired) {
-                setError('Este QR ya expiró ⏰\nPide uno nuevo en tu próxima visita');
+                setError('Este QR ha expirado.\nSolicita uno nuevo en tu próxima visita.');
             } else if (data?.already_used) {
-                setError('Este QR ya fue canjeado ✅\nSolo se puede usar una vez');
+                setError('Este QR ya fue canjeado.\nSolamente se puede usar una vez.');
             } else {
-                setError(data?.error || 'Error al reclamar sello');
+                setError(data?.error || 'Excepción al reclamar el sello.');
             }
         }
     }
@@ -115,15 +116,15 @@ export default function ClaimPointPage() {
                 <div className="cliente-login-card" style={{ textAlign: 'center' }}>
                     <div className="cliente-login-logo">
                         <div className="logo-ring">
-                            <Icon name="scissors" size={36} color="#c9a227" />
+                            <Icon name="scissors" size={36} color="#FF5F40" />
                         </div>
                         <h1>The Gangsta</h1>
                         <p className="tagline">Barber Shop</p>
                     </div>
                     <div style={{ padding: '2rem' }}>
-                        <div className="cliente-spinner"></div>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '1rem' }}>
-                            {status === 'claiming' ? 'Reclamando tu sello...' : 'Verificando...'}
+                        <div className="cliente-spinner" style={{ margin: '0 auto' }}></div>
+                        <p style={{ color: '#6B7280', marginTop: '1rem', fontWeight: 500 }}>
+                            {status === 'claiming' ? 'Verificando y reclamando sello...' : 'Cargando información...'}
                         </p>
                     </div>
                 </div>
@@ -131,29 +132,34 @@ export default function ClaimPointPage() {
         );
     }
 
-    // Success!! 🎉
+    // Success !!
     if (status === 'success') {
         const puntos = result?.puntos || 0;
         const paraPremio = result?.puntos_para_regalo || (10 - (puntos % 10));
         return (
             <div className="cliente-login-page">
                 <div className="cliente-login-card" style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>🎉</div>
-                    <h2 style={{ color: '#c9a227', marginBottom: '0.5rem' }}>¡Sello Reclamado!</h2>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                        Ahora tienes <strong style={{ color: '#c9a227' }}>{puntos} sellos</strong>
+                    <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '20px', borderRadius: '50%' }}>
+                            <CheckCircle size={64} color="#10B981" />
+                        </div>
+                    </div>
+                    <h2 style={{ color: '#111827', marginBottom: '0.5rem', fontWeight: 800 }}>¡Sello Reclamado!</h2>
+                    <p style={{ color: '#4B5563', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                        Ahora tienes <strong style={{ color: '#FF5F40' }}>{puntos} sellos</strong> en total.
                     </p>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', marginBottom: '2rem' }}>
+                    <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '2rem', fontWeight: 500 }}>
                         {paraPremio > 0
-                            ? `Estás a ${paraPremio} corte${paraPremio > 1 ? 's' : ''} de tu regalo 🎁`
-                            : '¡Tienes un corte gratis! 🎁'
+                            ? `Estás a ${paraPremio} corte${paraPremio > 1 ? 's' : ''} de tu acceso VIP.`
+                            : '¡Tienes un corte VIP disponible!'
                         }
                     </p>
                     <button
                         className="cliente-submit-btn"
                         onClick={() => navigate('/mi-perfil/portal')}
+                        style={{ width: '100%' }}
                     >
-                        Ver Mi Tarjeta 💈
+                        Ver Mi Lealtad <Gift size={18} style={{ marginLeft: '8px' }} />
                     </button>
                 </div>
             </div>
@@ -164,18 +170,24 @@ export default function ClaimPointPage() {
     if (status === 'scanner') {
         return (
             <div className="cliente-login-page">
-                <div className="cliente-login-card" style={{ textAlign: 'center' }}>
-                    <h2 style={{ color: '#c9a227', marginBottom: '0.5rem', fontSize: '1.2rem' }}>Escanea el Código QR</h2>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                        Apunta la cámara al QR que te muestra el barbero.
+                <div className="cliente-login-card" style={{ textAlign: 'center', padding: '30px 20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                        <div style={{ background: 'rgba(255, 95, 64, 0.1)', padding: '16px', borderRadius: '50%' }}>
+                            <QrCode size={40} color="#FF5F40" />
+                        </div>
+                    </div>
+                    <h2 style={{ color: '#111827', marginBottom: '0.5rem', fontSize: '1.3rem', fontWeight: 800 }}>Escanea el Código QR</h2>
+                    <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                        Apunta la cámara al código que te muestra el barbero al terminar.
                     </p>
 
                     <div style={{
-                        borderRadius: '16px',
+                        borderRadius: '20px',
                         overflow: 'hidden',
-                        border: '2px solid rgba(201, 162, 39, 0.3)',
-                        backgroundColor: '#000',
-                        marginBottom: '1.5rem'
+                        border: '3px solid #FF5F40',
+                        backgroundColor: '#F9FAFB',
+                        marginBottom: '1.5rem',
+                        boxShadow: '0 10px 25px rgba(255,95,64,0.1)'
                     }}>
                         <Scanner
                             onScan={handleScan}
@@ -188,8 +200,8 @@ export default function ClaimPointPage() {
                     </div>
 
                     <button
-                        className="btn btn-outline-secondary w-100"
-                        style={{ borderRadius: '12px', padding: '0.75rem', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+                        className="tab-btn"
+                        style={{ width: '100%', background: '#F3F4F6', color: '#4B5563' }}
                         onClick={() => navigate('/mi-perfil/portal')}
                     >
                         Cancelar y volver al menú
@@ -201,34 +213,40 @@ export default function ClaimPointPage() {
 
     // Error
     if (status === 'error' && !error.includes('Inicia sesión')) {
+        const isUsed = error.includes('canjeado');
+        const isExpired = error.includes('expirado');
+
         return (
             <div className="cliente-login-page">
                 <div className="cliente-login-card" style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                        {error.includes('expiró') ? '⏰' : error.includes('canjeado') ? '✅' : '❌'}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                        <div style={{ background: isUsed ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)', padding: '20px', borderRadius: '50%' }}>
+                            {isUsed ? <CheckCircle size={48} color="#F59E0B" /> : isExpired ? <Clock size={48} color="#EF4444" /> : <XCircle size={48} color="#EF4444" />}
+                        </div>
                     </div>
-                    <h2 style={{ color: error.includes('canjeado') ? '#c9a227' : '#ff6b6b', marginBottom: '0.5rem' }}>
-                        {error.includes('canjeado') ? 'Ya canjeado' : 'No disponible'}
+
+                    <h2 style={{ color: '#111827', marginBottom: '0.5rem', fontWeight: 800 }}>
+                        {isUsed ? 'Código ya usado' : 'No disponible'}
                     </h2>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre-line', marginBottom: '2rem' }}>
+
+                    <p style={{ color: '#6B7280', whiteSpace: 'pre-line', marginBottom: '2rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
                         {error}
                     </p>
 
-                    {/* Boton para intentar escanear otro si hubo error */}
                     <button
                         className="cliente-submit-btn"
-                        style={{ marginBottom: '1rem' }}
+                        style={{ marginBottom: '1rem', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}
                         onClick={() => { setScannedToken(null); setStatus('scanner'); setError(''); }}
                     >
-                        <Icon name="qr-code-scan" className="me-2" /> Escanear otro código
+                        <QrCode size={18} /> Escanear nuevo código
                     </button>
 
                     <button
-                        className="btn btn-outline-secondary w-100"
-                        style={{ borderRadius: '12px', padding: '0.75rem', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+                        className="tab-btn"
+                        style={{ width: '100%', background: '#F3F4F6', color: '#4B5563' }}
                         onClick={() => navigate('/mi-perfil/portal')}
                     >
-                        Ir a Mi Tarjeta
+                        Volver al Portal
                     </button>
                 </div>
             </div>
@@ -241,31 +259,31 @@ export default function ClaimPointPage() {
             <div className="cliente-login-card">
                 <div className="cliente-login-logo">
                     <div className="logo-ring">
-                        <Icon name="scissors" size={36} color="#c9a227" />
+                        <Icon name="scissors" size={36} color="#FF5F40" />
                     </div>
                     <h1>The Gangsta</h1>
                     <p className="tagline">Barber Shop</p>
                 </div>
 
-                <div className="cliente-login-welcome">
-                    <h2>💈 ¡Tu sello te espera!</h2>
-                    <p>Inicia sesión para poder registrar tu punto.</p>
+                <div className="cliente-welcome-section">
+                    <h2><Scissors size={20} style={{ marginRight: '6px', verticalAlign: 'middle', color: '#FF5F40' }} /> ¡Tu visita te espera!</h2>
+                    <p>Inicia sesión primero para poder registrar tu asistencia.</p>
                 </div>
 
                 {error && (
                     <div className="cliente-login-error">
-                        <Icon name="alert-circle" size={16} />
+                        <AlertCircle size={16} />
                         <span>{error}</span>
                     </div>
                 )}
 
                 <form onSubmit={handleLogin} className="cliente-login-form">
                     <div className="cliente-input-group">
-                        <div className="cliente-input-icon">📱</div>
+                        <div className="cliente-input-icon"><Smartphone size={20} /></div>
                         <input
                             type="tel"
                             className="cliente-input"
-                            placeholder="55-1234-5678"
+                            placeholder="Teléfono"
                             value={telefono}
                             onChange={(e) => setTelefono(formatPhone(e.target.value))}
                             required
@@ -274,11 +292,11 @@ export default function ClaimPointPage() {
                         />
                     </div>
                     <div className="cliente-input-group">
-                        <div className="cliente-input-icon">🔒</div>
+                        <div className="cliente-input-icon"><Lock size={20} /></div>
                         <input
                             type="password"
                             className="cliente-input"
-                            placeholder="Tu contraseña"
+                            placeholder="Contraseña"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -286,12 +304,12 @@ export default function ClaimPointPage() {
                         />
                     </div>
                     <button type="submit" className="cliente-submit-btn" disabled={loginLoading}>
-                        {loginLoading ? <div className="cliente-spinner"></div> : 'Entrar para Reclamar 🎁'}
+                        {loginLoading ? <div className="cliente-spinner"></div> : 'Entrar para Registrar'}
                     </button>
                 </form>
 
-                <p className="cliente-login-footer">
-                    ¿No tienes cuenta? <a href="/mi-perfil" style={{ color: '#c9a227' }}>Regístrate aquí</a>
+                <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#6B7280', fontSize: '0.9rem' }}>
+                    ¿No tienes cuenta? <a href="/mi-perfil" style={{ color: '#FF5F40', fontWeight: 600, textDecoration: 'none' }}>Regístrate aquí</a>
                 </p>
             </div>
         </div>

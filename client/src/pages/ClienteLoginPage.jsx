@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Icon from '../components/Icon';
+import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle } from 'lucide-react';
 import './ClienteLoginPage.css';
 
 export default function ClienteLoginPage() {
@@ -65,13 +65,13 @@ export default function ClienteLoginPage() {
 
     return (
         <div className="cliente-login-page">
-            <div className="cliente-login-card">
+            <div className="cliente-login-card fade-in-on-load">
                 {/* Logo */}
                 <div className="cliente-login-logo">
                     <div className="logo-ring">
-                        <Icon name="scissors" size={36} color="#c9a227" />
+                        <Scissors size={40} color="#FF6B4A" strokeWidth={1} />
                     </div>
-                    <h1>The Gangsta</h1>
+                    <h1>Gangsta Barbershop</h1>
                     <p className="tagline">Barber Shop</p>
                 </div>
 
@@ -103,7 +103,7 @@ export default function ClienteLoginPage() {
                 {/* Error */}
                 {error && (
                     <div className="cliente-login-error">
-                        <Icon name="alert-circle" size={16} />
+                        <AlertCircle size={16} />
                         <span>{error}</span>
                     </div>
                 )}
@@ -113,7 +113,7 @@ export default function ClienteLoginPage() {
                     {/* Name Input (only for new registration) */}
                     {activeTab === 'register' && (
                         <div className="cliente-input-group slide-in">
-                            <div className="cliente-input-icon">👤</div>
+                            <div className="cliente-input-icon"><User size={20} strokeWidth={1.5} /></div>
                             <input
                                 type="text"
                                 className="cliente-input"
@@ -127,7 +127,7 @@ export default function ClienteLoginPage() {
 
                     {/* Phone Input */}
                     <div className="cliente-input-group">
-                        <div className="cliente-input-icon">📱</div>
+                        <div className="cliente-input-icon"><Phone size={20} strokeWidth={1.5} /></div>
                         <input
                             type="tel"
                             className="cliente-input"
@@ -141,7 +141,7 @@ export default function ClienteLoginPage() {
 
                     {/* Password Input */}
                     <div className="cliente-input-group">
-                        <div className="cliente-input-icon">🔒</div>
+                        <div className="cliente-input-icon"><Lock size={20} strokeWidth={1.5} /></div>
                         <input
                             type={showPassword ? 'text' : 'password'}
                             className="cliente-input"
@@ -157,7 +157,7 @@ export default function ClienteLoginPage() {
                             onClick={() => setShowPassword(!showPassword)}
                             tabIndex={-1}
                         >
-                            <Icon name={showPassword ? 'eye-slash' : 'eye'} size={18} />
+                            {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                         </button>
                     </div>
 
@@ -180,16 +180,6 @@ export default function ClienteLoginPage() {
                         )}
                     </button>
                 </form>
-
-                {/* Staff Login Link */}
-                <a href="/login" className="staff-login-link" onClick={(e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    window.location.href = '/login';
-                }}>
-                    ¿Eres del staff? Ingresa aquí
-                </a>
             </div>
         </div>
     );

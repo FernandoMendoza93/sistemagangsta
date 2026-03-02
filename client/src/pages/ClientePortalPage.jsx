@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { citasService, loyaltyService } from '../services/api';
 import Swal from 'sweetalert2';
 import Icon from '../components/Icon';
+import { Calendar, CheckCircle, Gift, Star, Clock, User, X, PlusCircle, QrCode } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import './ClientePortalPage.css';
 
@@ -249,34 +250,46 @@ export default function ClientePortalPage() {
 
     return (
         <div className="cliente-portal">
-            {/* Header */}
+            {/* Header / Top Nav */}
             <div className="portal-header">
                 <div className="portal-header-top">
                     <div className="portal-brand">
-                        <Icon name="scissors" size={20} color="#c9a227" />
+                        <Icon name="scissors" size={20} color="#FF5F40" />
                         <span>The Gangsta</span>
                     </div>
                     <button className="portal-logout" onClick={handleLogout}>
-                        <Icon name="box-arrow-left" /> Salir
+                        Salir
                     </button>
                 </div>
                 <div className="portal-greeting">
-                    <h1>¡Qué onda, {user?.nombre?.split(' ')[0]}! 💈</h1>
+                    <h1>Hola, {user?.nombre?.split(' ')[0]}</h1>
                     <p>
                         {remaining > 0
-                            ? `Estás a ${remaining} corte${remaining > 1 ? 's' : ''} de tu regalo 🎁`
-                            : '¡Tienes un corte gratis! 🎉'
+                            ? `Estás a ${remaining} corte${remaining > 1 ? 's' : ''} de tu acceso VIP.`
+                            : '¡Tienes un corte VIP disponible!'
                         }
                     </p>
                 </div>
             </div>
 
-            {/* Loyalty Card */}
+            {/* Hero Section (Welcome Fernando) */}
+            <div className="hero-section">
+                <div className="hero-overlay"></div>
+                <div className="hero-content">
+                    <h2>Fernando Mendoza</h2>
+                    <p>Arte, precisión y estilo en cada corte. Oaxaca de Juárez.</p>
+                </div>
+            </div>
+
+            {/* Loyalty Card (Clean Interface) */}
             <div className="loyalty-card">
                 <div className="loyalty-card-header">
-                    <span>🏆 Tarjeta de Fidelidad</span>
+                    <div className="header-title">
+                        <Star size={20} color="#FF5F40" />
+                        Mi Lealtad
+                    </div>
                     {completedCards > 0 && (
-                        <span className="loyalty-badge">🎉 {completedCards} completada{completedCards > 1 ? 's' : ''}</span>
+                        <span className="loyalty-badge">{completedCards} Tarjeta{completedCards > 1 ? 's' : ''} Llenas</span>
                     )}
                 </div>
                 <div className="stamps-grid">
@@ -290,9 +303,9 @@ export default function ClientePortalPage() {
                                 style={{ cursor: isNextEmpty ? 'pointer' : 'default' }}
                             >
                                 {i < currentStamps ? (
-                                    <Icon name="scissors" size={18} color="#0a0a1a" />
+                                    <CheckCircle size={22} color="#FFFFFF" />
                                 ) : i === maxStamps - 1 ? (
-                                    <span className="stamp-gift">🎁</span>
+                                    <Gift size={22} color={isNextEmpty ? "#FF5F40" : "#9CA3AF"} />
                                 ) : (
                                     <span className="stamp-number">{i + 1}</span>
                                 )}
@@ -304,121 +317,127 @@ export default function ClientePortalPage() {
                     <div className="progress-bar">
                         <div className="progress-fill" style={{ width: `${(currentStamps / maxStamps) * 100}%` }}></div>
                     </div>
-                    <span className="progress-text">{currentStamps}/{maxStamps} sellos</span>
+                    <span className="progress-text">{currentStamps} / {maxStamps}</span>
                 </div>
                 {currentStamps === 0 && completedCards > 0 && (
-                    <div className="loyalty-redeem">
-                        <button className="redeem-btn" onClick={openWhatsApp}>
-                            🎁 Canjear Corte Gratis
+                    <div style={{ marginTop: '1rem' }}>
+                        <button className="btn-agendar-main" onClick={openWhatsApp} style={{ padding: '0.85rem' }}>
+                            <Gift size={18} /> Canjear Corte VIP
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Citas Section */}
-            <div className="portal-section">
-                <div className="section-header">
-                    <h2>📅 Mis Citas</h2>
+            {/* Citas / Agenda Section - Listado tipo Event Cards */}
+            <h2 className="section-title">
+                <Calendar size={20} color="#111827" /> Citas Agendadas
+            </h2>
+
+            {citas.filter(c => c.estado !== 'Cancelada').length === 0 ? (
+                <div className="info-empy">
+                    <Calendar size={32} opacity={0.5} style={{ margin: '0 auto' }} />
+                    <p>No tienes citas programadas actualmente.</p>
                 </div>
-                {citas.length === 0 ? (
-                    <div className="empty-citas">
-                        <p>No tienes citas agendadas</p>
-                        <p className="empty-hint">Agenda tu próxima visita 👇</p>
-                    </div>
-                ) : (
-                    <div className="citas-list">
-                        {citas.filter(c => c.estado !== 'Cancelada').slice(0, 5).map(cita => (
-                            <div key={cita.id} className={`cita-card cita-${cita.estado.toLowerCase()}`}>
-                                <div className="cita-date">
-                                    <div className="cita-day">{new Date(cita.fecha + 'T00:00').toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' })}</div>
-                                    <div className="cita-month">{new Date(cita.fecha + 'T00:00').toLocaleDateString('es-MX', { month: 'short' })}</div>
+            ) : (
+                <div className="citas-list">
+                    {citas.filter(c => c.estado !== 'Cancelada').slice(0, 5).map(cita => (
+                        <div key={cita.id} className="cita-card">
+                            <div className="cita-header">
+                                <div className="cita-fecha">
+                                    <Calendar size={18} color="#FF5F40" />
+                                    {new Date(cita.fecha + 'T00:00').toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </div>
-                                <div className="cita-info">
-                                    <strong>{cita.nombre_servicio || 'Servicio general'}</strong>
-                                    <span>{cita.hora} hrs {cita.barbero_nombre ? `· ${cita.barbero_nombre}` : ''}</span>
-                                </div>
-                                <div className={`cita-status status-${cita.estado.toLowerCase()}`}>
+                                <span className={`cita-badge ${cita.estado.toLowerCase()}`}>
                                     {cita.estado}
-                                </div>
+                                </span>
                             </div>
-                        ))}
-                    </div>
-                )}
+
+                            <div className="cita-servicio">
+                                <strong>{cita.nombre_servicio || 'Servicio de Barbería'}</strong>
+                            </div>
+
+                            <div className="cita-barbero-notes">
+                                <span className="cita-barbero">
+                                    <Clock size={14} /> {cita.hora} hrs
+                                    {cita.barbero_nombre && <><User size={14} style={{ marginLeft: '8px' }} /> {cita.barbero_nombre}</>}
+                                </span>
+                                {cita.notas && (
+                                    <span className="cita-notes" title={cita.notas}>
+                                        {cita.notas}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Bottom Actions Floating Bar */}
+            <div className="portal-actions">
+                <button className="btn-scan-main" onClick={() => setShowScannerModal(true)}>
+                    <QrCode size={20} /> Escanear QR
+                </button>
+                <button className="btn-agendar-main" onClick={openAgendarModal}>
+                    <PlusCircle size={20} /> Agendar Cita
+                </button>
             </div>
 
-            {/* Bottom Actions */}
-            <div className="portal-bottom-actions">
-                <button className="bottom-btn btn-wa" onClick={openWhatsApp}>
-                    <Icon name="whatsapp" /> WhatsApp
-                </button>
-                <button className="bottom-btn btn-agendar" onClick={openAgendarModal}>
-                    <Icon name="calendar-plus" /> Agendar
-                </button>
-            </div>
-
-            {/* Modal Agendar */}
+            {/* Modal Agendar Cita */}
             {showAgendarModal && (
-                <div className="portal-modal-overlay" onClick={() => setShowAgendarModal(false)}>
-                    <div className="portal-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="portal-modal-header">
-                            <h3>📅 Agendar Cita</h3>
-                            <button onClick={() => setShowAgendarModal(false)}>
-                                <Icon name="x-lg" />
+                <div className="modal-overlay" onClick={() => setShowAgendarModal(false)}>
+                    <div className="modal-content bottom-sheet" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>
+                                <Calendar size={22} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                                Nueva Cita
+                            </h2>
+                            <button className="close-btn" onClick={() => setShowAgendarModal(false)}>
+                                <X size={20} />
                             </button>
                         </div>
-                        <form onSubmit={handleAgendarCita} className="portal-modal-form">
-                            {/* Servicio */}
-                            <div className="portal-form-group">
-                                <label>¿Qué te hacemos?</label>
-                                <div className="service-chips">
+                        <form onSubmit={handleAgendarCita}>
+                            {/* Servicio y Barbero (Oculto u Opcional) */}
+                            <div className="form-group">
+                                <label><Icon name="scissors" size={16} /> Servicio</label>
+                                <select
+                                    className="form-control"
+                                    value={citaForm.id_servicio}
+                                    onChange={(e) => {
+                                        setCitaForm({ ...citaForm, id_servicio: e.target.value, hora: '' });
+                                        if (citaForm.fecha) handleFechaChange(citaForm.fecha);
+                                    }}
+                                    required
+                                >
+                                    <option value="">Selecciona un servicio</option>
                                     {servicios.map(s => (
-                                        <button
-                                            key={s.id}
-                                            type="button"
-                                            className={`service-chip ${citaForm.id_servicio == s.id ? 'selected' : ''}`}
-                                            onClick={() => {
-                                                setCitaForm({ ...citaForm, id_servicio: s.id, fecha: '', hora: '' });
-                                                setHorarioLaboral(null);
-                                                setHorasOcupadas([]);
-                                            }}
-                                        >
-                                            {s.nombre_servicio} · ${s.precio}
-                                        </button>
+                                        <option key={s.id} value={s.id}>{s.nombre_servicio} - ${s.precio}</option>
                                     ))}
-                                </div>
-                            </div>
-
-                            {/* Barbero fijo */}
-                            <div className="portal-form-group">
-                                <label>✂️ Con Fernando Mendoza</label>
+                                </select>
                             </div>
 
                             {/* Fecha */}
-                            <div className="portal-form-group">
-                                <label>📆 Fecha</label>
+                            <div className="form-group">
+                                <label><Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Fecha</label>
                                 <input
                                     type="date"
                                     value={citaForm.fecha}
-                                    onChange={(e) => handleFechaChange(e.target.value)}
                                     min={getMinDate()}
+                                    onChange={(e) => handleFechaChange(e.target.value)}
+                                    className="form-control"
                                     required
                                 />
                             </div>
 
                             {/* Hora */}
-                            <div className="portal-form-group">
-                                <label>🕐 Hora</label>
-                                <div className="time-chips">
-                                    {(!citaForm.fecha || !citaForm.id_servicio) ? (
-                                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                                            Selecciona el servicio y la fecha primero para ver los espacios.
-                                        </p>
-                                    ) : horasDisponibles.length === 0 ? (
-                                        <p style={{ color: '#ff6b6b', fontSize: '0.9rem' }}>
-                                            No hay espacios disponibles para este servicio hoy.
-                                        </p>
-                                    ) : (
-                                        horasDisponibles.map(hora => (
+                            <div className="form-group">
+                                <label><Clock size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Horarios Disponibles</label>
+                                {(!citaForm.fecha || !citaForm.id_servicio) ? (
+                                    <p>Selecciona el servicio y la fecha primero para ver los espacios.</p>
+                                ) : horasDisponibles.length === 0 ? (
+                                    <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
+                                ) : (
+                                    <div className="time-grid">
+                                        {horasDisponibles.map(hora => (
                                             <button
                                                 key={hora}
                                                 type="button"
@@ -427,71 +446,55 @@ export default function ClientePortalPage() {
                                             >
                                                 {hora}
                                             </button>
-                                        ))
-                                    )}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Notas */}
-                            <div className="portal-form-group">
-                                <label>📝 Notas (opcional)</label>
+                            <div className="form-group">
+                                <label><Star size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Notas al barbero (Opcional)</label>
                                 <input
                                     type="text"
-                                    placeholder="Algo especial que quieras..."
+                                    placeholder="Ej. Quiero desvanecido medio..."
                                     value={citaForm.notas}
                                     onChange={(e) => setCitaForm({ ...citaForm, notas: e.target.value })}
+                                    className="form-control"
+                                    maxLength="100"
                                 />
                             </div>
 
-                            <button type="submit" className="portal-submit-btn" disabled={!citaForm.fecha || !citaForm.hora}>
-                                Confirmar Cita 💈
+                            <button
+                                type="submit"
+                                className="btn-primary w-100"
+                                disabled={!citaForm.fecha || !citaForm.hora || !citaForm.id_servicio}
+                            >
+                                Confirmar Cita
                             </button>
                         </form>
-                        {/* Modal Scanner QR - FINISH */}
                     </div>
                 </div>
             )}
 
             {/* Modal Scanner QR */}
             {showScannerModal && (
-                <div className="portal-modal-overlay" onClick={() => setShowScannerModal(false)}>
-                    <div className="portal-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="portal-modal-header">
-                            <h3>📸 Escanear Visita</h3>
-                            <button onClick={() => setShowScannerModal(false)}>
-                                <Icon name="x-lg" />
+                <div className="modal-overlay" onClick={() => setShowScannerModal(false)}>
+                    <div className="modal-content bottom-sheet" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2><QrCode size={22} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Escanear Código QR</h2>
+                            <button className="close-btn" onClick={() => setShowScannerModal(false)}>
+                                <X size={20} />
                             </button>
                         </div>
-                        <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                                Apunta la cámara al QR que te muestra el barbero.
-                            </p>
-
-                            <div style={{
-                                borderRadius: '16px',
-                                overflow: 'hidden',
-                                border: '2px solid rgba(201, 162, 39, 0.3)',
-                                backgroundColor: '#000',
-                                marginBottom: '1.5rem'
-                            }}>
-                                <Scanner
-                                    onScan={handleScan}
-                                    formats={['qr_code']}
-                                    components={{
-                                        audio: false,
-                                        finder: true,
-                                    }}
-                                />
-                            </div>
-
-                            <button
-                                className="portal-submit-btn"
-                                style={{ width: '100%', backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
-                                onClick={() => setShowScannerModal(false)}
-                            >
-                                Cancelar
-                            </button>
+                        <div className="scanner-container">
+                            <Scanner
+                                onScan={handleScan}
+                                formats={['qr_code']}
+                            />
                         </div>
+                        <p style={{ textAlign: 'center', marginTop: '1rem', color: '#6B7280', fontSize: '0.9rem' }}>
+                            Apunta la cámara al código QR proporcionado por tu barbero al finalizar tu corte.
+                        </p>
                     </div>
                 </div>
             )}
