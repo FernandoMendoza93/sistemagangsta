@@ -23,7 +23,13 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+
+            // Si el cliente estaba en el portal, regresarlo a su login
+            if (window.location.pathname.startsWith('/mi-perfil')) {
+                window.location.href = '/mi-perfil';
+            } else {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }

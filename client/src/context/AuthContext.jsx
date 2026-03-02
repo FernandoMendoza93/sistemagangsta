@@ -18,7 +18,6 @@ export function AuthProvider({ children }) {
     const warningTimer = useRef(null);
     const warningShown = useRef(false);
 
-    // Cerrar sesión por inactividad
     const logoutByInactivity = useCallback(() => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -27,11 +26,11 @@ export function AuthProvider({ children }) {
             icon: 'info',
             title: 'Sesión cerrada',
             text: 'Tu sesión se cerró por inactividad',
-            confirmButtonColor: '#c9a227'
+            confirmButtonColor: '#c9a227',
+            heightAuto: false
         });
     }, []);
 
-    // Mostrar advertencia antes de cerrar
     const showWarning = useCallback(() => {
         if (warningShown.current) return;
         warningShown.current = true;
@@ -42,14 +41,15 @@ export function AuthProvider({ children }) {
             confirmButtonText: 'Sí, sigo aquí',
             confirmButtonColor: '#c9a227',
             timer: 60000,
-            timerProgressBar: true
+            timerProgressBar: true,
+            heightAuto: false
         }).then((result) => {
             warningShown.current = false;
             if (result.isConfirmed) {
                 resetInactivityTimer();
             }
         });
-    }, []);
+    }, [resetInactivityTimer]);
 
     // Reiniciar el timer de inactividad
     const resetInactivityTimer = useCallback(() => {
