@@ -149,6 +149,18 @@ export default function ClientePortalPage() {
         }
     }
     async function handleFechaChange(fecha) {
+        if (!citaForm.id_servicio) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Selecciona un servicio',
+                text: 'Por favor, selecciona qué servicio deseas antes de elegir la fecha.',
+                confirmButtonColor: '#c9a227',
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            return;
+        }
+
         setCitaForm({ ...citaForm, fecha, hora: '' }); // Limpia la hora si cambia de día
         if (!fecha) {
             setHorasOcupadas([]);
