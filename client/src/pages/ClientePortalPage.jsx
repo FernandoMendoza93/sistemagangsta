@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { citasService, loyaltyService } from '../services/api';
 import Swal from 'sweetalert2';
 import Icon from '../components/Icon';
-import { Calendar, CheckCircle, Gift, Star, Clock, User, X, PlusCircle, QrCode } from 'lucide-react';
+import { Calendar, CheckCircle, Gift, Star, Clock, User, X, PlusCircle, QrCode, MessageCircle } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import './ClientePortalPage.css';
 
@@ -367,6 +367,18 @@ export default function ClientePortalPage() {
                                     </span>
                                 )}
                             </div>
+
+                            {/* Botón de Contacto WhatsApp Integrado */}
+                            <button
+                                className="btn-whatsapp-cita"
+                                onClick={() => {
+                                    const fechaStr = new Date(cita.fecha + 'T00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+                                    const msg = encodeURIComponent(`Hola Fernando, tengo una duda sobre mi cita del ${fechaStr}`);
+                                    window.open(`https://wa.me/529511955349?text=${msg}`, '_blank');
+                                }}
+                            >
+                                <MessageCircle size={16} /> Contactar sobre cita
+                            </button>
                         </div>
                     ))}
                 </div>
