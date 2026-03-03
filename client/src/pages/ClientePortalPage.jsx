@@ -191,6 +191,32 @@ export default function ClientePortalPage() {
         return new Date().toISOString().split('T')[0];
     }
 
+    // Generar próximos días disponibles (Viernes, Sábado, Domingo)
+    function generarDiasDisponibles() {
+        const dias = [];
+        const hoy = new Date();
+        let fechaActual = new Date(hoy);
+
+        while (dias.length < 12) { // Mostrar próximos 12 días laborales (~1 mes de agenda)
+            const numDia = fechaActual.getDay(); // 0=Dom, 1=Lun, ..., 5=Vie, 6=Sáb
+            if (numDia === 0 || numDia === 5 || numDia === 6) {
+                const fechaISO = fechaActual.toISOString().split('T')[0];
+                const nombreDiaCorto = fechaActual.toLocaleDateString('es-MX', { weekday: 'short' });
+                const numeroDia = fechaActual.getDate();
+                const nombreMesCorto = fechaActual.toLocaleDateString('es-MX', { month: 'short' });
+
+                dias.push({
+                    fechaISO,
+                    displayStr: `${nombreDiaCorto} ${numeroDia} ${nombreMesCorto}`
+                });
+            }
+            fechaActual.setDate(fechaActual.getDate() + 1);
+        }
+        return dias;
+    }
+
+    const diasDisponibles = generarDiasDisponibles();
+
     // Funciones para Calendario Dinámico (Tetris)
     function generarSlots() {
         if (!citaForm.fecha || !citaForm.id_servicio || !horarioLaboral) return [];
@@ -427,17 +453,23 @@ export default function ClientePortalPage() {
                                 </select>
                             </div>
 
-                            {/* Fecha */}
+                            {/* Fecha - Carrusel */}
                             <div className="form-group">
-                                <label><Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Fecha</label>
-                                <input
-                                    type="date"
-                                    value={citaForm.fecha}
-                                    min={getMinDate()}
-                                    onChange={(e) => handleFechaChange(e.target.value)}
-                                    className="form-control"
-                                    required
-                                />
+                                <label><Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Fechas Disponibles</label>
+                                <div className="dias-carousel">
+                                    {diasDisponibles.map(dia => (
+                                        <button
+                                            key={dia.fechaISO}
+                                            type="button"
+                                            className={`dia-chip ${citaForm.fecha === dia.fechaISO ? 'selected' : ''}`}
+                                            onClick={() => handleFechaChange(dia.fechaISO)}
+                                        >
+                                            <span className="dia-nombre">{dia.displayStr.split(' ')[0]}</span>
+                                            <span className="dia-numero">{dia.displayStr.split(' ')[1]}</span>
+                                            <span className="dia-mes">{dia.displayStr.split(' ')[2]}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             {/* Hora */}

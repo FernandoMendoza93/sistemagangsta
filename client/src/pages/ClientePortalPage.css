@@ -631,6 +631,72 @@
     box-shadow: 0 0 0 3px rgba(255, 95, 64, 0.1);
 }
 
+/* --- Carrusel de Días --- */
+.dias-carousel {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.dias-carousel::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.dia-chip {
+    flex: 0 0 auto;
+    min-width: 65px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dia-chip:hover {
+    border-color: #FF5F40;
+}
+
+.dia-chip .dia-nombre {
+    font-size: 0.75rem;
+    color: #6B7280;
+    text-transform: capitalize;
+    font-weight: 600;
+}
+
+.dia-chip .dia-numero {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 2px 0;
+}
+
+.dia-chip .dia-mes {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+    text-transform: capitalize;
+    font-weight: 500;
+}
+
+.dia-chip.selected {
+    background: #FF5F40;
+    border-color: #FF5F40;
+    box-shadow: 0 4px 12px rgba(255, 95, 64, 0.3);
+}
+
+.dia-chip.selected * {
+    color: #FFFFFF;
+}
+
 .time-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
