@@ -1,5 +1,12 @@
 import express from 'express';
 import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault("America/Mexico_City");
 
 const router = express.Router();
 
@@ -13,9 +20,9 @@ function addMinutes(timeStr, minsToAdd) {
 // Utilidad: Obtener horario de apertura/cierre de Fernando según día de semana
 function getHorarioDia(dayOfWeek) {
     // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
-    if (dayOfWeek === 5) return { apertura: '17:00', cierre: '21:00' }; // Viernes
+    if (dayOfWeek === 5) return { apertura: '17:30', cierre: '21:00' }; // Viernes
     if (dayOfWeek === 6) return { apertura: '10:00', cierre: '21:00' }; // Sabado
-    if (dayOfWeek === 0) return { apertura: '10:30', cierre: '18:30' }; // Domingo
+    if (dayOfWeek === 0) return { apertura: '10:30', cierre: '19:00' }; // Domingo
     return { apertura: '10:00', cierre: '20:00' }; // Lunes-Jueves (Genérico)
 }
 
@@ -77,9 +84,9 @@ router.post('/', verifyToken, (req, res) => {
         const duracionTotal = servicio.duracion_aprox + 15;
         const horaFin = addMinutes(hora, duracionTotal);
 
-        // Verificamos si excede el horario laboral
-        const dateObj = new Date(fecha + 'T00:00:00'); // Evita timezone offset issues
-        const dayOfWeek = dateObj.getDay(); // 0(Dom) a 6(Sab)
+        // Verificamos si excede el horario laboral usando la zona horaria de México
+        const dateObj = dayjs.tz(fecha, "America/Mexico_City");
+        const dayOfWeek = dateObj.day(); // 0(Dom) a 6(Sab)
         const horarioLaboral = getHorarioDia(dayOfWeek);
 
         if (hora < horarioLaboral.apertura) {
@@ -140,8 +147,8 @@ router.get('/disponibilidad', verifyToken, (req, res) => {
             return res.status(400).json({ error: 'Fecha requerida' });
         }
 
-        const dateObj = new Date(fecha + 'T00:00:00');
-        const dayOfWeek = dateObj.getDay();
+        const dateObj = dayjs.tz(fecha, "America/Mexico_City");
+        const dayOfWeek = dateObj.day();
         const horarioLaboral = getHorarioDia(dayOfWeek);
 
         // Obtener citas del barbero para calcular los intervalos [{inicio, fin}]

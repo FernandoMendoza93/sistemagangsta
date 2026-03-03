@@ -1,6 +1,13 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { verifyToken } from '../middleware/auth.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault("America/Mexico_City");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'mi_secreto_super_seguro_2024';
@@ -63,26 +70,28 @@ router.post('/claim', verifyToken, async (req, res) => {
             return res.status(409).json({ error: 'Este QR ya fue canjeado ✅', already_used: true });
         }
 
+        const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+
         // Registrar el uso del token
         if (tokenRecord) {
             await dbQuery.run(`
-                UPDATE loyalty_tokens SET usado = 1, id_cliente = ?, fecha_uso = datetime('now', 'localtime')
+                UPDATE loyalty_tokens SET usado = 1, id_cliente = ?, fecha_uso = ?
                 WHERE venta_id = ?
-            `, [req.user.id, ventaId]);
+            `, [req.user.id, mxDateTime, ventaId]);
         } else {
             await dbQuery.run(`
                 INSERT INTO loyalty_tokens (venta_id, id_cliente, usado, fecha_uso)
-                VALUES (?, ?, 1, datetime('now', 'localtime'))
-            `, [ventaId, req.user.id,]);
+                VALUES (?, ?, 1, ?)
+            `, [ventaId, req.user.id, mxDateTime]);
         }
 
         // Sumar punto de lealtad
         await dbQuery.run(`
             UPDATE clientes 
             SET puntos_lealtad = puntos_lealtad + 1,
-                ultima_visita = datetime('now', 'localtime')
+                ultima_visita = ?
             WHERE id = ?
-        `, [req.user.id]);
+        `, [mxDateTime, req.user.id]);
 
         // Confirmar la venta (estado pendiente → completada)
         await dbQuery.run(`

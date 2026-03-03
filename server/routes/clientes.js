@@ -1,5 +1,12 @@
 import express from 'express';
 import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault("America/Mexico_City");
 
 const router = express.Router();
 
@@ -36,15 +43,17 @@ router.get('/inactivos', verifyToken, (req, res) => {
     try {
         const db = req.app.locals.db;
 
+        const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+
         const clientes = db.prepare(`
             SELECT id, nombre, telefono, puntos_lealtad, ultima_visita, fecha_registro, notas,
-                   CAST(julianday('now', 'localtime') - julianday(ultima_visita) AS INTEGER) as dias_sin_visita
+                   CAST(julianday(?) - julianday(ultima_visita) AS INTEGER) as dias_sin_visita
             FROM clientes
             WHERE activo = 1
               AND ultima_visita IS NOT NULL
-              AND julianday('now', 'localtime') - julianday(ultima_visita) > 30
+              AND julianday(?) - julianday(ultima_visita) > 30
             ORDER BY ultima_visita ASC
-        `).all();
+        `).all(mxDateTime, mxDateTime);
 
         res.json(clientes);
     } catch (error) {

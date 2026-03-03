@@ -1,3 +1,11 @@
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault("America/Mexico_City");
+
 export class CorteCajaRepository {
     constructor(dbQuery) {
         this.dbQuery = dbQuery;
@@ -19,15 +27,17 @@ export class CorteCajaRepository {
     }
 
     async update(id, { ingresos, montoReal, diferencia, notas }) {
+        const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+
         return await this.dbQuery.run(`
             UPDATE cortes_caja 
-            SET fecha_cierre = datetime('now','localtime'), 
+            SET fecha_cierre = ?, 
                 ingresos_calculados = ?, 
                 monto_real_fisico = ?, 
                 diferencia = ?, 
                 notas = ? 
             WHERE id = ?
-        `, [ingresos, montoReal, diferencia, notas, id]);
+        `, [mxDateTime, ingresos, montoReal, diferencia, notas, id]);
     }
 
     async getHistory(limit = 30) {
@@ -132,8 +142,7 @@ export class CorteCajaRepository {
      * Actualizar método create para incluir hora y modo
      */
     async createWithDetails(montoInicial, idEncargado, modoCierre = 'transparente') {
-        const now = new Date();
-        const hora = now.toTimeString().substring(0, 8); // HH:MM:SS
+        const hora = dayjs().tz("America/Mexico_City").format("HH:mm:ss");
 
         return await this.dbQuery.run(`
             INSERT INTO cortes_caja (
@@ -149,13 +158,14 @@ export class CorteCajaRepository {
      * Actualizar método update para incluir totales calculados
      */
     async updateWithTotals(id, data) {
-        const now = new Date();
-        const hora = now.toTimeString().substring(0, 8);
+        const mxDateObj = dayjs().tz("America/Mexico_City");
+        const mxDateTime = mxDateObj.format("YYYY-MM-DD HH:mm:ss");
+        const hora = mxDateObj.format("HH:mm:ss");
 
         return await this.dbQuery.run(`
             UPDATE cortes_caja 
             SET 
-                fecha_cierre = datetime('now','localtime'),
+                fecha_cierre = ?,
                 hora_cierre = ?,
                 ingresos_calculados = ?,
                 monto_real_fisico = ?,
@@ -168,6 +178,7 @@ export class CorteCajaRepository {
                 entradas_efectivo_total = ?
             WHERE id = ?
         `, [
+            mxDateTime,
             hora,
             data.ingresos || 0,
             data.montoReal || 0,

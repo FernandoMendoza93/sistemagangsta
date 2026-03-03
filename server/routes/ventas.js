@@ -1,6 +1,13 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault("America/Mexico_City");
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mi_secreto_super_seguro_2024';
 
@@ -30,8 +37,10 @@ router.get('/', verifyToken, (req, res) => {
             conditions.push("date(v.fecha) BETWEEN date(?) AND date(?)");
             params.push(desde, hasta);
         } else {
-            // Por defecto, ventas de hoy
-            conditions.push("date(v.fecha) = date('now', 'localtime')");
+            // Por defecto, ventas de hoy (Zona horaria MX)
+            const mxDate = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
+            conditions.push("date(v.fecha) = ?");
+            params.push(mxDate);
         }
 
         // Si es barbero, solo ve sus ventas
@@ -63,6 +72,8 @@ router.get('/resumen/hoy', verifyToken, (req, res) => {
     try {
         const db = req.app.locals.db;
 
+        const mxDate = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
+
         const resumen = db.prepare(`
       SELECT 
         COUNT(*) as total_ventas,
@@ -71,8 +82,8 @@ router.get('/resumen/hoy', verifyToken, (req, res) => {
         COALESCE(SUM(CASE WHEN metodo_pago = 'Tarjeta' THEN total_venta ELSE 0 END), 0) as tarjeta,
         COALESCE(SUM(CASE WHEN metodo_pago = 'Transferencia' THEN total_venta ELSE 0 END), 0) as transferencia
       FROM ventas_cabecera
-      WHERE date(fecha) = date('now', 'localtime') AND estado = 'completada'
-    `).get();
+      WHERE date(fecha) = ? AND estado = 'completada'
+    `).get(mxDate);
 
         res.json(resumen);
     } catch (error) {
@@ -147,11 +158,12 @@ router.post('/', verifyToken, (req, res) => {
             totalVenta += item.precio_unitario * item.cantidad;
         }
 
-        // Insertar cabecera con estado PENDIENTE
+        // Insertar cabecera con estado PENDIENTE forzando timestamp de México
+        const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
         const result = db.prepare(`
-      INSERT INTO ventas_cabecera (id_barbero, total_venta, metodo_pago, notas, estado)
-      VALUES (?, ?, ?, ?, 'pendiente')
-    `).run(id_barbero || null, totalVenta, metodo_pago || 'Efectivo', notas || '');
+      INSERT INTO ventas_cabecera (id_barbero, total_venta, metodo_pago, notas, estado, fecha)
+      VALUES (?, ?, ?, ?, 'pendiente', ?)
+    `).run(id_barbero || null, totalVenta, metodo_pago || 'Efectivo', notas || '', mxDateTime);
 
         const ventaId = result.lastInsertRowid;
 
