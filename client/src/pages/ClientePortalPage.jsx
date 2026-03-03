@@ -246,24 +246,48 @@ export default function ClientePortalPage() {
 
             // Comprobar solapamiento
             let solapa = false;
+            let finSolapaMins = 0;
+
             for (const oc of horasOcupadas) {
                 // Solapamiento verdadero: A_inicio < B_fin y A_fin > B_inicio
                 if (slotStartStr < oc.fin && slotEndStr > oc.inicio) {
                     solapa = true;
+                    // Guardamos dónde termina la ocupación para saltar directo a esa hora
+                    const [ocFinH, ocFinM] = oc.fin.split(':').map(Number);
+                    finSolapaMins = (ocFinH * 60) + ocFinM;
                     break;
                 }
             }
 
-            // En lugar de omitirlos, los marcamos como ocupados para que se vean grises y tachados
-            slots.push({ hora: slotStartStr, ocupado: solapa });
+            if (!solapa) {
+                slots.push({ hora: slotStartStr, ocupado: false });
+                // Si la hora está libre, en el frontend avanzamos de 30 en 30 para visualización limpia
+                curM += 30;
+                if (curM >= 60) {
+                    curH += 1;
+                    curM -= 60;
+                }
+            } else {
+                // Si está ocupado, registramos el bloque (desactivado)
+                slots.push({ hora: slotStartStr, ocupado: true });
 
-            // Cambiado a requerimiento del usuario:
-            // Avanzamos 30 minutos visualmente para la siguiente opción dinámica en lugar de 15
-            // (El sistema aún restringe la hora de fin real en el backend usando duracionTotal)
-            curM += 30;
-            if (curM >= 60) {
-                curH += 1;
-                curM -= 60;
+                // --- LA MAGIA TETRIS ---
+                // Si chocamos con una cita (ej. Ocupado hasta las 17:55)...
+                // Saltamos INMEDIATAMENTE al minuto en que termina esa cita ocupada,
+                // para que el cliente pueda agendar justo después sin perder huecos.
+                // Redondeamos hacia arriba a los 5 minutos más cercanos por seguridad estética.
+                let nextMins = finSolapaMins;
+                if (nextMins % 5 !== 0) {
+                    nextMins = nextMins + (5 - (nextMins % 5));
+                }
+
+                // Evitar ciclos infinitos si la lógica de la base falla
+                if (nextMins <= (curH * 60 + curM)) {
+                    nextMins = (curH * 60 + curM) + 30;
+                }
+
+                curH = Math.floor(nextMins / 60);
+                curM = nextMins % 60;
             }
         }
 
