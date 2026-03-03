@@ -246,48 +246,25 @@ export default function ClientePortalPage() {
 
             // Comprobar solapamiento
             let solapa = false;
-            let finSolapaMins = 0;
 
             for (const oc of horasOcupadas) {
                 // Solapamiento verdadero: A_inicio < B_fin y A_fin > B_inicio
                 if (slotStartStr < oc.fin && slotEndStr > oc.inicio) {
                     solapa = true;
-                    // Guardamos dónde termina la ocupación para saltar directo a esa hora
-                    const [ocFinH, ocFinM] = oc.fin.split(':').map(Number);
-                    finSolapaMins = (ocFinH * 60) + ocFinM;
                     break;
                 }
             }
 
             if (!solapa) {
-                slots.push({ hora: slotStartStr, ocupado: false });
-                // Si la hora está libre, en el frontend avanzamos de 30 en 30 para visualización limpia
-                curM += 30;
-                if (curM >= 60) {
-                    curH += 1;
-                    curM -= 60;
-                }
-            } else {
-                // Si está ocupado, registramos el bloque (desactivado)
-                slots.push({ hora: slotStartStr, ocupado: true });
+                // Si la hora está libre por completo, la registramos.
+                slots.push({ hora: slotStartStr });
+            }
 
-                // --- LA MAGIA TETRIS ---
-                // Si chocamos con una cita (ej. Ocupado hasta las 17:55)...
-                // Saltamos INMEDIATAMENTE al minuto en que termina esa cita ocupada,
-                // para que el cliente pueda agendar justo después sin perder huecos.
-                // Redondeamos hacia arriba a los 5 minutos más cercanos por seguridad estética.
-                let nextMins = finSolapaMins;
-                if (nextMins % 5 !== 0) {
-                    nextMins = nextMins + (5 - (nextMins % 5));
-                }
-
-                // Evitar ciclos infinitos si la lógica de la base falla
-                if (nextMins <= (curH * 60 + curM)) {
-                    nextMins = (curH * 60 + curM) + 30;
-                }
-
-                curH = Math.floor(nextMins / 60);
-                curM = nextMins % 60;
+            // Genera iterativamente bloques cada 15 minutos probando espacios
+            curM += 15;
+            if (curM >= 60) {
+                curH += 1;
+                curM -= 60;
             }
         }
 
@@ -511,17 +488,22 @@ export default function ClientePortalPage() {
                                     <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
                                 ) : (
                                     <div className="time-grid">
-                                        {horasDisponibles.map(slot => (
-                                            <button
-                                                key={slot.hora}
-                                                type="button"
-                                                className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
-                                                onClick={() => !slot.ocupado && setCitaForm({ ...citaForm, hora: slot.hora })}
-                                                disabled={slot.ocupado}
-                                            >
-                                                {slot.hora} {slot.ocupado ? '(Ocupado)' : ''}
-                                            </button>
-                                        ))}
+                                        {horasDisponibles.length > 0 ? (
+                                            horasDisponibles.map(slot => (
+                                                <button
+                                                    key={slot.hora}
+                                                    type="button"
+                                                    className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''}`}
+                                                    onClick={() => setCitaForm({ ...citaForm, hora: slot.hora })}
+                                                >
+                                                    {slot.hora}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <p style={{ color: '#EF4444', gridColumn: '1 / -1', fontSize: '0.9rem' }}>
+                                                No hay espacios disponibles para este servicio hoy.
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </div>
