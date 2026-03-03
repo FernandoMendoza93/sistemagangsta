@@ -725,9 +725,14 @@
     box-shadow: 0 4px 12px rgba(255, 95, 64, 0.3);
 }
 
-.time-chip:disabled {
-    opacity: 0.4;
+.time-chip:disabled,
+.time-chip.ocupado {
+    background: #F3F4F6;
+    color: #9CA3AF;
+    opacity: 0.6;
     cursor: not-allowed;
+    border-color: #E5E7EB;
+    text-decoration: line-through;
 }
 
 .portal-submit-btn {

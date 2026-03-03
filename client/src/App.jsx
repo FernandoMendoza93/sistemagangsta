@@ -68,7 +68,35 @@ function ProtectedRoute({ children, allowedRoles }) {
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // --- Auto-Logout por Inactividad (15 minutos) ---
+  useEffect(() => {
+    if (!user) return; // Solo actuar si hay usuario logueado
+
+    let timeoutId;
+    const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutos
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        logout();
+        navigate(user.rol === 'Cliente' ? '/mi-perfil' : '/login');
+      }, INACTIVITY_LIMIT_MS);
+    };
+
+    // Eventos que reinician el temporizador
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer(); // Inicializar
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [user, logout, navigate]);
 
   function ClienteProtectedRoute({ children }) {
     if (loading) return <div className="loading"><div className="spinner"></div></div>;

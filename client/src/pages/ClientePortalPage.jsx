@@ -247,9 +247,8 @@ export default function ClientePortalPage() {
                 }
             }
 
-            if (!solapa) {
-                slots.push(slotStartStr);
-            }
+            // En lugar de omitirlos, los marcamos como ocupados para que se vean grises y tachados
+            slots.push({ hora: slotStartStr, ocupado: solapa });
 
             // Cambiado a requerimiento del usuario:
             // Avanzamos 30 minutos visualmente para la siguiente opción dinámica en lugar de 15
@@ -481,14 +480,15 @@ export default function ClientePortalPage() {
                                     <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
                                 ) : (
                                     <div className="time-grid">
-                                        {horasDisponibles.map(hora => (
+                                        {horasDisponibles.map(slot => (
                                             <button
-                                                key={hora}
+                                                key={slot.hora}
                                                 type="button"
-                                                className={`time-chip ${citaForm.hora === hora ? 'selected' : ''}`}
-                                                onClick={() => setCitaForm({ ...citaForm, hora })}
+                                                className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
+                                                onClick={() => !slot.ocupado && setCitaForm({ ...citaForm, hora: slot.hora })}
+                                                disabled={slot.ocupado}
                                             >
-                                                {hora}
+                                                {slot.hora} {slot.ocupado ? '(Ocupado)' : ''}
                                             </button>
                                         ))}
                                     </div>
