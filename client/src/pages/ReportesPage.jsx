@@ -3,8 +3,15 @@ import Swal from 'sweetalert2';
 import { reportesService } from '../services/api';
 
 export default function ReportesPage() {
-    const [desde, setDesde] = useState(new Date(new Date().setDate(1)).toISOString().split('T')[0]);
-    const [hasta, setHasta] = useState(new Date().toISOString().split('T')[0]);
+    const [desde, setDesde] = useState(() => {
+        const d = new Date();
+        d.setDate(1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    });
+    const [hasta, setHasta] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    });
     const [ventas, setVentas] = useState([]);
     const [comisiones, setComisiones] = useState([]);
     const [servicios, setServicios] = useState([]);

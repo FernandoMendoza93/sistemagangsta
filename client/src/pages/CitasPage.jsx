@@ -8,7 +8,10 @@ import './CitasPage.css';
 export default function CitasPage() {
     const [citas, setCitas] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filtroFecha, setFiltroFecha] = useState(new Date().toISOString().split('T')[0]); // Hoy
+    const [filtroFecha, setFiltroFecha] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }); // Hoy
     const { user, isBarbero } = useAuth();
 
     useEffect(() => {

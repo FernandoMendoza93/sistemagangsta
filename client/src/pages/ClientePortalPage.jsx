@@ -188,7 +188,11 @@ export default function ClientePortalPage() {
     const remaining = maxStamps - currentStamps;
 
     function getMinDate() {
-        return new Date().toISOString().split('T')[0];
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
     }
 
     // Generar próximos días disponibles (Viernes, Sábado, Domingo)
@@ -200,7 +204,10 @@ export default function ClientePortalPage() {
         while (dias.length < 12) { // Mostrar próximos 12 días laborales (~1 mes de agenda)
             const numDia = fechaActual.getDay(); // 0=Dom, 1=Lun, ..., 5=Vie, 6=Sáb
             if (numDia === 0 || numDia === 5 || numDia === 6) {
-                const fechaISO = fechaActual.toISOString().split('T')[0];
+                const y = fechaActual.getFullYear();
+                const m = String(fechaActual.getMonth() + 1).padStart(2, '0');
+                const d = String(fechaActual.getDate()).padStart(2, '0');
+                const fechaISO = `${y}-${m}-${d}`;
                 const nombreDiaCorto = fechaActual.toLocaleDateString('es-MX', { weekday: 'short' });
                 const numeroDia = fechaActual.getDate();
                 const nombreMesCorto = fechaActual.toLocaleDateString('es-MX', { month: 'short' });
