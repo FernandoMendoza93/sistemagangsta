@@ -732,6 +732,9 @@
     opacity: 0.6;
     cursor: not-allowed;
     border-color: #E5E7EB;
+}
+
+.time-chip.ocupado .time-text {
     text-decoration: line-through;
 }
 
