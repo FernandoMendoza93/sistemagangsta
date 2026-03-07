@@ -127,6 +127,29 @@ if (tableExists('loyalty_tokens') && !columnExists('loyalty_tokens', 'barberia_i
     console.log('  ADDED barberia_id to loyalty_tokens');
 }
 
+// Check and create visitas_lealtad if it doesn't exist
+if (!tableExists('visitas_lealtad')) {
+    db.exec(`
+        CREATE TABLE visitas_lealtad (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_cliente INTEGER NOT NULL,
+            barberia_id INTEGER NOT NULL,
+            id_barbero INTEGER,
+            fecha TEXT DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (id_cliente) REFERENCES clientes(id),
+            FOREIGN KEY (barberia_id) REFERENCES barberias(id),
+            FOREIGN KEY (id_barbero) REFERENCES barberos(id)
+        );
+    `);
+    console.log('  Created visitas_lealtad table (Migration patch)');
+} else {
+    // If it exists, ensure it has barberia_id too (if it was created before multitenant)
+    if (!columnExists('visitas_lealtad', 'barberia_id')) {
+        db.exec(`ALTER TABLE visitas_lealtad ADD COLUMN barberia_id INTEGER DEFAULT 1 REFERENCES barberias(id)`);
+        console.log('  ADDED barberia_id to visitas_lealtad');
+    }
+}
+
 // ==========================================
 // STEP 4: Add SuperAdmin role
 // ==========================================
