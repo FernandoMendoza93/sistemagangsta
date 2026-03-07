@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { usuariosService, barberosService } from '../services/api';
 import Icon from '../components/Icon';
 
@@ -38,7 +38,7 @@ export default function PersonalPage() {
             setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo' });
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al crear usuario', confirmButtonColor: '#c9a227' });
+            toast.error(error.response?.data?.error || 'Error al crear usuario');
         }
     };
 
@@ -69,9 +69,9 @@ export default function PersonalPage() {
             setShowEditModal(false);
             setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3 });
             loadData();
-            Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Usuario actualizado correctamente', confirmButtonColor: '#c9a227' });
+            toast.success('Usuario actualizado correctamente');
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al actualizar usuario', confirmButtonColor: '#c9a227' });
+            toast.error(error.response?.data?.error || 'Error al actualizar usuario');
         }
     };
 
@@ -80,7 +80,7 @@ export default function PersonalPage() {
             await usuariosService.update(id, { activo: activo ? 0 : 1 });
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al actualizar', confirmButtonColor: '#c9a227' });
+            toast.error('Error al actualizar');
         }
     };
 

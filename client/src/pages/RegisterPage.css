@@ -1,0 +1,484 @@
+/* =============================================
+   REGISTER PAGE — Full Registration Form
+   White/Cream aesthetic matching the system
+   ============================================= */
+
+.register-page {
+    min-height: 100vh;
+    background: #FAF9F6;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #111827;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Nav */
+.reg-page-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 2.5rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.reg-page-nav-brand {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: -0.5px;
+    cursor: pointer;
+}
+
+.reg-page-nav-brand span {
+    color: #FF5F40;
+}
+
+/* Main Content */
+.reg-page-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 2.5rem 1.5rem 4rem;
+}
+
+.reg-page-card {
+    width: 100%;
+    max-width: 580px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.reg-page-card h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-align: center;
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.5px;
+    color: #111827;
+}
+
+.reg-page-subtitle {
+    text-align: center;
+    color: #6B7280;
+    font-size: 0.9rem;
+    margin: 0 0 2rem;
+    font-weight: 500;
+}
+
+/* Steps indicator */
+.reg-steps {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.reg-step {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9CA3AF;
+}
+
+.reg-step.active {
+    color: #FF5F40;
+}
+
+.reg-step.done {
+    color: #10B981;
+}
+
+.reg-step-separator {
+    width: 24px;
+    height: 2px;
+    background: #E5E7EB;
+    border-radius: 1px;
+}
+
+/* Section titles */
+.reg-section-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 1.75rem 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.reg-section-title:first-of-type {
+    margin-top: 0;
+}
+
+/* Form */
+.reg-page-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.reg-field {
+    margin-bottom: 1rem;
+}
+
+.reg-label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4B5563;
+    margin-bottom: 0.4rem;
+}
+
+.reg-field-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    color: #111827;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.reg-field-input::placeholder {
+    color: #9CA3AF;
+}
+
+.reg-field-input:focus {
+    background: #FFFFFF;
+    border-color: #FF5F40;
+    box-shadow: 0 0 0 3px rgba(255, 95, 64, 0.1);
+}
+
+.reg-field-input.has-value {
+    background: rgba(16, 185, 129, 0.03);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Logo upload */
+.logo-upload-area {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.logo-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #F3F4F6;
+    border: 2px dashed #D1D5DB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.logo-preview.has-image {
+    border: 3px solid rgba(255, 95, 64, 0.3);
+    border-style: solid;
+}
+
+.logo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.logo-upload-info {
+    flex: 1;
+}
+
+.logo-upload-info p {
+    font-size: 0.8rem;
+    color: #6B7280;
+    margin: 0.25rem 0 0;
+}
+
+.btn-upload {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem;
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    color: #4B5563;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-upload:hover {
+    background: #E5E7EB;
+    color: #111827;
+}
+
+/* Plan selector */
+.reg-plan-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.reg-plan-option {
+    padding: 1.25rem;
+    background: #F9FAFB;
+    border: 2px solid #E5E7EB;
+    border-radius: 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.reg-plan-option:hover {
+    border-color: rgba(255, 95, 64, 0.3);
+}
+
+.reg-plan-option.selected {
+    border-color: #FF5F40;
+    background: rgba(255, 95, 64, 0.03);
+    box-shadow: 0 4px 15px rgba(255, 95, 64, 0.1);
+}
+
+.reg-plan-option .plan-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 0.3rem;
+}
+
+.reg-plan-option.selected .plan-name {
+    color: #FF5F40;
+}
+
+.reg-plan-option .plan-price {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+}
+
+.reg-plan-option .plan-period {
+    font-size: 0.75rem;
+    color: #6B7280;
+    font-weight: 500;
+}
+
+.plan-popular-tag {
+    position: absolute;
+    top: -10px;
+    right: 12px;
+    background: #FF5F40;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Payment section */
+.payment-box {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.payment-box h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin: 0 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #111827;
+}
+
+.payment-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.payment-detail:last-child {
+    border-bottom: none;
+}
+
+.payment-detail-label {
+    font-size: 0.82rem;
+    color: #6B7280;
+    font-weight: 500;
+}
+
+.payment-detail-value {
+    font-size: 0.88rem;
+    color: #111827;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.payment-note {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 95, 64, 0.04);
+    border: 1px solid rgba(255, 95, 64, 0.12);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    color: #6B7280;
+    line-height: 1.5;
+}
+
+.btn-whatsapp-pay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.7rem;
+    background: #F0FDF4;
+    color: #16A34A;
+    border: 1px solid #BBF7D0;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-whatsapp-pay:hover {
+    background: #DCFCE7;
+    border-color: #86EFAC;
+}
+
+/* Submit */
+.btn-activate {
+    width: 100%;
+    padding: 0.95rem;
+    background: #FF5F40;
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 6px 20px rgba(255, 95, 64, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-activate:hover {
+    background: #E54D30;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 95, 64, 0.35);
+}
+
+.btn-activate:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Error */
+.reg-error {
+    padding: 0.75rem 1rem;
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    border-radius: 12px;
+    color: #EF4444;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* Success */
+.reg-success-page {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.reg-success-page h2 {
+    font-family: 'Montserrat', sans-serif;
+    color: #10B981;
+    font-size: 1.5rem;
+    margin: 1rem 0 0.5rem;
+}
+
+.reg-success-page p {
+    color: #6B7280;
+    font-size: 0.92rem;
+    margin: 0.25rem 0;
+}
+
+.btn-go-login {
+    margin-top: 1.5rem;
+    padding: 0.85rem 2rem;
+    background: #FF5F40;
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(255, 95, 64, 0.25);
+    transition: all 0.25s ease;
+}
+
+.btn-go-login:hover {
+    background: #E54D30;
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .reg-page-card {
+        padding: 1.75rem 1.25rem;
+        border-radius: 20px;
+    }
+
+    .reg-page-nav {
+        padding: 1rem 1.25rem;
+    }
+
+    .reg-plan-grid {
+        grid-template-columns: 1fr;
+    }
+}

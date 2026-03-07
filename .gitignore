@@ -15,6 +15,9 @@ database.sqlite*
 !server/data_seed/
 !server/data_seed/*
 
+# User uploads (logos, images)
+server/uploads/
+
 # Environment variables
 .env
 .env.local

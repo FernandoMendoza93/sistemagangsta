@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { serviciosService } from '../services/api';
 import Icon from '../components/Icon';
 
@@ -46,7 +46,7 @@ export default function ServiciosPage() {
             setShowModal(false);
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al guardar', confirmButtonColor: '#c9a227' });
+            toast.error(error.response?.data?.error || 'Error al guardar');
         }
     };
 
@@ -55,7 +55,7 @@ export default function ServiciosPage() {
             await serviciosService.update(id, { activo: activo ? 0 : 1 });
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al actualizar estado', confirmButtonColor: '#c9a227' });
+            toast.error('Error al actualizar estado');
         }
     };
 

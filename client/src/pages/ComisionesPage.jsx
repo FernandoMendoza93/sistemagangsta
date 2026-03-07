@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { barberosService } from '../services/api';
 
 export default function ComisionesPage() {
@@ -42,10 +42,10 @@ export default function ComisionesPage() {
         setPaying(true);
         try {
             const res = await barberosService.pagarComisiones(selectedBarbero.id, 'Pago de comisiones');
-            Swal.fire({ icon: 'success', title: '¡Pago Realizado!', text: `Se pagaron $${res.data.monto.toFixed(2)}`, confirmButtonColor: '#c9a227' });
+            toast.success(`¡Pago Realizado! Se pagaron $${res.data.monto.toFixed(2)}`);
             loadComisiones(selectedBarbero.id);
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al pagar', confirmButtonColor: '#c9a227' });
+            toast.error(error.response?.data?.error || 'Error al pagar');
         } finally {
             setPaying(false);
         }

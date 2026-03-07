@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { reportesService } from '../services/api';
 
 export default function ReportesPage() {
@@ -50,7 +50,7 @@ export default function ReportesPage() {
             link.click();
             link.remove();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al exportar', confirmButtonColor: '#c9a227' });
+            toast.error('Error al exportar');
         } finally {
             setExporting(false);
         }

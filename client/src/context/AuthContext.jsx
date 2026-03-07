@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { authService, clienteAuthService } from '../services/api';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 
 const AuthContext = createContext(null);
 
@@ -22,13 +22,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
-        Swal.fire({
-            icon: 'info',
-            title: 'Sesión cerrada',
-            text: 'Tu sesión se cerró por inactividad',
-            confirmButtonColor: '#c9a227',
-            heightAuto: false
-        });
+        toast.info('Tu sesión se cerró por inactividad');
     }, []);
 
     // Ref para el reset timer para evitar dependencias circulares
@@ -37,19 +31,17 @@ export function AuthProvider({ children }) {
     const showWarning = useCallback(() => {
         if (warningShown.current) return;
         warningShown.current = true;
-        Swal.fire({
-            icon: 'warning',
-            title: 'Sigues ahí? 👀',
-            text: 'Tu sesión se cerrará en 1 minuto por inactividad',
-            confirmButtonText: 'Sí, sigo aquí',
-            confirmButtonColor: '#c9a227',
-            timer: 60000,
-            timerProgressBar: true,
-            heightAuto: false
-        }).then((result) => {
-            warningShown.current = false;
-            if (result.isConfirmed) {
-                if (resetTimerRef.current) resetTimerRef.current();
+        toast.warning('Tu sesión se cerrará en 1 minuto por inactividad', {
+            duration: 60000,
+            action: {
+                label: 'Sigo aquí',
+                onClick: () => {
+                    warningShown.current = false;
+                    if (resetTimerRef.current) resetTimerRef.current();
+                }
+            },
+            onDismiss: () => {
+                warningShown.current = false;
             }
         });
     }, []);
@@ -174,7 +166,8 @@ export function AuthProvider({ children }) {
             isAdmin,
             isEncargado,
             isBarbero,
-            isCliente
+            isCliente,
+            token: localStorage.getItem('token')
         }}>
             {children}
         </AuthContext.Provider>

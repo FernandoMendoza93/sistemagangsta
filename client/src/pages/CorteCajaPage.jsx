@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { corteCajaService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
+import ConfirmModal from '../components/ConfirmModal';
 import CorteResumen from '../components/CorteResumen';
 import DineroCajaDesglose from '../components/DineroCajaDesglose';
 import VentasPorMetodo from '../components/VentasPorMetodo';
@@ -27,6 +28,7 @@ export default function CorteCajaPage() {
     const [entradaForm, setEntradaForm] = useState({ monto: '', descripcion: '' });
     const [salidaForm, setSalidaForm] = useState({ monto: '', descripcion: '' });
     const [cierreForm, setCierreForm] = useState({ montoReal: '', notas: '' });
+    const [showCerrarConfirm, setShowCerrarConfirm] = useState(false);
 
     useEffect(() => {
         cargarDatos();
@@ -44,7 +46,7 @@ export default function CorteCajaPage() {
             }
         } catch (error) {
             console.error('Error cargando datos:', error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al cargar los datos del corte', confirmButtonColor: '#c9a227' });
+            toast.error('Error al cargar los datos del corte');
         } finally {
             setLoading(false);
         }
@@ -52,101 +54,82 @@ export default function CorteCajaPage() {
 
     const handleAbrirTurno = async () => {
         if (!montoInicial || parseFloat(montoInicial) < 0) {
-            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa un monto inicial válido', confirmButtonColor: '#c9a227' });
+            toast.warning('Ingresa un monto inicial válido');
             return;
         }
 
         try {
             await corteCajaService.abrir(parseFloat(montoInicial), 'transparente');
-            Swal.fire({ icon: 'success', title: '¡Turno Abierto!', text: `Turno abierto con $${montoInicial}`, confirmButtonColor: '#c9a227' });
+            toast.success(`¡Turno Abierto con $${montoInicial}!`);
             setMontoInicial('');
             cargarDatos();
         } catch (error) {
             console.error(error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al abrir el turno', confirmButtonColor: '#c9a227' });
+            toast.error('Error al abrir el turno');
         }
     };
 
     const handleRegistrarEntrada = async () => {
         const { monto, descripcion } = entradaForm;
         if (!monto || !descripcion) {
-            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Completa todos los campos', confirmButtonColor: '#c9a227' });
+            toast.warning('Completa todos los campos');
             return;
         }
 
         try {
             await corteCajaService.registrarEntrada(parseFloat(monto), descripcion);
-            Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Entrada registrada correctamente', confirmButtonColor: '#c9a227' });
+            toast.success('Entrada registrada correctamente');
             setEntradaForm({ monto: '', descripcion: '' });
             setShowEntradaModal(false);
             cargarDatos();
         } catch (error) {
             console.error(error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al registrar entrada', confirmButtonColor: '#c9a227' });
+            toast.error('Error al registrar entrada');
         }
     };
 
     const handleRegistrarSalida = async () => {
         const { monto, descripcion } = salidaForm;
         if (!monto || !descripcion) {
-            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Completa todos los campos', confirmButtonColor: '#c9a227' });
+            toast.warning('Completa todos los campos');
             return;
         }
 
         try {
             await corteCajaService.registrarGasto(parseFloat(monto), descripcion);
-            Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Salida registrada correctamente', confirmButtonColor: '#c9a227' });
+            toast.success('Salida registrada correctamente');
             setSalidaForm({ monto: '', descripcion: '' });
             setShowSalidaModal(false);
             cargarDatos();
         } catch (error) {
             console.error(error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al registrar salida', confirmButtonColor: '#c9a227' });
+            toast.error('Error al registrar salida');
         }
     };
 
     const handleCerrarTurno = async () => {
         const { montoReal, notas } = cierreForm;
         if (montoReal === '' || parseFloat(montoReal) < 0) {
-            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa un monto real válido', confirmButtonColor: '#c9a227' });
+            toast.warning('Ingresa un monto real válido');
             return;
         }
 
-        const confirmResult = await Swal.fire({
-            icon: 'question',
-            title: '¿Cerrar turno?',
-            text: '¿Estás seguro de que deseas cerrar el turno?',
-            showCancelButton: true,
-            confirmButtonColor: '#c9a227',
-            cancelButtonColor: '#6e7681',
-            confirmButtonText: 'Sí, cerrar',
-            cancelButtonText: 'Cancelar'
-        });
+        setShowCerrarConfirm(true);
+    };
 
-        if (!confirmResult.isConfirmed) return;
-
+    const confirmarCierre = async () => {
+        setShowCerrarConfirm(false);
         try {
-            const res = await corteCajaService.cerrar(parseFloat(montoReal), notas);
+            const res = await corteCajaService.cerrar(parseFloat(cierreForm.montoReal), cierreForm.notas);
             const { resumen } = res.data;
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Turno Cerrado',
-                html: `
-                    <div style="text-align: left; font-size: 1rem;">
-                        <p><strong>💰 Esperado:</strong> $${resumen.esperado.toFixed(2)}</p>
-                        <p><strong>🧮 Real:</strong> $${resumen.monto_real_fisico.toFixed(2)}</p>
-                        <p><strong>📊 Diferencia:</strong> $${resumen.diferencia.toFixed(2)}</p>
-                    </div>
-                `,
-                confirmButtonColor: '#c9a227'
-            });
+            toast.success(`Turno cerrado — Esperado: $${resumen.esperado.toFixed(2)} | Real: $${resumen.monto_real_fisico.toFixed(2)} | Diferencia: $${resumen.diferencia.toFixed(2)}`);
             setCierreForm({ montoReal: '', notas: '' });
             setShowCierreModal(false);
             cargarDatos();
         } catch (error) {
             console.error(error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al cerrar el turno', confirmButtonColor: '#c9a227' });
+            toast.error('Error al cerrar el turno');
         }
     };
 
@@ -162,7 +145,7 @@ export default function CorteCajaPage() {
             link.remove();
         } catch (error) {
             console.error(error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al exportar', confirmButtonColor: '#c9a227' });
+            toast.error('Error al exportar');
         }
     };
 
@@ -405,6 +388,18 @@ export default function CorteCajaPage() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                open={showCerrarConfirm}
+                title="¿Cerrar turno?"
+                message="¿Estás seguro de que deseas cerrar el turno? Esta acción no se puede deshacer."
+                icon="🔒"
+                confirmText="Sí, cerrar"
+                cancelText="Cancelar"
+                danger
+                onConfirm={confirmarCierre}
+                onCancel={() => setShowCerrarConfirm(false)}
+            />
         </div>
     );
 }

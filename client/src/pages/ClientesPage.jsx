@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { clientesService } from '../services/api';
 import Icon from '../components/Icon';
+import ConfirmModal from '../components/ConfirmModal';
 import './ClientesPage.css';
 
 export default function ClientesPage() {
@@ -13,6 +14,8 @@ export default function ClientesPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
     const [formData, setFormData] = useState({ nombre: '', telefono: '', notas: '' });
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
         loadClientes();
@@ -66,38 +69,34 @@ export default function ClientesPage() {
         try {
             if (editingClient) {
                 await clientesService.update(editingClient.id, formData);
-                Swal.fire({ icon: 'success', title: 'Cliente actualizado', timer: 1500, showConfirmButton: false });
+                toast.success('Cliente actualizado');
             } else {
                 await clientesService.create(formData);
-                Swal.fire({ icon: 'success', title: 'Cliente registrado', timer: 1500, showConfirmButton: false });
+                toast.success('Cliente registrado');
             }
             setShowModal(false);
             loadClientes();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al guardar' });
+            toast.error(error.response?.data?.error || 'Error al guardar');
         }
     }
 
     async function handleDelete(id, nombre) {
-        const result = await Swal.fire({
-            title: `¿Desactivar a ${nombre}?`,
-            text: 'El cliente no aparecerá en la lista pero sus datos se conservan',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, desactivar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#dc3545'
-        });
+        setDeleteTarget({ id, nombre });
+        setShowDeleteConfirm(true);
+    }
 
-        if (result.isConfirmed) {
-            try {
-                await clientesService.delete(id);
-                loadClientes();
-                Swal.fire({ icon: 'success', title: 'Cliente desactivado', timer: 1500, showConfirmButton: false });
-            } catch (error) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo desactivar' });
-            }
+    async function confirmDelete() {
+        if (!deleteTarget) return;
+        try {
+            await clientesService.delete(deleteTarget.id);
+            loadClientes();
+            toast.success('Cliente desactivado');
+        } catch (error) {
+            toast.error('No se pudo desactivar');
         }
+        setShowDeleteConfirm(false);
+        setDeleteTarget(null);
     }
 
     function sendWhatsApp(cliente) {
@@ -327,6 +326,18 @@ export default function ClientesPage() {
                 </div>,
                 document.body
             )}
+
+            <ConfirmModal
+                open={showDeleteConfirm}
+                title={`¿Desactivar a ${deleteTarget?.nombre}?`}
+                message="El cliente no aparecerá en la lista pero sus datos se conservan."
+                icon="🗑️"
+                confirmText="Sí, desactivar"
+                cancelText="Cancelar"
+                danger
+                onConfirm={confirmDelete}
+                onCancel={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
+            />
         </div>
     );
 }

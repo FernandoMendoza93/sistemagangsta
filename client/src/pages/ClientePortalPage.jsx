@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { citasService, loyaltyService } from '../services/api';
-import Swal from 'sweetalert2';
-import Icon from '../components/Icon';
-import { Calendar, CheckCircle, Gift, Star, Clock, User, X, PlusCircle, QrCode, MessageCircle } from 'lucide-react';
-import { Scanner } from '@yudiel/react-qr-scanner';
+import { citasService, clientesService } from '../services/api';
+import { toast } from 'sonner';
+import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy } from 'lucide-react';
+import QRCode from 'react-qr-code';
+import heroImg from '../assets/hero-bg.jpg';
 import './ClientePortalPage.css';
 
 export default function ClientePortalPage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [perfil, setPerfil] = useState(null);
+    const [wallet, setWallet] = useState(null);
     const [citas, setCitas] = useState([]);
     const [servicios, setServicios] = useState([]);
     const [barberos, setBarberos] = useState([]);
     const [showAgendarModal, setShowAgendarModal] = useState(false);
-    const [showScannerModal, setShowScannerModal] = useState(false);
     const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '1', fecha: '', hora: '', notas: '' });
     const [loading, setLoading] = useState(true);
     const [horasOcupadas, setHorasOcupadas] = useState([]);
@@ -24,16 +23,46 @@ export default function ClientePortalPage() {
 
     useEffect(() => {
         loadData();
+
+        // Setup SSE connection for real-time loyalty updates
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const baseUrl = import.meta.env.VITE_API_URL || '/api';
+        const sseUrl = `${baseUrl}/loyalty/stream?token=${token}`;
+
+        const source = new EventSource(sseUrl);
+
+        source.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'STAMP_ADDED') {
+                    toast.success('🎉 ' + data.message);
+                    loadData(); // Refresh wallet and UI instantly
+                }
+            } catch (err) {
+                console.error("Error parsing SSE data", err);
+            }
+        };
+
+        source.onerror = (error) => {
+            console.error("SSE connection error", error);
+            source.close();
+        };
+
+        return () => {
+            source.close();
+        };
     }, []);
 
     async function loadData() {
         try {
             setLoading(true);
-            const [perfilRes, citasRes] = await Promise.all([
-                citasService.getMiPerfil(),
+            const [walletRes, citasRes] = await Promise.all([
+                clientesService.getWalletStatus(),
                 citasService.getMisCitas()
             ]);
-            setPerfil(perfilRes.data);
+            setWallet(walletRes.data);
             setCitas(citasRes.data);
         } catch (error) {
             console.error('Error cargando datos:', error);
@@ -41,80 +70,6 @@ export default function ClientePortalPage() {
             setLoading(false);
         }
     }
-
-    // --- LÓGICA DEL ESCÁNER DE SELLOS ---
-    const handleStampClick = (index) => {
-        const puntos = perfil?.puntos_lealtad || 0;
-        const currentStamps = puntos % 10;
-
-        // Solo el siguiente sello vacío es clickeable
-        if (index === currentStamps) {
-            Swal.fire({
-                title: '¿Canjear visita actual?',
-                text: "Abre la cámara para escanear el código QR del barbero",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#c9a227',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, abrir cámara',
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    setShowScannerModal(true);
-                }
-            });
-        }
-    };
-
-    const handleScan = async (detectedCodes) => {
-        if (detectedCodes && detectedCodes.length > 0) {
-            const qrValue = detectedCodes[0].rawValue;
-            setShowScannerModal(false); // Cerrar cámara inmediatamente
-
-            // Extraer token de la URL si es que escaneó una ruta completa
-            const match = qrValue.match(/\/sello\/(.+)$/);
-            const tokenToClaim = match ? match[1] : qrValue;
-
-            Swal.fire({
-                title: 'Reclamando sello...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            try {
-                await loyaltyService.claim(tokenToClaim);
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Sello Reclamado! 🎉',
-                    text: 'Se ha agregado un punto a tu tarjeta',
-                    timer: 2500,
-                    showConfirmButton: false,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                loadData(); // Recargar el perfil para mostrar el nuevo sello
-            } catch (err) {
-                const data = err.response?.data;
-                let errorMsg = 'Error al reclamar sello';
-                if (data?.expired) errorMsg = 'Este QR ya expiró ⏰';
-                else if (data?.already_used) errorMsg = 'Este QR ya fue canjeado ✅';
-                else if (data?.error) errorMsg = data.error;
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'No se pudo canjear',
-                    text: errorMsg,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-            }
-        }
-    };
-    // ------------------------------------
 
     async function openAgendarModal() {
         try {
@@ -135,33 +90,21 @@ export default function ClientePortalPage() {
         e.preventDefault();
         try {
             await citasService.crear(citaForm);
-            Swal.fire({
-                icon: 'success',
-                title: '¡Cita agendada! 💈',
-                text: 'Te esperamos, no llegues tarde',
-                timer: 2500,
-                showConfirmButton: false
-            });
+            toast.success('¡Cita Agendada! Te esperamos');
             setShowAgendarModal(false);
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'No se pudo agendar' });
+            toast.error(error.response?.data?.error || 'No se pudo agendar');
         }
     }
+
     async function handleFechaChange(fecha) {
         if (!citaForm.id_servicio) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Selecciona un servicio',
-                text: 'Por favor, selecciona qué servicio deseas antes de elegir la fecha.',
-                confirmButtonColor: '#c9a227',
-                background: '#1a1a2e',
-                color: '#fff'
-            });
+            toast.warning('Por favor, selecciona un servicio antes de elegir la fecha.');
             return;
         }
 
-        setCitaForm({ ...citaForm, fecha, hora: '' }); // Limpia la hora si cambia de día
+        setCitaForm({ ...citaForm, fecha, hora: '' });
         if (!fecha) {
             setHorasOcupadas([]);
             setHorarioLaboral(null);
@@ -169,7 +112,6 @@ export default function ClientePortalPage() {
         }
 
         try {
-            // El id_barbero por defecto es 1 (Fernando Mendoza)
             const res = await citasService.getDisponibilidad(fecha, 1);
             setHorasOcupadas(res.data.ocupadas || []);
             setHorarioLaboral(res.data.horario || null);
@@ -185,36 +127,27 @@ export default function ClientePortalPage() {
         navigate('/mi-perfil');
     }
 
-    function openWhatsApp() {
-        const message = encodeURIComponent(
-            `¡Hola! Soy ${user?.nombre}, tengo una duda sobre mi cita en The Gangsta Barber Shop 💈`
-        );
-        // Número de la barbería (puedes configurar esto)
-        window.open(`https://wa.me/529511955349?text=${message}`, '_blank');
+    // --- Loyalty stamps calculations ---
+    const sellosActuales = wallet?.sellos_actuales || 0;
+    const maxStamps = wallet?.total_requerido || 10;
+    const remaining = maxStamps - sellosActuales;
+
+    function getNivelIcon() {
+        switch (wallet?.nivel?.toLowerCase()) {
+            case 'oro': return <Crown size={16} color="#FCD34D" />;
+            case 'plata': return <Trophy size={16} color="#E5E7EB" />;
+            default: return <Star size={16} color="#D97706" />;
+        }
     }
 
-    const puntos = perfil?.puntos_lealtad || 0;
-    const maxStamps = 10;
-    const currentStamps = puntos % maxStamps;
-    const completedCards = Math.floor(puntos / maxStamps);
-    const remaining = maxStamps - currentStamps;
-
-    function getMinDate() {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    }
-
-    // Generar próximos días disponibles (Viernes, Sábado, Domingo)
+    // Generar proximos dias disponibles (Viernes, Sabado, Domingo)
     function generarDiasDisponibles() {
         const dias = [];
         const hoy = new Date();
         let fechaActual = new Date(hoy);
 
-        while (dias.length < 12) { // Mostrar próximos 12 días laborales (~1 mes de agenda)
-            const numDia = fechaActual.getDay(); // 0=Dom, 1=Lun, ..., 5=Vie, 6=Sáb
+        while (dias.length < 12) {
+            const numDia = fechaActual.getDay();
             if (numDia === 0 || numDia === 5 || numDia === 6) {
                 const y = fechaActual.getFullYear();
                 const m = String(fechaActual.getMonth() + 1).padStart(2, '0');
@@ -236,19 +169,17 @@ export default function ClientePortalPage() {
 
     const diasDisponibles = generarDiasDisponibles();
 
-    // Funciones para Calendario Dinámico (Tetris)
+    // Funciones para Calendario Dinamico (Tetris)
     function generarSlots() {
         if (!citaForm.fecha || !citaForm.id_servicio || !horarioLaboral) return [];
 
         const servicio = servicios.find(s => s.id === parseInt(citaForm.id_servicio));
         if (!servicio) return [];
 
-        const duracionTotal = servicio.duracion_aprox + 15; // duración real en backend + 15 min colchón
-
+        const duracionTotal = servicio.duracion_aprox + 15;
         const slots = [];
         let [curH, curM] = horarioLaboral.apertura.split(':').map(Number);
         const [endH, endM] = horarioLaboral.cierre.split(':').map(Number);
-
         const endMinutesOfDay = endH * 60 + endM;
 
         while ((curH * 60 + curM) + duracionTotal <= endMinutesOfDay) {
@@ -256,15 +187,12 @@ export default function ClientePortalPage() {
             const slotEndMins = (curH * 60 + curM) + duracionTotal;
             const slotEndStr = `${String(Math.floor(slotEndMins / 60)).padStart(2, '0')}:${String(slotEndMins % 60).padStart(2, '0')}`;
 
-            // Comprobar solapamiento
             let solapa = false;
             let finSolapaMins = 0;
 
             for (const oc of horasOcupadas) {
-                // Solapamiento verdadero: A_inicio < B_fin y A_fin > B_inicio
                 if (slotStartStr < oc.fin && slotEndStr > oc.inicio) {
                     solapa = true;
-                    // Guardamos dónde termina la ocupación para saltar directo a esa hora
                     const [ocFinH, ocFinM] = oc.fin.split(':').map(Number);
                     finSolapaMins = (ocFinH * 60) + ocFinM;
                     break;
@@ -272,32 +200,14 @@ export default function ClientePortalPage() {
             }
 
             if (!solapa) {
-                // Si la hora está libre por completo, la registramos.
                 slots.push({ hora: slotStartStr, ocupado: false });
-
-                // Genera estéticamente bloques cada 45 minutos (como solicitó el usuario)
                 curM += 45;
-                if (curM >= 60) {
-                    curH += 1;
-                    curM -= 60;
-                }
+                if (curM >= 60) { curH += 1; curM -= 60; }
             } else {
-                // Registrar el bloque bloqueado visualmente
                 slots.push({ hora: slotStartStr, ocupado: true });
-
-                // --- LA MAGIA TETRIS ---
-                // Si chocamos con una cita, saltamos INMEDIATAMENTE al minuto en que termina.
-                // Redondeamos hacia arriba a los 5 minutos más cercanos por seguridad estética.
                 let nextMins = finSolapaMins;
-                if (nextMins % 5 !== 0) {
-                    nextMins = nextMins + (5 - (nextMins % 5));
-                }
-
-                // Evitar ciclos infinitos si la lógica falla
-                if (nextMins <= (curH * 60 + curM)) {
-                    nextMins = (curH * 60 + curM) + 45;
-                }
-
+                if (nextMins % 5 !== 0) nextMins = nextMins + (5 - (nextMins % 5));
+                if (nextMins <= (curH * 60 + curM)) nextMins = (curH * 60 + curM) + 45;
                 curH = Math.floor(nextMins / 60);
                 curM = nextMins % 60;
             }
@@ -322,7 +232,7 @@ export default function ClientePortalPage() {
             <div className="portal-header">
                 <div className="portal-header-top">
                     <div className="portal-brand">
-                        <Icon name="scissors" size={20} color="#FF5F40" />
+                        <Scissors size={20} color="#FF5F40" />
                         <span>The Gangsta</span>
                     </div>
                     <button className="portal-logout" onClick={handleLogout}>
@@ -331,49 +241,81 @@ export default function ClientePortalPage() {
                 </div>
                 <div className="portal-greeting">
                     <h1>Hola, {user?.nombre?.split(' ')[0]}</h1>
-                    <p>
-                        {remaining > 0
-                            ? `Estás a ${remaining} corte${remaining > 1 ? 's' : ''} de tu acceso VIP.`
-                            : '¡Tienes un corte VIP disponible!'
-                        }
-                    </p>
+                    <p>Estas a {remaining} cortes de tu acceso VIP.</p>
                 </div>
             </div>
 
-            {/* Hero Section (Welcome Fernando) */}
-            <div className="hero-section">
-                <div className="hero-overlay"></div>
-                <div className="hero-content">
-                    <h2>Fernando Mendoza</h2>
-                    <p>Arte, precisión y estilo en cada corte. Oaxaca de Juárez.</p>
+            {/* ========= WALLET CARD (Estilo Barbering/Woncards) ========= */}
+            <div className="wallet-card">
+                {/* Card Header */}
+                <div className="wallet-card-header">
+                    <div className="wallet-brand">
+                        <Scissors size={18} color="#fff" strokeWidth={1.5} />
+                        <span>The Gangsta</span>
+                    </div>
+                    <div className="wallet-nivel">
+                        {getNivelIcon()}
+                        <span>{wallet?.nivel || 'Bronce'}</span>
+                    </div>
+                </div>
+
+                {/* Hero Image */}
+                <div className="wallet-hero">
+                    <img src={heroImg} alt="The Gangsta Barber Shop" />
+                    <div className="wallet-hero-overlay"></div>
+                    <div className="wallet-hero-text">
+                        <h3>Fernando Mendoza</h3>
+                        <p>Oaxaca de Juarez</p>
+                    </div>
+                </div>
+
+                {/* QR Section */}
+                <div className="wallet-qr-section">
+                    <div className="wallet-qr-wrapper">
+                        {wallet?.qr_token ? (
+                            <QRCode
+                                value={wallet.qr_token}
+                                size={140}
+                                bgColor="#ffffff"
+                                fgColor="#1a1a2e"
+                                level="H"
+                            />
+                        ) : (
+                            <div className="wallet-qr-placeholder">Cargando...</div>
+                        )}
+                    </div>
+                    <p className="wallet-client-name">{wallet?.nombre || user?.nombre}</p>
+                    <p className="wallet-hint">Muestra este codigo al barbero al terminar tu servicio</p>
                 </div>
             </div>
 
-            {/* Loyalty Card (Clean Interface) */}
+            {/* Tarjeta de Lealtad — Stamps Grid */}
             <div className="loyalty-card">
                 <div className="loyalty-card-header">
                     <div className="header-title">
-                        <Star size={20} color="#FF5F40" />
-                        Mi Lealtad
+                        <Star size={20} color="#FF5F40" /> Mi Lealtad
                     </div>
-                    {completedCards > 0 && (
-                        <span className="loyalty-badge">{completedCards} Tarjeta{completedCards > 1 ? 's' : ''} Llenas</span>
+                    {wallet?.recompensa_disponible && (
+                        <span className="loyalty-badge">
+                            <Gift size={14} /> Premio
+                        </span>
                     )}
                 </div>
+
                 <div className="stamps-grid">
-                    {[...Array(maxStamps)].map((_, i) => {
-                        const isNextEmpty = i === currentStamps;
+                    {Array.from({ length: maxStamps }, (_, i) => {
+                        const isFilled = i < sellosActuales;
+                        const isNext = i === sellosActuales;
+                        const isGift = i === maxStamps - 1;
                         return (
                             <div
                                 key={i}
-                                className={`stamp-circle ${i < currentStamps ? 'filled' : ''} ${isNextEmpty ? 'next-stamp' : ''}`}
-                                onClick={() => isNextEmpty ? handleStampClick(i) : null}
-                                style={{ cursor: isNextEmpty ? 'pointer' : 'default' }}
+                                className={`stamp-circle ${isFilled ? 'filled' : ''} ${isNext ? 'next-stamp' : ''}`}
                             >
-                                {i < currentStamps ? (
-                                    <CheckCircle size={22} color="#FFFFFF" />
-                                ) : i === maxStamps - 1 ? (
-                                    <Gift size={22} color={isNextEmpty ? "#FF5F40" : "#9CA3AF"} />
+                                {isFilled ? (
+                                    <CheckCircle size={22} />
+                                ) : isGift ? (
+                                    <Gift size={18} />
                                 ) : (
                                     <span className="stamp-number">{i + 1}</span>
                                 )}
@@ -381,22 +323,19 @@ export default function ClientePortalPage() {
                         );
                     })}
                 </div>
+
                 <div className="loyalty-progress">
                     <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${(currentStamps / maxStamps) * 100}%` }}></div>
+                        <div
+                            className="progress-fill"
+                            style={{ width: `${(sellosActuales / maxStamps) * 100}%` }}
+                        ></div>
                     </div>
-                    <span className="progress-text">{currentStamps} / {maxStamps}</span>
+                    <span className="progress-text">{sellosActuales} / {maxStamps}</span>
                 </div>
-                {currentStamps === 0 && completedCards > 0 && (
-                    <div style={{ marginTop: '1rem' }}>
-                        <button className="btn-agendar-main" onClick={openWhatsApp} style={{ padding: '0.85rem' }}>
-                            <Gift size={18} /> Canjear Corte VIP
-                        </button>
-                    </div>
-                )}
             </div>
 
-            {/* Citas / Agenda Section - Listado tipo Event Cards */}
+            {/* Citas / Agenda Section */}
             <h2 className="section-title">
                 <Calendar size={20} color="#111827" /> Citas Agendadas
             </h2>
@@ -421,7 +360,7 @@ export default function ClientePortalPage() {
                             </div>
 
                             <div className="cita-servicio">
-                                <strong>{cita.nombre_servicio || 'Servicio de Barbería'}</strong>
+                                <strong>{cita.nombre_servicio || 'Servicio de Barberia'}</strong>
                             </div>
 
                             <div className="cita-barbero-notes">
@@ -429,14 +368,8 @@ export default function ClientePortalPage() {
                                     <Clock size={14} /> {cita.hora} hrs
                                     {cita.barbero_nombre && <><User size={14} style={{ marginLeft: '8px' }} /> {cita.barbero_nombre}</>}
                                 </span>
-                                {cita.notas && (
-                                    <span className="cita-notes" title={cita.notas}>
-                                        {cita.notas}
-                                    </span>
-                                )}
                             </div>
 
-                            {/* Botón de Contacto WhatsApp Integrado */}
                             <button
                                 className="btn-whatsapp-cita"
                                 onClick={() => {
@@ -454,9 +387,6 @@ export default function ClientePortalPage() {
 
             {/* Bottom Actions Floating Bar */}
             <div className="portal-actions">
-                <button className="btn-scan-main" onClick={() => setShowScannerModal(true)}>
-                    <QrCode size={20} /> Escanear QR
-                </button>
                 <button className="btn-agendar-main" onClick={openAgendarModal}>
                     <PlusCircle size={20} /> Agendar Cita
                 </button>
@@ -476,9 +406,8 @@ export default function ClientePortalPage() {
                             </button>
                         </div>
                         <form onSubmit={handleAgendarCita}>
-                            {/* Servicio y Barbero (Oculto u Opcional) */}
                             <div className="form-group">
-                                <label><Icon name="scissors" size={16} /> Servicio</label>
+                                <label><Scissors size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Servicio</label>
                                 <select
                                     className="form-control"
                                     value={citaForm.id_servicio}
@@ -495,7 +424,6 @@ export default function ClientePortalPage() {
                                 </select>
                             </div>
 
-                            {/* Fecha - Carrusel */}
                             <div className="form-group">
                                 <label><Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Fechas Disponibles</label>
                                 <div className="dias-carousel">
@@ -514,7 +442,6 @@ export default function ClientePortalPage() {
                                 </div>
                             </div>
 
-                            {/* Hora */}
                             <div className="form-group">
                                 <label><Clock size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Horarios Disponibles</label>
                                 {(!citaForm.fecha || !citaForm.id_servicio) ? (
@@ -523,29 +450,22 @@ export default function ClientePortalPage() {
                                     <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
                                 ) : (
                                     <div className="time-grid">
-                                        {horasDisponibles.length > 0 ? (
-                                            horasDisponibles.map(slot => (
-                                                <button
-                                                    key={slot.hora}
-                                                    type="button"
-                                                    className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
-                                                    onClick={() => !slot.ocupado && setCitaForm({ ...citaForm, hora: slot.hora })}
-                                                    disabled={slot.ocupado}
-                                                >
-                                                    <span className="time-text">{slot.hora}</span>
-                                                    {slot.ocupado && <span style={{ color: '#EF4444', fontSize: '0.72rem', display: 'block', marginTop: '2px', textDecoration: 'none' }}>Ocupado</span>}
-                                                </button>
-                                            ))
-                                        ) : (
-                                            <p style={{ color: '#EF4444', gridColumn: '1 / -1', fontSize: '0.9rem' }}>
-                                                No hay espacios disponibles para este servicio hoy.
-                                            </p>
-                                        )}
+                                        {horasDisponibles.map(slot => (
+                                            <button
+                                                key={slot.hora}
+                                                type="button"
+                                                className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
+                                                onClick={() => !slot.ocupado && setCitaForm({ ...citaForm, hora: slot.hora })}
+                                                disabled={slot.ocupado}
+                                            >
+                                                <span className="time-text">{slot.hora}</span>
+                                                {slot.ocupado && <span style={{ color: '#EF4444', fontSize: '0.72rem', display: 'block', marginTop: '2px' }}>Ocupado</span>}
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Notas */}
                             <div className="form-group">
                                 <label><Star size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Notas al barbero (Opcional)</label>
                                 <input
@@ -566,29 +486,6 @@ export default function ClientePortalPage() {
                                 Confirmar Cita
                             </button>
                         </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Scanner QR */}
-            {showScannerModal && (
-                <div className="modal-overlay" onClick={() => setShowScannerModal(false)}>
-                    <div className="modal-content bottom-sheet" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2><QrCode size={22} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Escanear Código QR</h2>
-                            <button className="close-btn" onClick={() => setShowScannerModal(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="scanner-container">
-                            <Scanner
-                                onScan={handleScan}
-                                formats={['qr_code']}
-                            />
-                        </div>
-                        <p style={{ textAlign: 'center', marginTop: '1rem', color: '#6B7280', fontSize: '0.9rem' }}>
-                            Apunta la cámara al código QR proporcionado por tu barbero al finalizar tu corte.
-                        </p>
                     </div>
                 </div>
             )}

@@ -1,23 +1,23 @@
 import express from 'express';
 import * as XLSX from 'xlsx';
-import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
+import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/reportes/ventas
-router.get('/ventas', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+// GET /api/reportes/ventas — filtrado por tenant
+router.get('/ventas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { desde, hasta } = req.query;
 
         let query = `
-      SELECT date(v.fecha) as fecha, COUNT(*) as total_ventas,
-             SUM(v.total_venta) as ingresos,
-             SUM(CASE WHEN v.metodo_pago = 'Efectivo' THEN v.total_venta ELSE 0 END) as efectivo,
-             SUM(CASE WHEN v.metodo_pago = 'Tarjeta' THEN v.total_venta ELSE 0 END) as tarjeta
-      FROM ventas_cabecera v WHERE v.estado = 'completada'
-    `;
-        const params = [];
+            SELECT date(v.fecha) as fecha, COUNT(*) as total_ventas,
+                   SUM(v.total_venta) as ingresos,
+                   SUM(CASE WHEN v.metodo_pago = 'Efectivo' THEN v.total_venta ELSE 0 END) as efectivo,
+                   SUM(CASE WHEN v.metodo_pago = 'Tarjeta' THEN v.total_venta ELSE 0 END) as tarjeta
+            FROM ventas_cabecera v WHERE v.estado = 'completada' AND v.barberia_id = ?
+        `;
+        const params = [req.barberia_id];
         if (desde) { query += ' AND date(v.fecha) >= ?'; params.push(desde); }
         if (hasta) { query += ' AND date(v.fecha) <= ?'; params.push(hasta); }
         query += ' GROUP BY date(v.fecha) ORDER BY fecha DESC';
@@ -29,21 +29,21 @@ router.get('/ventas', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (r
     }
 });
 
-// GET /api/reportes/comisiones
-router.get('/comisiones', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+// GET /api/reportes/comisiones — filtrado por tenant
+router.get('/comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { desde, hasta } = req.query;
 
         let query = `
-      SELECT u.nombre as barbero, COUNT(cp.id) as servicios,
-             SUM(cp.monto) as total_comision,
-             SUM(CASE WHEN cp.pagado = 0 THEN cp.monto ELSE 0 END) as pendiente
-      FROM comisiones_pendientes cp
-      JOIN barberos b ON cp.id_barbero = b.id
-      JOIN usuarios u ON b.id_usuario = u.id WHERE 1=1
-    `;
-        const params = [];
+            SELECT u.nombre as barbero, COUNT(cp.id) as servicios,
+                   SUM(cp.monto) as total_comision,
+                   SUM(CASE WHEN cp.pagado = 0 THEN cp.monto ELSE 0 END) as pendiente
+            FROM comisiones_pendientes cp
+            JOIN barberos b ON cp.id_barbero = b.id
+            JOIN usuarios u ON b.id_usuario = u.id WHERE cp.barberia_id = ?
+        `;
+        const params = [req.barberia_id];
         if (desde) { query += ' AND date(cp.fecha) >= ?'; params.push(desde); }
         if (hasta) { query += ' AND date(cp.fecha) <= ?'; params.push(hasta); }
         query += ' GROUP BY b.id ORDER BY total_comision DESC';
@@ -55,20 +55,21 @@ router.get('/comisiones', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO)
     }
 });
 
-// GET /api/reportes/servicios
-router.get('/servicios', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+// GET /api/reportes/servicios — filtrado por tenant
+router.get('/servicios', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { desde, hasta } = req.query;
 
         let query = `
-      SELECT s.nombre_servicio, COUNT(vd.id) as cantidad,
-             SUM(vd.subtotal) as ingresos
-      FROM ventas_detalle vd
-      JOIN servicios s ON vd.id_servicio = s.id
-      JOIN ventas_cabecera v ON vd.id_venta_cabecera = v.id WHERE v.estado = 'completada' AND vd.id_servicio IS NOT NULL
-    `;
-        const params = [];
+            SELECT s.nombre_servicio, COUNT(vd.id) as cantidad,
+                   SUM(vd.subtotal) as ingresos
+            FROM ventas_detalle vd
+            JOIN servicios s ON vd.id_servicio = s.id
+            JOIN ventas_cabecera v ON vd.id_venta_cabecera = v.id 
+            WHERE v.estado = 'completada' AND vd.id_servicio IS NOT NULL AND v.barberia_id = ?
+        `;
+        const params = [req.barberia_id];
         if (desde) { query += ' AND date(v.fecha) >= ?'; params.push(desde); }
         if (hasta) { query += ' AND date(v.fecha) <= ?'; params.push(hasta); }
         query += ' GROUP BY s.id ORDER BY cantidad DESC';
@@ -80,37 +81,33 @@ router.get('/servicios', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO),
     }
 });
 
-// GET /api/reportes/excel
-router.get('/excel', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+// GET /api/reportes/excel — filtrado por tenant
+router.get('/excel', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { desde, hasta } = req.query;
 
-        // Ventas
         let ventasQuery = `SELECT v.id, v.fecha, u.nombre as barbero, v.total_venta, v.metodo_pago
-      FROM ventas_cabecera v LEFT JOIN barberos b ON v.id_barbero = b.id
-      LEFT JOIN usuarios u ON b.id_usuario = u.id WHERE v.estado = 'completada'`;
-        const params = [];
+            FROM ventas_cabecera v LEFT JOIN barberos b ON v.id_barbero = b.id
+            LEFT JOIN usuarios u ON b.id_usuario = u.id WHERE v.estado = 'completada' AND v.barberia_id = ?`;
+        const params = [req.barberia_id];
         if (desde) { ventasQuery += ' AND date(v.fecha) >= ?'; params.push(desde); }
         if (hasta) { ventasQuery += ' AND date(v.fecha) <= ?'; params.push(hasta); }
         const ventas = db.prepare(ventasQuery).all(...params);
 
-        // Comisiones
         const comisiones = db.prepare(`
-      SELECT u.nombre as barbero, SUM(cp.monto) as total,
-             SUM(CASE WHEN cp.pagado = 0 THEN cp.monto ELSE 0 END) as pendiente
-      FROM comisiones_pendientes cp
-      JOIN barberos b ON cp.id_barbero = b.id
-      JOIN usuarios u ON b.id_usuario = u.id GROUP BY b.id
-    `).all();
+            SELECT u.nombre as barbero, SUM(cp.monto) as total,
+                   SUM(CASE WHEN cp.pagado = 0 THEN cp.monto ELSE 0 END) as pendiente
+            FROM comisiones_pendientes cp
+            JOIN barberos b ON cp.id_barbero = b.id
+            JOIN usuarios u ON b.id_usuario = u.id WHERE cp.barberia_id = ? GROUP BY b.id
+        `).all(req.barberia_id);
 
-        // Inventario
         const inventario = db.prepare(`
-      SELECT p.nombre, p.stock_actual, p.stock_minimo, p.precio_costo, p.precio_venta, c.nombre as categoria
-      FROM productos p LEFT JOIN categorias c ON p.id_categoria = c.id WHERE p.activo = 1
-    `).all();
+            SELECT p.nombre, p.stock_actual, p.stock_minimo, p.precio_costo, p.precio_venta, c.nombre as categoria
+            FROM productos p LEFT JOIN categorias c ON p.id_categoria = c.id WHERE p.activo = 1 AND p.barberia_id = ?
+        `).all(req.barberia_id);
 
-        // Crear workbook
         const wb = XLSX.utils.book_new();
 
         const wsVentas = XLSX.utils.json_to_sheet(ventas);

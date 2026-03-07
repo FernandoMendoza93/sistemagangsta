@@ -1,21 +1,22 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
+import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/usuarios - Listar todos los usuarios (Solo Admin)
-router.get('/', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
+// GET /api/usuarios - Listar usuarios del tenant (Solo Admin)
+router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), (req, res) => {
     try {
         const db = req.app.locals.db;
 
         const usuarios = db.prepare(`
-      SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
-             r.nombre_rol as rol, u.id_rol
-      FROM usuarios u
-      JOIN roles r ON u.id_rol = r.id
-      ORDER BY u.id
-    `).all();
+            SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
+                   r.nombre_rol as rol, u.id_rol
+            FROM usuarios u
+            JOIN roles r ON u.id_rol = r.id
+            WHERE u.barberia_id = ?
+            ORDER BY u.id
+        `).all(req.barberia_id);
 
         res.json(usuarios);
     } catch (error) {
@@ -24,19 +25,19 @@ router.get('/', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
     }
 });
 
-// GET /api/usuarios/:id - Obtener usuario por ID
-router.get('/:id', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+// GET /api/usuarios/:id - Obtener usuario por ID (verificado por tenant)
+router.get('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
 
         const usuario = db.prepare(`
-      SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
-             r.nombre_rol as rol, r.id as id_rol
-      FROM usuarios u
-      JOIN roles r ON u.id_rol = r.id
-      WHERE u.id = ?
-    `).get(id);
+            SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
+                   r.nombre_rol as rol, r.id as id_rol
+            FROM usuarios u
+            JOIN roles r ON u.id_rol = r.id
+            WHERE u.id = ? AND u.barberia_id = ?
+        `).get(id, req.barberia_id);
 
         if (!usuario) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -49,27 +50,26 @@ router.get('/:id', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req,
     }
 });
 
-// PUT /api/usuarios/:id - Actualizar usuario (Solo Admin)
-router.put('/:id', verifyToken, requireRole(ROLES.ADMIN), async (req, res) => {
+// PUT /api/usuarios/:id - Actualizar usuario (Solo Admin, verificado por tenant)
+router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
         const { nombre, email, id_rol, activo, password } = req.body;
 
-        // Si se envió password, hashearla y actualizarla
         if (password && password.trim()) {
             const passwordHash = await bcrypt.hash(password, 10);
-            db.prepare('UPDATE usuarios SET password_hash = ? WHERE id = ?').run(passwordHash, id);
+            db.prepare('UPDATE usuarios SET password_hash = ? WHERE id = ? AND barberia_id = ?').run(passwordHash, id, req.barberia_id);
         }
 
         db.prepare(`
-      UPDATE usuarios 
-      SET nombre = COALESCE(?, nombre),
-          email = COALESCE(?, email),
-          id_rol = COALESCE(?, id_rol),
-          activo = COALESCE(?, activo)
-      WHERE id = ?
-    `).run(nombre, email, id_rol, activo, id);
+            UPDATE usuarios 
+            SET nombre = COALESCE(?, nombre),
+                email = COALESCE(?, email),
+                id_rol = COALESCE(?, id_rol),
+                activo = COALESCE(?, activo)
+            WHERE id = ? AND barberia_id = ?
+        `).run(nombre, email, id_rol, activo, id, req.barberia_id);
 
         res.json({ message: 'Usuario actualizado' });
     } catch (error) {
@@ -79,13 +79,12 @@ router.put('/:id', verifyToken, requireRole(ROLES.ADMIN), async (req, res) => {
 });
 
 // DELETE /api/usuarios/:id - Desactivar usuario (Solo Admin)
-router.delete('/:id', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
+router.delete('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
 
-        // No eliminamos, solo desactivamos
-        db.prepare('UPDATE usuarios SET activo = 0 WHERE id = ?').run(id);
+        db.prepare('UPDATE usuarios SET activo = 0 WHERE id = ? AND barberia_id = ?').run(id, req.barberia_id);
 
         res.json({ message: 'Usuario desactivado' });
     } catch (error) {
@@ -94,11 +93,12 @@ router.delete('/:id', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
     }
 });
 
-// GET /api/usuarios/roles/all - Listar roles disponibles
+// GET /api/usuarios/roles/all - Listar roles disponibles (shared, no tenant filter)
 router.get('/roles/all', verifyToken, (req, res) => {
     try {
         const db = req.app.locals.db;
-        const roles = db.prepare('SELECT * FROM roles').all();
+        // Roles son globales — excluir SuperAdmin de la lista para admins normales
+        const roles = db.prepare("SELECT * FROM roles WHERE nombre_rol != 'SuperAdmin'").all();
         res.json(roles);
     } catch (error) {
         console.error('Error listando roles:', error);

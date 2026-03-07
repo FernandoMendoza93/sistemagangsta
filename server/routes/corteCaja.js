@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
+import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
 import { CorteCajaRepository } from '../repositories/CorteCajaRepository.js';
 import { GastosRepository } from '../repositories/GastosRepository.js';
 import { EntradasEfectivoRepository } from '../repositories/EntradasEfectivoRepository.js';
@@ -7,13 +7,13 @@ import { ExcelAdapter } from '../patterns/ExcelAdapter.js';
 
 const router = express.Router();
 
-// GET /api/corte-caja/actual
-router.get('/actual', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+// GET /api/corte-caja/actual — filtrado por tenant
+router.get('/actual', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const corteRepo = new CorteCajaRepository(dbQuery);
-        const gastosRepo = new GastosRepository(dbQuery);
-        const entradasRepo = new EntradasEfectivoRepository(dbQuery);
+        const corteRepo = new CorteCajaRepository(dbQuery, req.barberia_id);
+        const gastosRepo = new GastosRepository(dbQuery, req.barberia_id);
+        const entradasRepo = new EntradasEfectivoRepository(dbQuery, req.barberia_id);
 
         const corte = await corteRepo.findOpen();
 
@@ -40,27 +40,22 @@ router.get('/actual', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), as
 });
 
 // GET /api/corte-caja/desglose - Obtener desglose completo
-router.get('/desglose', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+router.get('/desglose', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const corteRepo = new CorteCajaRepository(dbQuery);
-        const gastosRepo = new GastosRepository(dbQuery);
-        const entradasRepo = new EntradasEfectivoRepository(dbQuery);
+        const corteRepo = new CorteCajaRepository(dbQuery, req.barberia_id);
+        const gastosRepo = new GastosRepository(dbQuery, req.barberia_id);
+        const entradasRepo = new EntradasEfectivoRepository(dbQuery, req.barberia_id);
 
         const corte = await corteRepo.findOpen();
         if (!corte) return res.status(400).json({ error: 'No hay corte abierto' });
 
-        // Desglose por método de pago
         const ventasPorMetodo = await corteRepo.getDesglosePorMetodoPago(corte.fecha_apertura);
-
-        // Rentabilidad por departamento
         const rentabilidad = await corteRepo.getRentabilidadPorDepartamento(corte.fecha_apertura);
 
-        // Movimientos de efectivo
         const gastosList = await gastosRepo.getByDateRange(corte.fecha_apertura, new Date().toISOString());
         const entradasList = await entradasRepo.getByDateRange(corte.fecha_apertura, new Date().toISOString());
 
-        // Calcular totales
         const totalVentas = ventasPorMetodo.reduce((sum, m) => sum + m.total, 0);
         const totalGanancias =
             rentabilidad.servicios.reduce((sum, s) => sum + s.ganancia, 0) +
@@ -101,10 +96,10 @@ router.get('/desglose', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), 
 });
 
 // POST /api/corte-caja/abrir
-router.post('/abrir', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+router.post('/abrir', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const corteRepo = new CorteCajaRepository(dbQuery);
+        const corteRepo = new CorteCajaRepository(dbQuery, req.barberia_id);
 
         const corteAbierto = await corteRepo.findOpen();
         if (corteAbierto) return res.status(400).json({ error: 'Ya existe un corte abierto' });
@@ -128,12 +123,12 @@ router.post('/abrir', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), as
 });
 
 // POST /api/corte-caja/cerrar
-router.post('/cerrar', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const corteRepo = new CorteCajaRepository(dbQuery);
-        const gastosRepo = new GastosRepository(dbQuery);
-        const entradasRepo = new EntradasEfectivoRepository(dbQuery);
+        const corteRepo = new CorteCajaRepository(dbQuery, req.barberia_id);
+        const gastosRepo = new GastosRepository(dbQuery, req.barberia_id);
+        const entradasRepo = new EntradasEfectivoRepository(dbQuery, req.barberia_id);
 
         const { monto_real_fisico, notas } = req.body;
         if (monto_real_fisico === undefined) return res.status(400).json({ error: 'Monto requerido' });
@@ -141,14 +136,12 @@ router.post('/cerrar', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), a
         const corte = await corteRepo.findOpen();
         if (!corte) return res.status(400).json({ error: 'No hay corte abierto' });
 
-        // Calcular todos los montos
         const ingresosEfectivo = await corteRepo.getIngresosEfectivo(corte.fecha_apertura);
         const gastos = await gastosRepo.getTotalSince(corte.fecha_apertura);
         const entradas = await entradasRepo.getTotalSince(corte.fecha_apertura);
         const abonos = await corteRepo.getAbonosEfectivo(corte.fecha_apertura);
         const devoluciones = await corteRepo.getDevolucionesEfectivo(corte.fecha_apertura);
 
-        // Calcular ventas y ganancias totales
         const ventasPorMetodo = await corteRepo.getDesglosePorMetodoPago(corte.fecha_apertura);
         const totalVentas = ventasPorMetodo.reduce((sum, m) => sum + m.total, 0);
 
@@ -160,10 +153,8 @@ router.post('/cerrar', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), a
         const esperado = corte.monto_inicial + ingresosEfectivo + entradas - gastos;
         const diferencia = monto_real_fisico - esperado;
 
-        // Asociar entradas sin corte
         await entradasRepo.asociarACorte(corte.fecha_apertura, corte.id);
 
-        // Actualizar con todos los datos
         await corteRepo.updateWithTotals(corte.id, {
             ingresos: ingresosEfectivo,
             montoReal: monto_real_fisico,
@@ -201,10 +192,10 @@ router.post('/cerrar', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), a
 });
 
 // GET /api/corte-caja/historial
-router.get('/historial', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+router.get('/historial', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const corteRepo = new CorteCajaRepository(dbQuery);
+        const corteRepo = new CorteCajaRepository(dbQuery, req.barberia_id);
         const cortes = await corteRepo.getHistory();
         res.json(cortes);
     } catch (error) {
@@ -214,10 +205,10 @@ router.get('/historial', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO),
 });
 
 // POST /api/corte-caja/gastos
-router.post('/gastos', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+router.post('/gastos', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const gastosRepo = new GastosRepository(dbQuery);
+        const gastosRepo = new GastosRepository(dbQuery, req.barberia_id);
 
         const { monto, descripcion } = req.body;
         if (!monto || !descripcion) return res.status(400).json({ error: 'Monto y descripción requeridos' });
@@ -231,10 +222,10 @@ router.post('/gastos', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), a
 });
 
 // POST /api/corte-caja/entradas
-router.post('/entradas', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+router.post('/entradas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const entradasRepo = new EntradasEfectivoRepository(dbQuery);
+        const entradasRepo = new EntradasEfectivoRepository(dbQuery, req.barberia_id);
 
         const { monto, descripcion } = req.body;
         if (!monto || !descripcion) return res.status(400).json({ error: 'Monto y descripción requeridos' });
@@ -248,10 +239,10 @@ router.post('/entradas', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO),
 });
 
 // GET /api/corte-caja/exportar
-router.get('/exportar', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+router.get('/exportar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const corteRepo = new CorteCajaRepository(dbQuery);
+        const corteRepo = new CorteCajaRepository(dbQuery, req.barberia_id);
 
         const data = await corteRepo.getHistory(100);
 
@@ -268,4 +259,3 @@ router.get('/exportar', verifyToken, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), 
 });
 
 export default router;
-

@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { verifyToken } from '../middleware/auth.js';
+import crypto from 'crypto';
+import { verifyToken, requireTenant, requireRole, ROLES } from '../middleware/auth.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
@@ -12,106 +13,148 @@ dayjs.tz.setDefault("America/Mexico_City");
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'mi_secreto_super_seguro_2024';
 
-// POST /api/loyalty/claim — Cliente reclama su sello
-router.post('/claim', verifyToken, async (req, res) => {
+// SSE Clients Registry (key: cliente_id, value: response object)
+const sseClients = new Map();
+
+// Helper to notify a specific client via SSE
+function notifyClient(clienteId, eventData) {
+    const clientRes = sseClients.get(clienteId);
+    if (clientRes) {
+        clientRes.write(`data: ${JSON.stringify(eventData)}\n\n`);
+    }
+}
+
+// GET /api/loyalty/stream — SSE endpoint for real-time updates on client portal
+router.get('/stream', verifyToken, (req, res) => {
+    // Only logged-in clients should connect to this stream
+    if (req.user.rol !== 'Cliente') {
+        return res.status(403).json({ error: 'Solo clientes permitidos' });
+    }
+
+    const clienteId = req.user.id;
+
+    // Set headers for Server-Sent Events
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    // Add to registry
+    sseClients.set(clienteId, res);
+    console.log(`📡 SSE: Cliente ${clienteId} conectado al stream de lealtad.`);
+
+    // Keep connection alive with periodic pings
+    const pingInterval = setInterval(() => {
+        res.write(': ping\n\n');
+    }, 30000);
+
+    // Cleanup on disconnect
+    req.on('close', () => {
+        console.log(`📡 SSE: Cliente ${clienteId} desconectado.`);
+        clearInterval(pingInterval);
+        sseClients.delete(clienteId);
+    });
+});
+
+// POST /api/loyalty/scan — Instant scan and stamp (Staff only)
+router.post('/scan', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
     try {
-        const { token } = req.body;
         const db = req.app.locals.db;
-        const dbQuery = req.app.locals.dbQuery;
+        const { token } = req.body;
 
-        if (!token) {
-            return res.status(400).json({ error: 'Token requerido' });
-        }
+        if (!token) return res.status(400).json({ error: 'Token requerido' });
 
-        // El usuario debe ser un cliente
-        if (req.user.rol !== 'Cliente') {
-            return res.status(403).json({ error: 'Solo clientes pueden reclamar sellos' });
-        }
-
-        // Asegurar que la tabla existe
-        db.exec(`
-            CREATE TABLE IF NOT EXISTS loyalty_tokens (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                venta_id INTEGER NOT NULL UNIQUE,
-                id_cliente INTEGER,
-                usado INTEGER DEFAULT 0,
-                fecha_uso TEXT,
-                FOREIGN KEY (id_cliente) REFERENCES clientes(id)
-            );
-        `);
-
-        // Verificar firma y expiración del JWT
-        let decoded;
+        // Decode the QR token (Format expected: FLOW-{barberia_id}-{cliente_id} base64 encoded)
+        let decodedDecrypted;
         try {
-            decoded = jwt.verify(token, JWT_SECRET);
-        } catch (err) {
-            if (err.name === 'TokenExpiredError') {
-                return res.status(410).json({ error: 'Este QR ya expiró ⏰', expired: true });
-            }
-            return res.status(400).json({ error: 'QR inválido' });
+            decodedDecrypted = Buffer.from(token, 'base64').toString('ascii');
+        } catch (e) {
+            return res.status(400).json({ error: 'Formato QR no reconocido' });
         }
 
-        // Verificar que sea un token de loyalty
-        if (decoded.tipo !== 'loyalty_stamp') {
-            return res.status(400).json({ error: 'QR inválido' });
+        const parts = decodedDecrypted.split('-');
+        if (parts.length !== 3 || parts[0] !== 'FLOW') {
+            return res.status(400).json({ error: 'Formato QR no reconocido' });
         }
 
-        const ventaId = decoded.venta_id;
+        const tokenBarberiaId = parseInt(parts[1]);
+        const clienteId = parseInt(parts[2]);
 
-        // Verificar que la venta exista
-        const venta = await dbQuery.get('SELECT id FROM ventas_cabecera WHERE id = ?', [ventaId]);
-        if (!venta) {
-            return res.status(404).json({ error: 'Venta no encontrada' });
+        // Security: Ensure token belongs to this barbershop
+        if (tokenBarberiaId !== req.barberia_id) {
+            return res.status(403).json({ error: 'Código no válido para este establecimiento' });
         }
 
-        // Verificar si ya fue usado
-        const tokenRecord = await dbQuery.get('SELECT * FROM loyalty_tokens WHERE venta_id = ?', [ventaId]);
-        if (tokenRecord && tokenRecord.usado) {
-            return res.status(409).json({ error: 'Este QR ya fue canjeado ✅', already_used: true });
-        }
-
+        const mxDate = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
         const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
 
-        // Registrar el uso del token
-        if (tokenRecord) {
-            await dbQuery.run(`
-                UPDATE loyalty_tokens SET usado = 1, id_cliente = ?, fecha_uso = ?
-                WHERE venta_id = ?
-            `, [req.user.id, mxDateTime, ventaId]);
-        } else {
-            await dbQuery.run(`
-                INSERT INTO loyalty_tokens (venta_id, id_cliente, usado, fecha_uso)
-                VALUES (?, ?, 1, ?)
-            `, [ventaId, req.user.id, mxDateTime]);
+        // Verify client exists and belongs to this barbershop
+        const cliente = db.prepare('SELECT id, nombre, telefono, puntos_lealtad FROM clientes WHERE id = ? AND barberia_id = ? AND activo = 1').get(clienteId, req.barberia_id);
+
+        if (!cliente) {
+            return res.status(404).json({ error: 'Cliente no encontrado' });
         }
 
-        // Sumar punto de lealtad
-        await dbQuery.run(`
-            UPDATE clientes 
-            SET puntos_lealtad = puntos_lealtad + 1,
-                ultima_visita = ?
-            WHERE id = ?
-        `, [mxDateTime, req.user.id]);
+        // Anti-spam info: Check if client was already scanned today in visitas_lealtad
+        const yaSelladoHoy = db.prepare(`
+            SELECT id FROM visitas_lealtad
+            WHERE id_cliente = ? AND barberia_id = ? AND date(fecha) = ?
+        `).get(clienteId, req.barberia_id, mxDate);
 
-        // Confirmar la venta (estado pendiente → completada)
-        await dbQuery.run(`
-            UPDATE ventas_cabecera SET estado = 'completada' WHERE id = ? AND estado = 'pendiente'
-        `, [ventaId]);
+        let actionMessage = '';
+        let pointsAdded = false;
 
-        // Obtener puntos actualizados
-        const cliente = await dbQuery.get('SELECT puntos_lealtad FROM clientes WHERE id = ?', [req.user.id]);
+        if (yaSelladoHoy) {
+            actionMessage = 'Sello ya agregado hoy';
+        } else {
+            // 1. Audit Log in visitas_lealtad (This is the ONLY source of truth now)
+            db.prepare(`
+                INSERT INTO visitas_lealtad (id_cliente, barberia_id, id_barbero, fecha)
+                VALUES (?, ?, ?, ?)
+            `).run(clienteId, req.barberia_id, req.user.id, mxDateTime);
 
-        console.log(`✅ Sello reclamado: cliente ${req.user.nombre} — ahora tiene ${cliente.puntos_lealtad} puntos — venta #${ventaId} confirmada`);
+            // 2. Update client last visit (but NOT puntos_lealtad, as it's dynamic now)
+            db.prepare(`
+                UPDATE clientes SET ultima_visita = ? WHERE id = ? AND barberia_id = ?
+            `).run(mxDateTime, clienteId, req.barberia_id);
+
+            actionMessage = '¡Sello agregado hoy ✓!';
+            pointsAdded = true;
+
+            // Notify client portal in real-time
+            notifyClient(clienteId, { type: 'STAMP_ADDED', message: '¡Has recibido un nuevo sello!', timestamp: mxDateTime });
+        }
+
+        // Get final points status dynamically (last 120 days)
+        const sellosQuery = db.prepare(`
+            SELECT COUNT(*) as totales 
+            FROM visitas_lealtad 
+            WHERE id_cliente = ? AND barberia_id = ? 
+              AND date(fecha) >= date('now', '-120 days')
+        `).get(clienteId, req.barberia_id);
+
+        const sellos_actuales = sellosQuery.totales % 10;
+        const recompensa_disponible = sellosQuery.totales > 0 && sellos_actuales === 0;
 
         res.json({
-            message: '¡Sello reclamado! 💈',
-            puntos: cliente.puntos_lealtad,
-            puntos_para_regalo: 10 - (cliente.puntos_lealtad % 10)
+            success: true,
+            action: pointsAdded ? 'ADDED' : 'ALREADY_ADDED',
+            message: actionMessage,
+            cliente: {
+                id: cliente.id,
+                nombre: cliente.nombre,
+                telefono: cliente.telefono
+            },
+            lealtad: {
+                sellos_actuales,
+                totales_historico: sellosQuery.totales,
+                recompensa_disponible
+            }
         });
 
     } catch (error) {
-        console.error('❌ Error reclamando sello:', error);
-        res.status(500).json({ error: 'Error en el servidor' });
+        console.error('Error en escaneo de lealtad:', error);
+        res.status(500).json({ error: 'Error en el servidor al procesar QR' });
     }
 });
 

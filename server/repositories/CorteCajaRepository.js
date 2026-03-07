@@ -7,8 +7,9 @@ dayjs.extend(timezone);
 dayjs.tz.setDefault("America/Mexico_City");
 
 export class CorteCajaRepository {
-    constructor(dbQuery) {
+    constructor(dbQuery, barberiaId) {
         this.dbQuery = dbQuery;
+        this.barberiaId = barberiaId;
     }
 
     async findOpen() {
@@ -16,131 +17,12 @@ export class CorteCajaRepository {
             SELECT cc.*, u.nombre as encargado 
             FROM cortes_caja cc
             JOIN usuarios u ON cc.id_encargado = u.id
-            WHERE cc.fecha_cierre IS NULL 
+            WHERE cc.fecha_cierre IS NULL AND cc.barberia_id = ?
             ORDER BY cc.fecha_apertura DESC 
             LIMIT 1
-        `);
+        `, [this.barberiaId]);
     }
 
-    async create(montoInicial, idEncargado) {
-        return await this.dbQuery.run('INSERT INTO cortes_caja (monto_inicial, id_encargado) VALUES (?, ?)', [montoInicial, idEncargado]);
-    }
-
-    async update(id, { ingresos, montoReal, diferencia, notas }) {
-        const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
-
-        return await this.dbQuery.run(`
-            UPDATE cortes_caja 
-            SET fecha_cierre = ?, 
-                ingresos_calculados = ?, 
-                monto_real_fisico = ?, 
-                diferencia = ?, 
-                notas = ? 
-            WHERE id = ?
-        `, [mxDateTime, ingresos, montoReal, diferencia, notas, id]);
-    }
-
-    async getHistory(limit = 30) {
-        return await this.dbQuery.all(`
-            SELECT cc.*, u.nombre as encargado 
-            FROM cortes_caja cc
-            JOIN usuarios u ON cc.id_encargado = u.id
-            WHERE cc.fecha_cierre IS NOT NULL 
-            ORDER BY cc.fecha_apertura DESC 
-            LIMIT ?
-        `, [limit]);
-    }
-
-    async getIngresosEfectivo(fechaApertura) {
-        const result = await this.dbQuery.get(`
-            SELECT COALESCE(SUM(CASE WHEN metodo_pago = 'Efectivo' THEN total_venta ELSE 0 END), 0) as efectivo
-            FROM ventas_cabecera 
-            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada'
-        `, [fechaApertura]);
-        return result?.efectivo || 0;
-    }
-
-    async marcarVentasCerradas(fechaApertura) {
-        return await this.dbQuery.run(`
-            UPDATE ventas_cabecera 
-            SET estado_corte_caja = 1 
-            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada'
-        `, [fechaApertura]);
-    }
-
-    /**
-     * Obtener desglose de ventas por método de pago
-     */
-    async getDesglosePorMetodoPago(fechaApertura) {
-        return await this.dbQuery.all(`
-            SELECT 
-                metodo_pago,
-                COUNT(*) as cantidad_transacciones,
-                COALESCE(SUM(total_venta), 0) as total
-            FROM ventas_cabecera 
-            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada'
-            GROUP BY metodo_pago
-        `, [fechaApertura]);
-    }
-
-    /**
-     * Obtener rentabilidad por departamento (Servicios vs Productos)
-     * Calcula total de ventas y ganancia (precio_venta - costo)
-     */
-    async getRentabilidadPorDepartamento(fechaApertura) {
-        // Servicios
-        const servicios = await this.dbQuery.all(`
-            SELECT 
-                'Servicios' as departamento,
-                s.nombre_servicio as nombre,
-                COUNT(vd.id) as cantidad,
-                COALESCE(SUM(vd.subtotal), 0) as total_ventas,
-                COALESCE(SUM(vd.subtotal), 0) as ganancia
-            FROM ventas_detalle vd
-            JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
-            LEFT JOIN servicios s ON vd.id_servicio = s.id
-            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_servicio IS NOT NULL
-            GROUP BY s.id, s.nombre_servicio
-        `, [fechaApertura]);
-
-        // Productos
-        const productos = await this.dbQuery.all(`
-            SELECT 
-                c.nombre as departamento,
-                p.nombre as nombre,
-                SUM(vd.cantidad) as cantidad,
-                COALESCE(SUM(vd.subtotal), 0) as total_ventas,
-                COALESCE(SUM((vd.precio_unitario - p.precio_costo) * vd.cantidad), 0) as ganancia
-            FROM ventas_detalle vd
-            JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
-            LEFT JOIN productos p ON vd.id_producto = p.id
-            LEFT JOIN categorias c ON p.id_categoria = c.id
-            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_producto IS NOT NULL
-            GROUP BY c.id, p.id, c.nombre, p.nombre
-        `, [fechaApertura]);
-
-        return { servicios, productos };
-    }
-
-    /**
-     * Obtener total de abonos en efectivo (si existe esa funcionalidad)
-     */
-    async getAbonosEfectivo(fechaApertura) {
-        // Placeholder - implementar si tienes tabla de abonos
-        return 0;
-    }
-
-    /**
-     * Obtener total de devoluciones en efectivo
-     */
-    async getDevolucionesEfectivo(fechaApertura) {
-        // Placeholder - implementar si tienes tabla de devoluciones
-        return 0;
-    }
-
-    /**
-     * Actualizar método create para incluir hora y modo
-     */
     async createWithDetails(montoInicial, idEncargado, modoCierre = 'transparente') {
         const hora = dayjs().tz("America/Mexico_City").format("HH:mm:ss");
 
@@ -149,14 +31,12 @@ export class CorteCajaRepository {
                 monto_inicial, 
                 id_encargado, 
                 modo_cierre,
-                hora_apertura
-            ) VALUES (?, ?, ?, ?)
-        `, [montoInicial, idEncargado, modoCierre, hora]);
+                hora_apertura,
+                barberia_id
+            ) VALUES (?, ?, ?, ?, ?)
+        `, [montoInicial, idEncargado, modoCierre, hora, this.barberiaId]);
     }
 
-    /**
-     * Actualizar método update para incluir totales calculados
-     */
     async updateWithTotals(id, data) {
         const mxDateObj = dayjs().tz("America/Mexico_City");
         const mxDateTime = mxDateObj.format("YYYY-MM-DD HH:mm:ss");
@@ -176,7 +56,7 @@ export class CorteCajaRepository {
                 abonos_efectivo = ?,
                 devoluciones_efectivo = ?,
                 entradas_efectivo_total = ?
-            WHERE id = ?
+            WHERE id = ? AND barberia_id = ?
         `, [
             mxDateTime,
             hora,
@@ -189,7 +69,89 @@ export class CorteCajaRepository {
             data.abonos || 0,
             data.devoluciones || 0,
             data.entradas || 0,
-            id
+            id,
+            this.barberiaId
         ]);
+    }
+
+    async getHistory(limit = 30) {
+        return await this.dbQuery.all(`
+            SELECT cc.*, u.nombre as encargado 
+            FROM cortes_caja cc
+            JOIN usuarios u ON cc.id_encargado = u.id
+            WHERE cc.fecha_cierre IS NOT NULL AND cc.barberia_id = ?
+            ORDER BY cc.fecha_apertura DESC 
+            LIMIT ?
+        `, [this.barberiaId, limit]);
+    }
+
+    async getIngresosEfectivo(fechaApertura) {
+        const result = await this.dbQuery.get(`
+            SELECT COALESCE(SUM(CASE WHEN metodo_pago = 'Efectivo' THEN total_venta ELSE 0 END), 0) as efectivo
+            FROM ventas_cabecera 
+            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada' AND barberia_id = ?
+        `, [fechaApertura, this.barberiaId]);
+        return result?.efectivo || 0;
+    }
+
+    async marcarVentasCerradas(fechaApertura) {
+        return await this.dbQuery.run(`
+            UPDATE ventas_cabecera 
+            SET estado_corte_caja = 1 
+            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada' AND barberia_id = ?
+        `, [fechaApertura, this.barberiaId]);
+    }
+
+    async getDesglosePorMetodoPago(fechaApertura) {
+        return await this.dbQuery.all(`
+            SELECT 
+                metodo_pago,
+                COUNT(*) as cantidad_transacciones,
+                COALESCE(SUM(total_venta), 0) as total
+            FROM ventas_cabecera 
+            WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada' AND barberia_id = ?
+            GROUP BY metodo_pago
+        `, [fechaApertura, this.barberiaId]);
+    }
+
+    async getRentabilidadPorDepartamento(fechaApertura) {
+        const servicios = await this.dbQuery.all(`
+            SELECT 
+                'Servicios' as departamento,
+                s.nombre_servicio as nombre,
+                COUNT(vd.id) as cantidad,
+                COALESCE(SUM(vd.subtotal), 0) as total_ventas,
+                COALESCE(SUM(vd.subtotal), 0) as ganancia
+            FROM ventas_detalle vd
+            JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
+            LEFT JOIN servicios s ON vd.id_servicio = s.id
+            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_servicio IS NOT NULL AND vc.barberia_id = ?
+            GROUP BY s.id, s.nombre_servicio
+        `, [fechaApertura, this.barberiaId]);
+
+        const productos = await this.dbQuery.all(`
+            SELECT 
+                c.nombre as departamento,
+                p.nombre as nombre,
+                SUM(vd.cantidad) as cantidad,
+                COALESCE(SUM(vd.subtotal), 0) as total_ventas,
+                COALESCE(SUM((vd.precio_unitario - p.precio_costo) * vd.cantidad), 0) as ganancia
+            FROM ventas_detalle vd
+            JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
+            LEFT JOIN productos p ON vd.id_producto = p.id
+            LEFT JOIN categorias c ON p.id_categoria = c.id
+            WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_producto IS NOT NULL AND vc.barberia_id = ?
+            GROUP BY c.id, p.id, c.nombre, p.nombre
+        `, [fechaApertura, this.barberiaId]);
+
+        return { servicios, productos };
+    }
+
+    async getAbonosEfectivo(fechaApertura) {
+        return 0;
+    }
+
+    async getDevolucionesEfectivo(fechaApertura) {
+        return 0;
     }
 }

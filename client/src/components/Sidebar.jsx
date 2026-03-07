@@ -1,7 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.jpg';
-import sidebarBg from '../assets/sidebar-bg.jpg';
 
 export default function Sidebar({ isOpen, onToggle }) {
     const { user, logout, isAdmin, isEncargado } = useAuth();
@@ -13,90 +11,101 @@ export default function Sidebar({ isOpen, onToggle }) {
     };
 
     const handleNavClick = () => {
-        // Cerrar sidebar en tablet/mobile al navegar
         if (window.innerWidth <= 834) {
             onToggle?.(false);
         }
     };
 
-    const sidebarStyle = {
-        backgroundImage: `url(${sidebarBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-    };
+    // Dynamic tenant identity
+    const barberiaName = user?.barberia_nombre || 'Mi Barberia';
+    const logoUrl = user?.logo_url || null;
+
+    // Generate initials for avatar fallback
+    const initials = barberiaName
+        .split(' ')
+        .map(w => w[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
 
     return (
         <>
-            {/* Botón hamburguesa — solo visible en tablet/mobile vía CSS */}
             <button
                 className="sidebar-toggle"
                 onClick={() => onToggle?.(!isOpen)}
-                aria-label="Menú"
+                aria-label="Menu"
             >
                 <i className={`bi ${isOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
             </button>
 
-            {/* Backdrop para cerrar sidebar al tocar fuera */}
             <div
                 className={`sidebar-backdrop ${isOpen ? 'active' : ''}`}
                 onClick={() => onToggle?.(false)}
             />
 
-            <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`} style={sidebarStyle}>
+            <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
                 <div className="sidebar-overlay"></div>
                 <div className="sidebar-content">
                     <div className="sidebar-header">
                         <div className="sidebar-logo">
-                            <img src={logo} alt="The Gangsta Barber Shop" className="sidebar-logo-img" />
+                            {logoUrl ? (
+                                <img src={logoUrl} alt={barberiaName} className="sidebar-logo-img" />
+                            ) : (
+                                <div className="sidebar-logo-initials">{initials}</div>
+                            )}
                         </div>
-                        <h1 className="sidebar-brand">The Gangsta</h1>
-                        <p className="sidebar-tagline">Barber Shop</p>
+                        <h1 className="sidebar-brand">{barberiaName}</h1>
+                        <p className="sidebar-tagline">Panel de Gestion</p>
                     </div>
 
                     <nav className="sidebar-nav">
                         <div className="nav-section-title">Principal</div>
 
-                        <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                        <NavLink to="/panel" end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                             <i className="bi bi-speedometer2"></i>
                             <span>Dashboard</span>
                         </NavLink>
 
-                        <NavLink to="/pos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                        <NavLink to="/panel/pos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                             <i className="bi bi-shop"></i>
                             <span>Punto de Venta</span>
                         </NavLink>
 
-                        <NavLink to="/ventas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                        <NavLink to="/panel/ventas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                             <i className="bi bi-receipt"></i>
-                            <span>Ventas del Día</span>
+                            <span>Ventas del Dia</span>
                         </NavLink>
 
-                        <NavLink to="/citas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                        <NavLink to="/panel/citas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                             <i className="bi bi-calendar-check"></i>
                             <span>Citas</span>
                         </NavLink>
 
+                        <NavLink to="/panel/scanner" className={({ isActive }) => `nav-item scan-btn-nav ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                            <i className="bi bi-qr-code-scan"></i>
+                            <span>Escanear Wallet</span>
+                        </NavLink>
+
                         {isEncargado() && (
                             <>
-                                <div className="nav-section-title">Gestión</div>
+                                <div className="nav-section-title">Gestion</div>
 
-                                <NavLink to="/inventario" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                <NavLink to="/panel/inventario" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-box-seam"></i>
                                     <span>Inventario</span>
                                 </NavLink>
 
-                                <NavLink to="/corte-caja" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                <NavLink to="/panel/corte-caja" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-cash-stack"></i>
                                     <span>Corte de Caja</span>
                                 </NavLink>
 
-                                <NavLink to="/reportes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                <NavLink to="/panel/reportes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-graph-up-arrow"></i>
                                     <span>Reportes</span>
                                 </NavLink>
 
-                                <NavLink to="/clientes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                <NavLink to="/panel/clientes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-people-fill"></i>
                                     <span>Clientes</span>
                                 </NavLink>
@@ -105,19 +114,19 @@ export default function Sidebar({ isOpen, onToggle }) {
 
                         {isAdmin() && (
                             <>
-                                <div className="nav-section-title">Administración</div>
+                                <div className="nav-section-title">Administracion</div>
 
-                                <NavLink to="/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                <NavLink to="/panel/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-scissors"></i>
                                     <span>Servicios</span>
                                 </NavLink>
 
-                                <NavLink to="/personal" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                <NavLink to="/panel/personal" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-people"></i>
                                     <span>Personal</span>
                                 </NavLink>
 
-                                <NavLink to="/comisiones" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                <NavLink to="/panel/comisiones" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-gem"></i>
                                     <span>Comisiones</span>
                                 </NavLink>
@@ -138,12 +147,9 @@ export default function Sidebar({ isOpen, onToggle }) {
                                 </div>
                             </div>
                         </div>
-                        <button
-                            onClick={handleLogout}
-                            className="btn-logout"
-                        >
+                        <button onClick={handleLogout} className="btn-logout">
                             <i className="bi bi-box-arrow-left me-2"></i>
-                            Cerrar Sesión
+                            Cerrar Sesion
                         </button>
                     </div>
                 </div>

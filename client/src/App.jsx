@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
+import SuperAdminSidebar from './components/SuperAdminSidebar';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import SuperAdminPage from './pages/SuperAdminPage';
 import DashboardPage from './pages/DashboardPage';
 import POSPage from './pages/POSPage';
 import VentasPage from './pages/VentasPage';
@@ -17,23 +20,37 @@ import ClientesPage from './pages/ClientesPage';
 import ClienteLoginPage from './pages/ClienteLoginPage';
 import ClientePortalPage from './pages/ClientePortalPage';
 import ClaimPointPage from './pages/ClaimPointPage';
-import bodyBg from './assets/body-bg.jpg';
+import ScannerPage from './pages/ScannerPage';
+import RegisterPage from './pages/RegisterPage';
+import { Toaster } from 'sonner';
 import './index.css';
 
-// Layout con Sidebar
-function AppLayout() {
+// ============================================
+// LAYOUT: SuperAdmin (Flow Control)
+// Dark background, Flow branding, separate sidebar
+// ============================================
+function SuperAdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const appStyle = {
-    backgroundImage: `url(${bodyBg})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed',
-  };
+  return (
+    <div className="sa-layout">
+      <SuperAdminSidebar isOpen={sidebarOpen} onToggle={setSidebarOpen} />
+      <main className="sa-main-content">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+// ============================================
+// LAYOUT: Barber Business (El Producto)
+// White background, dynamic tenant branding
+// ============================================
+function BarberLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="app-container" style={appStyle}>
+    <div className="app-container barber-layout">
       <div className="app-overlay"></div>
       <Sidebar isOpen={sidebarOpen} onToggle={setSidebarOpen} />
       <main className="main-content">
@@ -55,13 +72,12 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Cliente NUNCA puede acceder al panel admin
   if (user.rol === 'Cliente') {
     return <Navigate to="/mi-perfil/portal" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.rol)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/panel" replace />;
   }
 
   return children;
@@ -71,12 +87,12 @@ function AppRoutes() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 
-  // --- Auto-Logout por Inactividad (15 minutos) ---
+  // Auto-Logout por Inactividad (15 minutos)
   useEffect(() => {
-    if (!user) return; // Solo actuar si hay usuario logueado
+    if (!user) return;
 
     let timeoutId;
-    const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutos
+    const INACTIVITY_LIMIT_MS = 15 * 60 * 1000;
 
     const resetTimer = () => {
       clearTimeout(timeoutId);
@@ -86,11 +102,9 @@ function AppRoutes() {
       }, INACTIVITY_LIMIT_MS);
     };
 
-    // Eventos que reinician el temporizador
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-
     events.forEach(event => window.addEventListener(event, resetTimer));
-    resetTimer(); // Inicializar
+    resetTimer();
 
     return () => {
       clearTimeout(timeoutId);
@@ -108,49 +122,70 @@ function AppRoutes() {
     return <div className="loading"><div className="spinner"></div></div>;
   }
 
+  // Helper to get redirect path after login
+  function getRedirectPath() {
+    if (!user) return '/';
+    if (user.rol === 'SuperAdmin') return '/admin/barberias';
+    if (user.rol === 'Cliente') return '/mi-perfil/portal';
+    return '/panel';
+  }
+
   return (
     <Routes>
-      <Route path="/login" element={
-        user
-          ? <Navigate to={user.rol === 'Cliente' ? '/mi-perfil/portal' : '/'} replace />
-          : <LoginPage />
-      } />
+      {/* ====== PUBLIC ====== */}
+      <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />} />
+      <Route path="/login" element={user ? <Navigate to={getRedirectPath()} replace /> : <LoginPage />} />
+      <Route path="/registrar" element={user ? <Navigate to={getRedirectPath()} replace /> : <RegisterPage />} />
 
-      {/* Portal del Cliente — rutas independientes sin sidebar */}
+      {/* ====== CLIENT PORTAL (no sidebar) ====== */}
       <Route path="/mi-perfil" element={<ClienteLoginPage />} />
       <Route path="/mi-perfil/portal" element={
         <ClienteProtectedRoute><ClientePortalPage /></ClienteProtectedRoute>
       } />
       <Route path="/mi-perfil/sello/:token" element={<ClaimPointPage />} />
 
-      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/pos" element={<POSPage />} />
-        <Route path="/ventas" element={<VentasPage />} />
-        <Route path="/citas" element={<CitasPage />} />
+      {/* ====== SUPER ADMIN — Flow Control ====== */}
+      <Route element={
+        <ProtectedRoute allowedRoles={['SuperAdmin']}>
+          <SuperAdminLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/admin/barberias" element={<SuperAdminPage />} />
+        <Route path="/admin/finanzas" element={<SuperAdminPage />} />
+        <Route path="/admin/configuracion" element={<SuperAdminPage />} />
+      </Route>
 
-        {/* Rutas para Encargado y Admin */}
-        <Route path="/inventario" element={
+      {/* ====== BARBER BUSINESS — El Producto ====== */}
+      <Route element={<ProtectedRoute><BarberLayout /></ProtectedRoute>}>
+        <Route path="/panel" element={<DashboardPage />} />
+        <Route path="/panel/pos" element={<POSPage />} />
+        <Route path="/panel/ventas" element={<VentasPage />} />
+        <Route path="/panel/citas" element={<CitasPage />} />
+
+        <Route path="/panel/scanner" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Encargado', 'Barbero']}><ScannerPage /></ProtectedRoute>
+        } />
+
+        <Route path="/panel/inventario" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><InventarioPage /></ProtectedRoute>
         } />
-        <Route path="/corte-caja" element={
+        <Route path="/panel/corte-caja" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><CorteCajaPage /></ProtectedRoute>
         } />
-        <Route path="/reportes" element={
+        <Route path="/panel/reportes" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><ReportesPage /></ProtectedRoute>
         } />
-        <Route path="/clientes" element={
+        <Route path="/panel/clientes" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><ClientesPage /></ProtectedRoute>
         } />
 
-        {/* Rutas solo Admin */}
-        <Route path="/servicios" element={
+        <Route path="/panel/servicios" element={
           <ProtectedRoute allowedRoles={['Admin']}><ServiciosPage /></ProtectedRoute>
         } />
-        <Route path="/personal" element={
+        <Route path="/panel/personal" element={
           <ProtectedRoute allowedRoles={['Admin']}><PersonalPage /></ProtectedRoute>
         } />
-        <Route path="/comisiones" element={
+        <Route path="/panel/comisiones" element={
           <ProtectedRoute allowedRoles={['Admin']}><ComisionesPage /></ProtectedRoute>
         } />
       </Route>
@@ -165,6 +200,20 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppRoutes />
+        <Toaster
+          position="top-center"
+          theme="light"
+          richColors
+          toastOptions={{
+            style: {
+              fontFamily: "'Inter', sans-serif",
+              borderRadius: '16px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+              border: 'none',
+              padding: '14px 20px',
+            }
+          }}
+        />
       </AuthProvider>
     </BrowserRouter>
   );

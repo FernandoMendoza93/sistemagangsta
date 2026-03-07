@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import { citasService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import Swal from 'sweetalert2';
-import Icon from '../components/Icon';
+import { toast } from 'sonner';
+import ConfirmModal from '../components/ConfirmModal';
+import { Calendar, CheckCircle, XCircle, User, Clock, CheckSquare, X, MessageCircle } from 'lucide-react';
 import './CitasPage.css';
+
+const START_HOUR = 10;
+const END_HOUR = 21;
+const MINUTE_HEIGHT = 1.6;
 
 export default function CitasPage() {
     const [citas, setCitas] = useState([]);
@@ -11,8 +16,14 @@ export default function CitasPage() {
     const [filtroFecha, setFiltroFecha] = useState(() => {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }); // Hoy
+    });
     const { user, isBarbero } = useAuth();
+
+    // Detail Modal State
+    const [selectedCita, setSelectedCita] = useState(null);
+    // Cancel Confirm State
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [cancelTargetId, setCancelTargetId] = useState(null);
 
     useEffect(() => {
         loadCitas();
@@ -22,10 +33,10 @@ export default function CitasPage() {
         setLoading(true);
         try {
             const res = await citasService.getAll(filtroFecha);
-            setCitas(res.data);
+            setCitas(res.data.filter(c => c.estado !== 'Cancelada'));
         } catch (error) {
             console.error('Error cargando citas:', error);
-            Swal.fire('Error', 'No se pudieron cargar las citas', 'error');
+            toast.error('No se pudieron cargar las citas');
         } finally {
             setLoading(false);
         }
@@ -34,171 +45,231 @@ export default function CitasPage() {
     const cambiarEstado = async (id, nuevoEstado) => {
         try {
             await citasService.cambiarEstado(id, nuevoEstado);
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: `Cita ${nuevoEstado.toLowerCase()}`,
-                showConfirmButton: false,
-                timer: 2000
-            });
+            toast.success(`Cita ${nuevoEstado.toLowerCase()}`);
+            setSelectedCita(null);
             loadCitas();
         } catch (error) {
-            Swal.fire('Error', 'No se pudo actualizar la cita', 'error');
+            toast.error('No se pudo actualizar la cita');
         }
     };
 
     const handleConfirmar = (id) => cambiarEstado(id, 'Confirmada');
     const handleCompletar = (id) => cambiarEstado(id, 'Completada');
-
     const handleCancelar = (id) => {
-        Swal.fire({
-            title: '¿Cancelar cita?',
-            text: "Esta acción no se puede deshacer.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, cancelar cita',
-            cancelButtonText: 'Volver'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                cambiarEstado(id, 'Cancelada');
-            }
-        });
+        setCancelTargetId(id);
+        setShowCancelConfirm(true);
     };
 
-    const getEstadoBadge = (estado) => {
-        const badges = {
-            'Pendiente': 'bg-warning text-dark',
-            'Confirmada': 'bg-info text-dark',
-            'Completada': 'bg-success',
-            'Cancelada': 'bg-danger'
+    const confirmCancel = () => {
+        if (cancelTargetId) {
+            cambiarEstado(cancelTargetId, 'Cancelada');
+        }
+        setShowCancelConfirm(false);
+        setCancelTargetId(null);
+    };
+
+    const handleBlockClick = (cita) => {
+        setSelectedCita(cita);
+    };
+
+    const timeScale = [];
+    for (let h = START_HOUR; h <= END_HOUR; h++) {
+        timeScale.push(`${h}:00`);
+    }
+
+    let barbersList = isBarbero() ? [user.nombre] : [...new Set(citas.map(c => c.barbero_nombre || 'Cualquiera'))];
+    if (barbersList.length === 0) barbersList = ['General'];
+
+    const getBlockStyle = (cita) => {
+        const [h, m] = cita.hora.split(':').map(Number);
+        const top = ((h - START_HOUR) * 60 + m) * MINUTE_HEIGHT;
+        const dur = cita.duracion_aprox || 30;
+        const height = dur * MINUTE_HEIGHT;
+
+        let bgColor = '#6B7280';
+        const sName = cita.nombre_servicio?.toLowerCase() || '';
+
+        if (sName.includes('barba')) bgColor = '#60A5FA';
+        if (sName.includes('corte') && !sName.includes('barba')) bgColor = '#10B981';
+        if (sName.includes('combo') || (sName.includes('corte') && sName.includes('barba'))) bgColor = '#FF7F50';
+        if (sName.includes('tinte')) bgColor = '#A78BFA';
+
+        const opacity = cita.estado === 'Completada' ? 0.6 : (cita.estado === 'Pendiente' ? 0.8 : 1);
+
+        return {
+            top: `${top}px`,
+            height: `${height - 2}px`,
+            backgroundColor: bgColor,
+            opacity: opacity
         };
-        return <span className={`badge ${badges[estado] || 'bg-secondary'}`}>{estado}</span>;
     };
 
     return (
-        <div className="page-container">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2><Icon name="calendar-check" className="me-2" /> Agenda de Citas</h2>
-
-                <div className="d-flex align-items-center gap-2">
-                    <label className="text-secondary mb-0">Fecha:</label>
+        <div className="calendar-page-container">
+            <div className="calendar-header-panel">
+                <div className="header-left">
+                    <Calendar size={28} color="#FF7F50" />
+                    <h2>Agenda del Día</h2>
+                </div>
+                <div className="header-right">
                     <input
                         type="date"
-                        className="form-control bg-dark text-white border-secondary"
+                        className="calendar-date-picker"
                         value={filtroFecha}
                         onChange={(e) => setFiltroFecha(e.target.value)}
                     />
-                    <button className="btn btn-outline-warning" onClick={() => {
-                        setFiltroFecha(''); // Cargar todas
-                    }}>
-                        Ver Todas
-                    </button>
                 </div>
             </div>
 
-            <div className="card bg-dark text-white border-secondary">
-                <div className="card-body p-0">
-                    <div className="table-responsive">
-                        <table className="table table-dark table-hover mb-0 align-middle custom-table">
-                            <thead>
-                                <tr>
-                                    <th>Fecha y Hora</th>
-                                    <th>Cliente</th>
-                                    <th>Servicio</th>
-                                    {!isBarbero() && <th>Barbero Solicitado</th>}
-                                    <th>Contacto</th>
-                                    <th>Estado</th>
-                                    <th className="text-end">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={isBarbero() ? "6" : "7"} className="text-center py-4">
-                                            <div className="spinner-border text-warning" role="status">
-                                                <span className="visually-hidden">Cargando...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : citas.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={isBarbero() ? "6" : "7"} className="text-center py-4 text-secondary">
-                                            <Icon name="calendar-x" size={32} className="mb-2 d-block mx-auto opacity-50" />
-                                            No hay citas programadas para esta fecha
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    citas.map(cita => (
-                                        <tr key={cita.id}>
-                                            <td data-label="Fecha y Hora">
-                                                <div className="fw-bold">{cita.fecha}</div>
-                                                <div className="text-warning">{cita.hora}</div>
-                                            </td>
-                                            <td data-label="Cliente">
-                                                <div className="fw-bold fs-6">{cita.cliente_nombre}</div>
-                                                {cita.notas && (
-                                                    <div className="text-secondary small mt-1">
-                                                        <Icon name="chat-left-text" className="me-1" /> {cita.notas}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td data-label="Servicio">
-                                                {cita.nombre_servicio || <span className="text-muted">No especificado</span>}
-                                            </td>
-                                            {!isBarbero() && (
-                                                <td data-label="Barbero Solicitado">{cita.barbero_nombre || <span className="text-muted">Cualquiera</span>}</td>
-                                            )}
-                                            <td data-label="Contacto">
-                                                <a href={`https://wa.me/52${cita.cliente_telefono}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-success">
-                                                    <Icon name="whatsapp" className="me-1" />
-                                                    {cita.cliente_telefono}
-                                                </a>
-                                            </td>
-                                            <td data-label="Estado">{getEstadoBadge(cita.estado)}</td>
-                                            <td className="text-end acciones-mobile">
-                                                {cita.estado === 'Pendiente' && (
-                                                    <button
-                                                        className="btn btn-sm btn-info me-2 mb-1"
-                                                        onClick={() => handleConfirmar(cita.id)}
-                                                        title="Confirmar Cita"
-                                                    >
-                                                        <Icon name="check2-circle" /> Confirmar
-                                                    </button>
-                                                )}
+            {loading ? (
+                <div className="calendar-loading">
+                    <div className="spinner"></div>
+                </div>
+            ) : (
+                <div className="calendar-board">
+                    <div className="time-scale-col">
+                        <div className="col-header">Hora</div>
+                        <div className="time-slots">
+                            {timeScale.map(time => (
+                                <div key={time} className="time-marker" style={{ height: `${60 * MINUTE_HEIGHT}px` }}>
+                                    <span>{time}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-                                                {(cita.estado === 'Pendiente' || cita.estado === 'Confirmada') && (
-                                                    <>
-                                                        <button
-                                                            className="btn btn-sm btn-success me-2 mb-1"
-                                                            onClick={() => handleCompletar(cita.id)}
-                                                            title="Marcar como Completada"
-                                                        >
-                                                            <Icon name="check-all" />
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {/* Se permite cancelar citas completadas para limpiar pruebas fallidas */}
-                                                {(cita.estado === 'Pendiente' || cita.estado === 'Confirmada' || cita.estado === 'Completada') && (
-                                                    <button
-                                                        className="btn btn-sm btn-outline-danger mb-1"
-                                                        onClick={() => handleCancelar(cita.id)}
-                                                        title="Cancelar Cita"
-                                                    >
-                                                        <Icon name="x-lg" />
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                    <div className="barber-cols-container">
+                        {barbersList.map(barber => {
+                            const barberCitas = citas.filter(c => (c.barbero_nombre || 'Cualquiera') === barber);
+                            return (
+                                <div key={barber} className="barber-col">
+                                    <div className="col-header">
+                                        <User size={16} />
+                                        <span>{barber.split(' ')[0]}</span>
+                                    </div>
+                                    <div className="blocks-layer" style={{ height: `${(END_HOUR - START_HOUR + 1) * 60 * MINUTE_HEIGHT}px` }}>
+                                        {timeScale.map(time => (
+                                            <div key={time} className="grid-line" style={{ height: `${60 * MINUTE_HEIGHT}px` }}></div>
+                                        ))}
+
+                                        {barberCitas.map(cita => {
+                                            const statusIcon = cita.estado === 'Pendiente' ? <Clock size={14} /> :
+                                                cita.estado === 'Confirmada' ? <CheckCircle size={14} /> :
+                                                    <CheckSquare size={14} />;
+
+                                            return (
+                                                <div
+                                                    key={cita.id}
+                                                    className={`cita-block ${cita.estado.toLowerCase()}`}
+                                                    style={getBlockStyle(cita)}
+                                                    onClick={() => handleBlockClick(cita)}
+                                                >
+                                                    <div className="block-time">{cita.hora}</div>
+                                                    <div className="block-client"><strong>{cita.cliente_nombre.split(' ')[0]}</strong></div>
+                                                    <div className="block-service">{cita.nombre_servicio}</div>
+                                                    <div className="block-status" title={cita.estado}>
+                                                        {statusIcon}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* ===== Appointment Detail Modal ===== */}
+            {selectedCita && (
+                <div className="confirm-modal-overlay" onClick={() => setSelectedCita(null)}>
+                    <div className="confirm-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1a1a2e' }}>
+                                {selectedCita.hora} — {selectedCita.nombre_servicio || 'Servicio'}
+                            </h3>
+                            <button
+                                onClick={() => setSelectedCita(null)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                            >
+                                <X size={20} color="#9ca3af" />
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', fontSize: '14px', color: '#374151' }}>
+                            <p style={{ margin: 0 }}><strong>Cliente:</strong> {selectedCita.cliente_nombre}</p>
+                            <p style={{ margin: 0 }}><strong>Teléfono:</strong> {selectedCita.cliente_telefono || 'No registrado'}</p>
+                            <p style={{ margin: 0 }}><strong>Barbero:</strong> {selectedCita.barbero_nombre || 'Cualquiera'}</p>
+                            <p style={{ margin: 0 }}>
+                                <strong>Estado:</strong>{' '}
+                                <span className={`badge ${selectedCita.estado === 'Completada' ? 'badge-success' : selectedCita.estado === 'Confirmada' ? 'badge-info' : 'badge-warning'}`}>
+                                    {selectedCita.estado}
+                                </span>
+                            </p>
+                            {selectedCita.notas && <p style={{ margin: 0 }}><strong>Notas:</strong> {selectedCita.notas}</p>}
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {selectedCita.estado === 'Pendiente' && (
+                                <button
+                                    className="confirm-modal-btn"
+                                    style={{ background: '#3b82f6', color: 'white', width: '100%' }}
+                                    onClick={() => handleConfirmar(selectedCita.id)}
+                                >
+                                    ✓ Confirmar Cita
+                                </button>
+                            )}
+                            {(selectedCita.estado === 'Pendiente' || selectedCita.estado === 'Confirmada') && (
+                                <button
+                                    className="confirm-modal-btn"
+                                    style={{ background: '#10b981', color: 'white', width: '100%' }}
+                                    onClick={() => handleCompletar(selectedCita.id)}
+                                >
+                                    ✓ Marcar como Completada
+                                </button>
+                            )}
+                            {selectedCita.estado !== 'Cancelada' && (
+                                <button
+                                    className="confirm-modal-btn"
+                                    style={{ background: '#ef4444', color: 'white', width: '100%' }}
+                                    onClick={() => handleCancelar(selectedCita.id)}
+                                >
+                                    ✗ Cancelar Cita
+                                </button>
+                            )}
+                            {selectedCita.cliente_telefono && (
+                                <a
+                                    href={`https://wa.me/52${selectedCita.cliente_telefono}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="confirm-modal-btn"
+                                    style={{
+                                        background: '#22c55e', color: 'white', width: '100%',
+                                        textDecoration: 'none', display: 'flex', justifyContent: 'center',
+                                        alignItems: 'center', gap: '8px'
+                                    }}
+                                >
+                                    <MessageCircle size={16} /> Enviar Mensaje
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Cancel Confirmation */}
+            <ConfirmModal
+                open={showCancelConfirm}
+                title="¿Cancelar cita?"
+                message="Esta acción no se puede deshacer. El horario quedará disponible nuevamente."
+                icon="⚠️"
+                confirmText="Sí, cancelar cita"
+                cancelText="Volver"
+                danger
+                onConfirm={confirmCancel}
+                onCancel={() => { setShowCancelConfirm(false); setCancelTargetId(null); }}
+            />
         </div>
     );
 }

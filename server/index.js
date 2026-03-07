@@ -10,10 +10,12 @@ const __dirname = dirname(__filename);
 // Inicializar Express
 const app = express();
 const PORT = process.env.PORT || 3000;
+process.env.TZ = 'America/Mexico_City'; // Enforcement de zona horaria
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 // Variables globales para DB
 let db = null;
@@ -55,13 +57,16 @@ async function initializeDatabase() {
         }
     }
 
-    // Fallback a SQLite (para desarrollo local)
+    // Fallback a SQLite (para desarrollo local y Railway)
     try {
-        console.log('🔍 Inicializando SQLite para desarrollo local...');
+        console.log('🚀 Ejecutando scripts de migración multi-tenant antes de levantar base...');
+        await import('./scripts/migrate-multitenant.js');
+
+        console.log('🔍 Inicializando SQLite...');
         const Database = (await import('better-sqlite3')).default;
         const { readFileSync, existsSync, copyFileSync, rmSync } = await import('fs');
 
-        const dbPath = join(__dirname, 'data', 'database.sqlite');
+        const dbPath = process.env.DATABASE_URL || join(__dirname, 'data', 'database.sqlite');
 
         const sqliteDb = new Database(dbPath);
         sqliteDb.pragma('journal_mode = WAL');
@@ -170,6 +175,7 @@ const reportesRoutes = (await import('./routes/reportes.js')).default;
 const clientesRoutes = (await import('./routes/clientes.js')).default;
 const citasRoutes = (await import('./routes/citas.js')).default;
 const loyaltyRoutes = (await import('./routes/loyalty.js')).default;
+const superadminRoutes = (await import('./routes/superadmin.js')).default;
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
@@ -183,12 +189,13 @@ app.use('/api/reportes', reportesRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/citas', citasRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/superadmin', superadminRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
-        message: '🏪 Sistema de Barbería funcionando',
+        message: 'Flow Barber Management System',
         database: dbType,
         environment: process.env.NODE_ENV || 'development'
     });
@@ -216,7 +223,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('Servidor activo en puerto:', PORT);
     console.log(`
   ╔════════════════════════════════════════════╗
-  ║   🏪 SISTEMA DE GESTIÓN PARA BARBERÍA      ║
+  ║   FLOW — Barber Management System          ║
   ║   Servidor corriendo en puerto ${PORT}         ║
   ║   Base de datos: ${dbType.toUpperCase().padEnd(26)}║
   ║   Entorno: ${(process.env.NODE_ENV || 'development').padEnd(30)}║

@@ -6,8 +6,8 @@
 
 .cliente-portal {
     min-height: 100vh;
-    background: #F9FAFB;
-    /* Fondo Off-White/Cream suave */
+    background: #FAF9F6;
+    /* Fondo Crema V2.0 */
     padding-bottom: 150px;
     max-width: 480px;
     margin: 0 auto;
@@ -20,7 +20,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #F9FAFB;
+    background: #FAF9F6;
 }
 
 /* --- Header / Top Bar --- */
@@ -87,46 +87,130 @@
     font-weight: 500;
 }
 
-/* --- Hero Section Integrada --- */
-.hero-section {
-    position: relative;
-    height: 220px;
-    background-image: url('../assets/hero-bg.jpg');
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    align-items: flex-end;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
+/* --- WALLET CARD (Estilo Barbering/Woncards) --- */
+.wallet-card {
+    margin: 1rem 1.25rem;
+    background: linear-gradient(145deg, #1A1A2E 0%, #2D2D44 50%, #1A1A2E 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
 }
 
-.hero-overlay {
+.wallet-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+}
+
+.wallet-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #FFFFFF;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+.wallet-nivel {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #E5E7EB;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.wallet-hero {
+    position: relative;
+    height: 180px;
+    margin: 0 0.75rem;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.wallet-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wallet-hero-overlay {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.8) 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.7) 100%);
 }
 
-.hero-content {
-    position: relative;
+.wallet-hero-text {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 1rem;
     z-index: 2;
     color: #FFFFFF;
 }
 
-.hero-content h2 {
-    font-size: 1.6rem;
+.wallet-hero-text h3 {
+    font-size: 1.2rem;
     font-weight: 800;
-    margin: 0 0 4px;
-    letter-spacing: -0.5px;
+    margin: 0 0 2px;
+    letter-spacing: -0.3px;
 }
 
-.hero-content p {
-    font-size: 0.95rem;
+.wallet-hero-text p {
+    font-size: 0.8rem;
     margin: 0;
-    opacity: 0.9;
+    opacity: 0.85;
     font-weight: 500;
+}
+
+.wallet-qr-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.25rem 1rem 1.5rem;
+}
+
+.wallet-qr-wrapper {
+    background: #FFFFFF;
+    padding: 1rem;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    margin-bottom: 0.75rem;
+}
+
+.wallet-qr-placeholder {
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9CA3AF;
+    font-size: 0.85rem;
+}
+
+.wallet-client-name {
+    color: #FFFFFF;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.3px;
+}
+
+.wallet-hint {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+    margin: 0;
+    text-align: center;
 }
 
 /* --- Loyalty Card Digital (Blanco/Crema) --- */
@@ -441,7 +525,7 @@
 
 .servicio-action-btn {
     background: transparent;
-    color: #FF5F40;
+    color: #FF7F50;
     font-weight: 700;
     font-size: 0.9rem;
     display: flex;
@@ -453,7 +537,7 @@
 }
 
 .servicio-action-btn:hover {
-    color: #E04E32;
+    color: #FF5A2A;
 }
 
 /* --- Bottom FAB / Action Bar --- */
@@ -497,9 +581,9 @@
 }
 
 .btn-agendar-main {
-    background: #FF5F40;
+    background: #FF7F50;
     color: #FFF;
-    box-shadow: 0 6px 20px rgba(255, 95, 64, 0.25);
+    box-shadow: 0 6px 20px rgba(255, 127, 80, 0.25);
 }
 
 .btn-scan-main {

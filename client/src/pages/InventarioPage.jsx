@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { productosService } from '../services/api';
 
 export default function InventarioPage() {
@@ -86,7 +86,7 @@ export default function InventarioPage() {
 
     const handleSaveProduct = async () => {
         if (!formData.nombre.trim()) {
-            Swal.fire({ icon: 'warning', title: 'Atención', text: 'El nombre es requerido', confirmButtonColor: '#c9a227' });
+            toast.warning('El nombre es requerido');
             return;
         }
 
@@ -99,7 +99,7 @@ export default function InventarioPage() {
             setShowProductModal(false);
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al guardar producto', confirmButtonColor: '#c9a227' });
+            toast.error(error.response?.data?.error || 'Error al guardar producto');
         }
     };
 
@@ -108,7 +108,7 @@ export default function InventarioPage() {
             await productosService.update(producto.id, { activo: producto.activo ? 0 : 1 });
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al cambiar estado', confirmButtonColor: '#c9a227' });
+            toast.error('Error al cambiar estado');
         }
     };
 
@@ -128,7 +128,7 @@ export default function InventarioPage() {
             setMovimiento({ tipo: 'Entrada', cantidad: 1, motivo: '' });
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.error || 'Error al registrar movimiento', confirmButtonColor: '#c9a227' });
+            toast.error(error.response?.data?.error || 'Error al registrar movimiento');
         }
     };
 

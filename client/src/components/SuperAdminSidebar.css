@@ -1,0 +1,239 @@
+/* =============================================
+   SUPER ADMIN SIDEBAR — Flow Control
+   White/Cream aesthetic matching the rest of the system
+   ============================================= */
+
+.sa-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: #FFFFFF;
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: transform 0.3s ease;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.02);
+}
+
+.sa-sidebar-header {
+    padding: 1.5rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sa-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.sa-brand-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 95, 64, 0.08);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sa-brand-text h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.sa-brand-text p {
+    font-size: 0.65rem;
+    color: #9CA3AF;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+}
+
+/* Navigation */
+.sa-sidebar-nav {
+    flex: 1;
+    padding: 1rem 0.75rem;
+    overflow-y: auto;
+}
+
+.sa-nav-section {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #9CA3AF;
+    font-weight: 700;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.sa-nav-section:first-child {
+    margin-top: 0;
+}
+
+.sa-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.7rem 0.75rem;
+    border-radius: 12px;
+    color: #6B7280;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+}
+
+.sa-nav-item:hover {
+    background: #F9FAFB;
+    color: #111827;
+}
+
+.sa-nav-item.active {
+    background: rgba(255, 95, 64, 0.08);
+    color: #FF5F40;
+}
+
+.sa-nav-item.active svg {
+    color: #FF5F40;
+}
+
+/* Footer */
+.sa-sidebar-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sa-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.sa-user-avatar {
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 95, 64, 0.08);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sa-user-name {
+    font-size: 0.88rem;
+    color: #111827;
+    font-weight: 700;
+}
+
+.sa-user-role {
+    font-size: 0.7rem;
+    color: #FF5F40;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sa-btn-logout {
+    width: 100%;
+    padding: 0.6rem;
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    color: #4B5563;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.sa-btn-logout:hover {
+    background: #E5E7EB;
+    color: #111827;
+}
+
+/* SuperAdmin Layout */
+.sa-layout {
+    display: flex;
+    min-height: 100vh;
+    background: #FAF9F6;
+}
+
+.sa-main-content {
+    flex: 1;
+    margin-left: 260px;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Mobile */
+.sa-sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 200;
+    width: 42px;
+    height: 42px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    color: #111827;
+    font-size: 1.2rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.sa-sidebar-backdrop {
+    display: none;
+}
+
+@media (max-width: 834px) {
+    .sa-sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sa-sidebar.sa-sidebar-open {
+        transform: translateX(0);
+    }
+
+    .sa-main-content {
+        margin-left: 0;
+    }
+
+    .sa-sidebar-toggle {
+        display: flex;
+    }
+
+    .sa-sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .sa-sidebar-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}

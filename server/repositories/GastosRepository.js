@@ -1,30 +1,30 @@
 export class GastosRepository {
-    constructor(dbQuery) {
+    constructor(dbQuery, barberiaId) {
         this.dbQuery = dbQuery;
+        this.barberiaId = barberiaId;
     }
 
     async create(monto, descripcion, idUsuario) {
-        // Assuming 'gastos' table exists with columns: id, monto, descripcion, fecha, id_usuario
         return await this.dbQuery.run(`
-            INSERT INTO gastos (monto, descripcion, id_usuario) 
-            VALUES (?, ?, ?)
-        `, [monto, descripcion, idUsuario]);
+            INSERT INTO gastos (monto, descripcion, id_usuario, barberia_id) 
+            VALUES (?, ?, ?, ?)
+        `, [monto, descripcion, idUsuario, this.barberiaId]);
     }
 
     async getByDateRange(startDate, endDate) {
         return await this.dbQuery.all(`
             SELECT * FROM gastos 
-            WHERE fecha BETWEEN ? AND ?
+            WHERE fecha BETWEEN ? AND ? AND barberia_id = ?
             ORDER BY fecha DESC
-        `, [startDate, endDate]);
+        `, [startDate, endDate, this.barberiaId]);
     }
 
     async getTotalSince(date) {
         const result = await this.dbQuery.get(`
             SELECT COALESCE(SUM(monto), 0) as total 
             FROM gastos 
-            WHERE fecha >= ?
-        `, [date]);
+            WHERE fecha >= ? AND barberia_id = ?
+        `, [date, this.barberiaId]);
         return result?.total || 0;
     }
 }

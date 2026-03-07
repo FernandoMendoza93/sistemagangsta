@@ -90,6 +90,7 @@ export const ventasService = {
     getById: (id) => api.get(`/ventas/${id}`),
     create: (data) => api.post('/ventas', data),
     getResumenHoy: () => api.get('/ventas/resumen/hoy'),
+    getResumenSemana: () => api.get('/ventas/resumen/semana'),
     confirmar: (id) => api.post(`/ventas/${id}/confirmar`),
     cancelar: (id) => api.post(`/ventas/${id}/cancelar`)
 };
@@ -124,7 +125,8 @@ export const clientesService = {
     getById: (id) => api.get(`/clientes/${id}`),
     create: (data) => api.post('/clientes', data),
     update: (id, data) => api.put(`/clientes/${id}`, data),
-    delete: (id) => api.delete(`/clientes/${id}`)
+    delete: (id) => api.delete(`/clientes/${id}`),
+    getWalletStatus: () => api.get('/clientes/wallet/status')
 };
 
 // Auth del Cliente (por teléfono)
@@ -146,7 +148,7 @@ export const citasService = {
 
 // Loyalty (QR)
 export const loyaltyService = {
-    claim: (token) => api.post('/loyalty/claim', { token })
+    scan: (token) => api.post('/loyalty/scan', { token })
 };
 
 export default api;

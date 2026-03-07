@@ -1,64 +1,88 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import { existsSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { JWT_SECRET } from '../middleware/auth.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Multer config for logo uploads
+const uploadsDir = join(__dirname, '../uploads/logos');
+if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => {
+        const ext = file.originalname.split('.').pop();
+        cb(null, `logo-${Date.now()}.${ext}`);
+    }
+});
+const upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 const router = express.Router();
 
-// POST /api/auth/login
+// POST /api/auth/login — Staff login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const dbQuery = req.app.locals.dbQuery;
 
         if (!email || !password) {
-            return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+            return res.status(400).json({ error: 'Email y contrasena son requeridos' });
         }
 
-        // Buscar usuario con su rol
+        // Buscar usuario con su rol + barberia
         const user = await dbQuery.get(`
-      SELECT u.id, u.nombre, u.email, u.password_hash, u.activo, r.nombre_rol as rol
-      FROM usuarios u
-      JOIN roles r ON u.id_rol = r.id
-      WHERE u.email = ?
-    `, [email]);
+            SELECT u.id, u.nombre, u.email, u.password_hash, u.activo, u.barberia_id,
+                   r.nombre_rol as rol,
+                   b.nombre as barberia_nombre, b.color_acento, b.logo_url, b.activo as barberia_activa
+            FROM usuarios u
+            JOIN roles r ON u.id_rol = r.id
+            LEFT JOIN barberias b ON u.barberia_id = b.id
+            WHERE u.email = ?
+        `, [email]);
 
         if (!user) {
-            console.log('❌ Usuario no encontrado:', email);
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
         if (!user.activo) {
-            console.log('❌ Usuario desactivado:', email);
             return res.status(401).json({ error: 'Usuario desactivado' });
         }
 
-        // Verificar contraseña
+        // SuperAdmin no necesita barberia activa
+        if (user.rol !== 'SuperAdmin' && user.barberia_id) {
+            if (user.barberia_activa === 0) {
+                return res.status(403).json({ error: 'La suscripcion de esta barberia esta inactiva. Contacta al administrador de Flow.' });
+            }
+        }
+
         const validPassword = await bcrypt.compare(password, user.password_hash);
         if (!validPassword) {
-            console.log('❌ Contraseña incorrecta para:', email);
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
-        console.log('✅ Login exitoso:', email);
-
-        // Generar JWT
+        // JWT con barberia_id
         const token = jwt.sign(
             {
                 id: user.id,
                 nombre: user.nombre,
                 email: user.email,
-                rol: user.rol
+                rol: user.rol,
+                barberia_id: user.barberia_id || null,
+                barberia_nombre: user.barberia_nombre || null,
+                logo_url: user.logo_url || null
             },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        // Verificar si el usuario es barbero
-        const barbero = await dbQuery.get(`
-      SELECT id, turno
-      FROM barberos WHERE id_usuario = ?
-    `, [user.id]);
+        // Verificar si es barbero
+        const barbero = await dbQuery.get('SELECT id, turno FROM barberos WHERE id_usuario = ?', [user.id]);
 
         res.json({
             message: 'Login exitoso',
@@ -68,17 +92,21 @@ router.post('/login', async (req, res) => {
                 nombre: user.nombre,
                 email: user.email,
                 rol: user.rol,
+                barberia_id: user.barberia_id,
+                barberia_nombre: user.barberia_nombre,
+                color_acento: user.color_acento,
+                logo_url: user.logo_url,
                 barbero: barbero || null
             }
         });
 
     } catch (error) {
-        console.error('❌ Error en login:', error);
+        console.error('Error en login:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });
 
-// POST /api/auth/register (Solo admins pueden registrar usuarios)
+// POST /api/auth/register — Staff registration (admin creates users within their barberia)
 router.post('/register', async (req, res) => {
     try {
         const { nombre, email, password, id_rol, esBarbero, turno } = req.body;
@@ -88,35 +116,36 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Todos los campos son requeridos' });
         }
 
-        // Verificar si el email ya existe
         const existingUser = await dbQuery.get('SELECT id FROM usuarios WHERE email = ?', [email]);
         if (existingUser) {
-            return res.status(400).json({ error: 'El email ya está registrado' });
+            return res.status(400).json({ error: 'El email ya esta registrado' });
         }
 
-        // Hash de la contraseña
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // Insertar usuario
+        // Use barberia_id from the authenticated admin (via header or default to 1)
+        const authHeader = req.headers['authorization'];
+        let barberia_id = 1;
+        if (authHeader) {
+            try {
+                const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+                barberia_id = decoded.barberia_id || 1;
+            } catch (e) { /* default */ }
+        }
+
         const result = await dbQuery.run(`
-      INSERT INTO usuarios (nombre, email, password_hash, id_rol)
-      VALUES (?, ?, ?, ?)
-    `, [nombre, email, passwordHash, id_rol]);
+            INSERT INTO usuarios (nombre, email, password_hash, id_rol, barberia_id)
+            VALUES (?, ?, ?, ?, ?)
+        `, [nombre, email, passwordHash, id_rol, barberia_id]);
 
         const userId = result.lastInsertRowid;
 
-        // Si es barbero, crear registro en tabla barberos
         if (esBarbero || id_rol === 3) {
-            await dbQuery.run(`
-        INSERT INTO barberos (id_usuario, turno)
-        VALUES (?, ?)
-      `, [userId, turno || 'Completo']);
+            await dbQuery.run('INSERT INTO barberos (id_usuario, turno, barberia_id) VALUES (?, ?, ?)',
+                [userId, turno || 'Completo', barberia_id]);
         }
 
-        res.status(201).json({
-            message: 'Usuario creado exitosamente',
-            userId
-        });
+        res.status(201).json({ message: 'Usuario creado exitosamente', userId });
 
     } catch (error) {
         console.error('Error en registro:', error);
@@ -124,7 +153,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// GET /api/auth/me - Obtener usuario actual
+// GET /api/auth/me
 router.get('/me', async (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -138,20 +167,19 @@ router.get('/me', async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
 
         const user = await dbQuery.get(`
-      SELECT u.id, u.nombre, u.email, r.nombre_rol as rol
-      FROM usuarios u
-      JOIN roles r ON u.id_rol = r.id
-      WHERE u.id = ?
-    `, [decoded.id]);
+            SELECT u.id, u.nombre, u.email, u.barberia_id, r.nombre_rol as rol,
+                   b.nombre as barberia_nombre, b.color_acento, b.logo_url
+            FROM usuarios u
+            JOIN roles r ON u.id_rol = r.id
+            LEFT JOIN barberias b ON u.barberia_id = b.id
+            WHERE u.id = ?
+        `, [decoded.id]);
 
         if (!user) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
-        const barbero = await dbQuery.get(`
-      SELECT id, turno
-      FROM barberos WHERE id_usuario = ?
-    `, [user.id]);
+        const barbero = await dbQuery.get('SELECT id, turno FROM barberos WHERE id_usuario = ?', [user.id]);
 
         res.json({
             ...user,
@@ -159,119 +187,92 @@ router.get('/me', async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(403).json({ error: 'Token inválido' });
+        return res.status(403).json({ error: 'Token invalido' });
     }
 });
 
-// POST /api/auth/cliente - Acceso del cliente por teléfono + contraseña
+// POST /api/auth/cliente — Client login/registration
 router.post('/cliente', async (req, res) => {
     try {
-        const { telefono, nombre, password } = req.body;
+        const { telefono, nombre, password, barberia_slug } = req.body;
         const dbQuery = req.app.locals.dbQuery;
         const db = req.app.locals.db;
 
         if (!telefono || telefono.replace(/\D/g, '').length < 10) {
-            return res.status(400).json({ error: 'Teléfono a 10 dígitos es requerido' });
+            return res.status(400).json({ error: 'Telefono a 10 digitos es requerido' });
         }
 
-        // Asegurar que las tablas existen
-        db.exec(`
-            CREATE TABLE IF NOT EXISTS clientes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL,
-                telefono TEXT,
-                password_hash TEXT,
-                puntos_lealtad INTEGER DEFAULT 0,
-                ultima_visita TEXT,
-                fecha_registro TEXT DEFAULT (datetime('now', 'localtime')),
-                notas TEXT,
-                activo INTEGER DEFAULT 1
-            );
-            CREATE TABLE IF NOT EXISTS citas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                id_cliente INTEGER NOT NULL,
-                id_servicio INTEGER,
-                id_barbero INTEGER,
-                fecha TEXT NOT NULL,
-                hora TEXT NOT NULL,
-                estado TEXT DEFAULT 'Pendiente',
-                notas TEXT,
-                fecha_creacion TEXT DEFAULT (datetime('now', 'localtime')),
-                FOREIGN KEY (id_cliente) REFERENCES clientes(id),
-                FOREIGN KEY (id_servicio) REFERENCES servicios(id),
-                FOREIGN KEY (id_barbero) REFERENCES barberos(id)
-            );
-        `);
-
-        // Agregar columna password_hash si no existe (para DBs existentes)
-        try {
-            db.exec('ALTER TABLE clientes ADD COLUMN password_hash TEXT');
-        } catch (e) {
-            // La columna ya existe, ignorar
+        // Determine barberia_id from slug or default to 1
+        let barberia_id = 1;
+        if (barberia_slug) {
+            const barb = await dbQuery.get('SELECT id, activo FROM barberias WHERE slug = ?', [barberia_slug]);
+            if (barb) {
+                if (!barb.activo) {
+                    return res.status(403).json({ error: 'Esta barberia no esta activa' });
+                }
+                barberia_id = barb.id;
+            }
         }
+
+
 
         const telefonoLimpio = telefono.replace(/\D/g, '').slice(-10);
-        let cliente = await dbQuery.get('SELECT * FROM clientes WHERE telefono = ? AND activo = 1', [telefonoLimpio]);
+
+        // Search client within the specific barberia
+        let cliente = await dbQuery.get(
+            'SELECT * FROM clientes WHERE telefono = ? AND barberia_id = ? AND activo = 1',
+            [telefonoLimpio, barberia_id]
+        );
 
         if (!cliente) {
-            // Cliente nuevo: necesita nombre + contraseña para registrarse
             if (!nombre || !password) {
                 return res.status(404).json({
                     error: 'Cliente no encontrado',
                     needsRegistration: true,
-                    message: '¿Primera vez? Regístrate para activar tu tarjeta'
+                    message: 'Primera vez? Registrate para activar tu tarjeta'
                 });
             }
 
             if (password.length < 4) {
-                return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+                return res.status(400).json({ error: 'La contrasena debe tener al menos 4 caracteres' });
             }
 
-            // Auto-registro con contraseña
             const passwordHash = await bcrypt.hash(password, 10);
             const result = await dbQuery.run(`
-                INSERT INTO clientes (nombre, telefono, password_hash)
-                VALUES (?, ?, ?)
-            `, [nombre.trim(), telefonoLimpio, passwordHash]);
+                INSERT INTO clientes (nombre, telefono, password_hash, barberia_id)
+                VALUES (?, ?, ?, ?)
+            `, [nombre.trim(), telefonoLimpio, passwordHash, barberia_id]);
 
             cliente = await dbQuery.get('SELECT * FROM clientes WHERE id = ?', [result.lastInsertRowid]);
-            console.log('✅ Nuevo cliente registrado:', cliente.nombre, telefonoLimpio);
         } else {
-            // Cliente existente — verificar contraseña
             if (!cliente.password_hash) {
-                // Cliente viejo sin contraseña: necesita crearla
                 if (!password) {
                     return res.status(400).json({
-                        error: 'Necesitas crear una contraseña',
-                        needsPassword: true,
-                        message: 'Crea una contraseña para proteger tu cuenta'
+                        error: 'Necesitas crear una contrasena',
+                        needsPassword: true
                     });
                 }
-                // Guardar la nueva contraseña
                 const passwordHash = await bcrypt.hash(password, 10);
                 await dbQuery.run('UPDATE clientes SET password_hash = ? WHERE id = ?', [passwordHash, cliente.id]);
-                console.log('✅ Contraseña creada para cliente existente:', cliente.nombre);
             } else {
-                // Verificar contraseña
                 if (!password) {
-                    return res.status(400).json({ error: 'Contraseña requerida' });
+                    return res.status(400).json({ error: 'Contrasena requerida' });
                 }
                 const validPassword = await bcrypt.compare(password, cliente.password_hash);
                 if (!validPassword) {
-                    return res.status(401).json({ error: 'Contraseña incorrecta' });
+                    return res.status(401).json({ error: 'Contrasena incorrecta' });
                 }
             }
-            console.log('✅ Login cliente:', cliente.nombre, telefonoLimpio);
         }
 
-        // Generar JWT limitado
         const token = jwt.sign(
             {
                 id: cliente.id,
                 nombre: cliente.nombre,
                 telefono: cliente.telefono,
                 rol: 'Cliente',
-                tipo: 'cliente'
+                tipo: 'cliente',
+                barberia_id: barberia_id
             },
             JWT_SECRET,
             { expiresIn: '7d' }
@@ -286,12 +287,91 @@ router.post('/cliente', async (req, res) => {
                 telefono: cliente.telefono,
                 puntos_lealtad: cliente.puntos_lealtad,
                 ultima_visita: cliente.ultima_visita,
-                rol: 'Cliente'
+                rol: 'Cliente',
+                barberia_id: barberia_id
             }
         });
 
     } catch (error) {
-        console.error('❌ Error en auth cliente:', error);
+        console.error('Error en auth cliente:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// POST /api/auth/register-barberia — Public registration (multipart for logo)
+router.post('/register-barberia', upload.single('logo'), async (req, res) => {
+    try {
+        const { nombre, telefono_whatsapp, email, plan, password, direccion } = req.body;
+        const dbQuery = req.app.locals.dbQuery;
+
+        if (!nombre || !email || !password) {
+            return res.status(400).json({ error: 'Nombre, email y contrasena son requeridos' });
+        }
+
+        // Generate slug
+        const slug = nombre.toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .substring(0, 50);
+
+        // Check if slug exists
+        const existingSlug = await dbQuery.get('SELECT id FROM barberias WHERE slug = ?', [slug]);
+        if (existingSlug) {
+            return res.status(400).json({ error: 'Ya existe una barberia con un nombre similar' });
+        }
+
+        // Check if email is taken
+        const existingEmail = await dbQuery.get('SELECT id FROM usuarios WHERE email = ?', [email]);
+        if (existingEmail) {
+            return res.status(400).json({ error: 'Este email ya esta registrado' });
+        }
+
+        // Logo path
+        const logo_url = req.file ? `/uploads/logos/${req.file.filename}` : null;
+
+        // Calculate subscription dates
+        const selectedPlan = plan === 'anual' ? 'anual' : 'mensual';
+        const precio = selectedPlan === 'anual' ? 2999 : 299;
+        const vencimiento = selectedPlan === 'anual'
+            ? "datetime('now', '+1 year', 'localtime')"
+            : "datetime('now', '+1 month', 'localtime')";
+
+        // Create barberia (INACTIVE until SuperAdmin confirms payment)
+        const barbResult = await dbQuery.run(`
+            INSERT INTO barberias (nombre, slug, telefono_whatsapp, email_contacto, direccion, logo_url, plan, precio_plan, fecha_vencimiento, activo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ${vencimiento}, 0)
+        `, [nombre, slug, telefono_whatsapp || '', email, direccion || '', logo_url, selectedPlan, precio]);
+
+        const barberia_id = barbResult.lastInsertRowid;
+
+        // Create admin user for this barberia
+        const passwordHash = await bcrypt.hash(password, 10);
+        await dbQuery.run(`
+            INSERT INTO usuarios (nombre, email, password_hash, id_rol, barberia_id)
+            VALUES (?, ?, ?, 1, ?)
+        `, [`Admin ${nombre}`, email, passwordHash, barberia_id]);
+
+        // Create default services
+        const defaultServices = [
+            ['Corte', 200, 30],
+            ['Barba', 200, 60],
+            ['Corte + Barba', 300, 90],
+        ];
+        for (const [servNombre, precio_s, duracion] of defaultServices) {
+            await dbQuery.run(
+                'INSERT INTO servicios (nombre_servicio, precio, duracion_aprox, barberia_id) VALUES (?, ?, ?, ?)',
+                [servNombre, precio_s, duracion, barberia_id]
+            );
+        }
+
+        res.status(201).json({
+            message: 'Barberia registrada exitosamente',
+            barberia: { id: barberia_id, nombre, slug },
+            credentials: { email, message: 'Usa la contrasena que proporcionaste para ingresar al panel' }
+        });
+
+    } catch (error) {
+        console.error('Error registrando barberia:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });

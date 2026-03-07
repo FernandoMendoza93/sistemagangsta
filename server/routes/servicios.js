@@ -1,18 +1,18 @@
 import express from 'express';
-import { verifyToken, requireRole, ROLES } from '../middleware/auth.js';
+import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/servicios - Listar todos los servicios
-router.get('/', verifyToken, (req, res) => {
+// GET /api/servicios - Listar todos los servicios del tenant
+router.get('/', verifyToken, requireTenant, (req, res) => {
     try {
         const db = req.app.locals.db;
-
         const servicios = db.prepare(`
-      SELECT id, nombre_servicio, precio, duracion_aprox, activo
-      FROM servicios
-      ORDER BY nombre_servicio
-    `).all();
+            SELECT id, nombre_servicio, precio, duracion_aprox, activo
+            FROM servicios
+            WHERE barberia_id = ?
+            ORDER BY nombre_servicio
+        `).all(req.barberia_id);
 
         res.json(servicios);
     } catch (error) {
@@ -22,16 +22,15 @@ router.get('/', verifyToken, (req, res) => {
 });
 
 // GET /api/servicios/activos - Solo servicios activos (para POS)
-router.get('/activos', verifyToken, (req, res) => {
+router.get('/activos', verifyToken, requireTenant, (req, res) => {
     try {
         const db = req.app.locals.db;
-
         const servicios = db.prepare(`
-      SELECT id, nombre_servicio, precio, duracion_aprox
-      FROM servicios
-      WHERE activo = 1
-      ORDER BY nombre_servicio
-    `).all();
+            SELECT id, nombre_servicio, precio, duracion_aprox
+            FROM servicios
+            WHERE activo = 1 AND barberia_id = ?
+            ORDER BY nombre_servicio
+        `).all(req.barberia_id);
 
         res.json(servicios);
     } catch (error) {
@@ -41,7 +40,7 @@ router.get('/activos', verifyToken, (req, res) => {
 });
 
 // POST /api/servicios - Crear servicio (Solo Admin)
-router.post('/', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
+router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { nombre_servicio, precio, duracion_aprox } = req.body;
@@ -51,9 +50,9 @@ router.post('/', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
         }
 
         const result = db.prepare(`
-      INSERT INTO servicios (nombre_servicio, precio, duracion_aprox)
-      VALUES (?, ?, ?)
-    `).run(nombre_servicio, precio, duracion_aprox || 30);
+            INSERT INTO servicios (nombre_servicio, precio, duracion_aprox, barberia_id)
+            VALUES (?, ?, ?, ?)
+        `).run(nombre_servicio, precio, duracion_aprox || 30, req.barberia_id);
 
         res.status(201).json({
             message: 'Servicio creado',
@@ -66,20 +65,20 @@ router.post('/', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
 });
 
 // PUT /api/servicios/:id - Actualizar servicio (Solo Admin)
-router.put('/:id', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
+router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
         const { nombre_servicio, precio, duracion_aprox, activo } = req.body;
 
         db.prepare(`
-      UPDATE servicios 
-      SET nombre_servicio = COALESCE(?, nombre_servicio),
-          precio = COALESCE(?, precio),
-          duracion_aprox = COALESCE(?, duracion_aprox),
-          activo = COALESCE(?, activo)
-      WHERE id = ?
-    `).run(nombre_servicio, precio, duracion_aprox, activo, id);
+            UPDATE servicios 
+            SET nombre_servicio = COALESCE(?, nombre_servicio),
+                precio = COALESCE(?, precio),
+                duracion_aprox = COALESCE(?, duracion_aprox),
+                activo = COALESCE(?, activo)
+            WHERE id = ? AND barberia_id = ?
+        `).run(nombre_servicio, precio, duracion_aprox, activo, id, req.barberia_id);
 
         res.json({ message: 'Servicio actualizado' });
     } catch (error) {
@@ -89,12 +88,12 @@ router.put('/:id', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
 });
 
 // DELETE /api/servicios/:id - Desactivar servicio (Solo Admin)
-router.delete('/:id', verifyToken, requireRole(ROLES.ADMIN), (req, res) => {
+router.delete('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
 
-        db.prepare('UPDATE servicios SET activo = 0 WHERE id = ?').run(id);
+        db.prepare('UPDATE servicios SET activo = 0 WHERE id = ? AND barberia_id = ?').run(id, req.barberia_id);
 
         res.json({ message: 'Servicio desactivado' });
     } catch (error) {

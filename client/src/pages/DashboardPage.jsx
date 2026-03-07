@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ventasService, productosService, barberosService } from '../services/api';
+import { ventasService, productosService, citasService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
+import { motion } from 'framer-motion';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
+import './DashboardPage.css';
 
-// Función para obtener la fecha local en formato YYYY-MM-DD
 const getLocalDate = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -12,13 +16,14 @@ const getLocalDate = () => {
     return `${year}-${month}-${day}`;
 };
 
+
 export default function DashboardPage() {
     const { user, isEncargado } = useAuth();
     const [resumen, setResumen] = useState(null);
     const [alertas, setAlertas] = useState([]);
     const [ventas, setVentas] = useState([]);
-    const [selectedVenta, setSelectedVenta] = useState(null);
-    const [detalles, setDetalles] = useState([]);
+    const [citasHoy, setCitasHoy] = useState([]);
+    const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -28,14 +33,23 @@ export default function DashboardPage() {
     const loadData = async () => {
         try {
             const fechaHoy = getLocalDate();
-            const [resumenRes, alertasRes, ventasRes] = await Promise.all([
+            const [resumenRes, alertasRes, ventasRes, citasRes, semanaRes] = await Promise.all([
                 ventasService.getResumenHoy(),
                 isEncargado() ? productosService.getAlertas() : Promise.resolve({ data: [] }),
-                ventasService.getAll({ fecha: fechaHoy })
+                ventasService.getAll({ fecha: fechaHoy }),
+                citasService.getAll ? citasService.getAll(fechaHoy) : Promise.resolve({ data: [] }),
+                ventasService.getResumenSemana()
             ]);
+
             setResumen(resumenRes.data);
             setAlertas(alertasRes.data);
             setVentas(ventasRes.data);
+
+            // Filter only pending appointments for the bento grid
+            const pendingCitas = (citasRes.data || []).filter(c => c.estado === 'Pendiente').slice(0, 6);
+            setCitasHoy(pendingCitas);
+
+            setChartData(semanaRes.data || []);
         } catch (error) {
             console.error('Error cargando dashboard:', error);
         } finally {
@@ -43,155 +57,136 @@ export default function DashboardPage() {
         }
     };
 
-    const verDetalle = async (ventaId) => {
-        try {
-            const res = await ventasService.getById(ventaId);
-            setSelectedVenta(res.data);
-            setDetalles(res.data.detalles || []);
-        } catch (error) {
-            console.error('Error cargando detalle:', error);
+    if (loading) {
+        return <div className="loading"><div className="spinner" style={{ borderColor: 'var(--primary)' }}></div></div>;
+    }
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
         }
     };
 
-    if (loading) {
-        return <div className="loading"><div className="spinner"></div></div>;
-    }
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    };
 
     return (
-        <div>
-            <div className="page-header">
+        <motion.div
+            className="dashboard-container"
+            initial="hidden"
+            animate="show"
+            variants={containerVariants}
+        >
+            <motion.div className="page-header dashboard-header-glow" variants={itemVariants}>
                 <div>
-                    <h1 className="page-title">Bienvenido, {user?.nombre}</h1>
-                    <p className="page-subtitle">Resumen del día - {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <h1 className="page-title" style={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
+                        Bienvenido, <span style={{ color: 'var(--primary)' }}>{user?.nombre}</span>
+                    </h1>
+                    <p className="page-subtitle" style={{ color: 'var(--text-secondary)' }}>
+                        Panel de Control - {new Date().toLocaleDateString('es-MX', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </p>
                 </div>
-            </div>
+            </motion.div>
 
-            <div className="card-grid">
-                <div className="stat-card stat-card-revenue">
-                    <div className="stat-icon">
-                        <Icon name="dollar-circle" size={32} color="#2563eb" />
+            <motion.div className="card-grid" variants={containerVariants}>
+                <motion.div className="stat-card" variants={itemVariants}>
+                    <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10B981' }}>
+                        <Icon name="dollar-sign" size={28} />
                     </div>
                     <div className="stat-info">
                         <div className="stat-value">${resumen?.ingresos_totales?.toFixed(2) || '0.00'}</div>
                         <div className="stat-label">Ingresos del Día</div>
                     </div>
-                </div>
+                </motion.div>
 
-                <div className="stat-card stat-card-sales">
-                    <div className="stat-icon">
-                        <Icon name="shopping-cart" size={32} color="#16a34a" />
+                <motion.div className="stat-card" variants={itemVariants}>
+                    <div className="stat-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', color: '#3B82F6' }}>
+                        <Icon name="shopping-cart" size={28} />
                     </div>
                     <div className="stat-info">
                         <div className="stat-value">{resumen?.total_ventas || 0}</div>
-                        <div className="stat-label">Ventas Realizadas</div>
+                        <div className="stat-label">Ventas Totales</div>
                     </div>
-                </div>
+                </motion.div>
 
-                <div className="stat-card stat-card-cash">
-                    <div className="stat-icon">
-                        <Icon name="cash" size={32} color="#0891b2" />
-                    </div>
-                    <div className="stat-info">
-                        <div className="stat-value">${resumen?.efectivo?.toFixed(2) || '0.00'}</div>
-                        <div className="stat-label">Efectivo</div>
-                    </div>
-                </div>
-
-                <div className="stat-card stat-card-card">
-                    <div className="stat-icon">
-                        <Icon name="credit-card" size={32} color="#7c3aed" />
+                <motion.div className="stat-card" variants={itemVariants}>
+                    <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}>
+                        <Icon name="credit-card" size={28} />
                     </div>
                     <div className="stat-info">
                         <div className="stat-value">${resumen?.tarjeta?.toFixed(2) || '0.00'}</div>
-                        <div className="stat-label">Tarjeta</div>
+                        <div className="stat-label">Tarjeta / Transf.</div>
                     </div>
-                </div>
+                </motion.div>
+            </motion.div>
 
-                <div className="stat-card stat-card-transfer">
-                    <div className="stat-icon">
-                        <Icon name="send" size={32} color="#f59e0b" />
-                    </div>
-                    <div className="stat-info">
-                        <div className="stat-value">${resumen?.transferencia?.toFixed(2) || '0.00'}</div>
-                        <div className="stat-label">Transferencias</div>
-                    </div>
+            {/* Gráfica de Ingresos */}
+            <motion.div className="premium-card" variants={itemVariants} style={{ marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
+                <div className="card-header" style={{ marginBottom: '0' }}>
+                    <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icon name="trending-up" size={20} color="var(--primary)" />
+                        Flujo de Ingresos (Semana)
+                    </h2>
                 </div>
-            </div>
+                <div className="chart-container">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                            <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: 'rgba(10,10,11,0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                itemStyle={{ color: 'var(--primary)' }}
+                            />
+                            <Area type="monotone" dataKey="ingresos" stroke="var(--primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngresos)" />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            </motion.div>
 
-            {alertas.length > 0 && isEncargado() && (
-                <div className="card stock-alerts-card">
+            <div className="card-grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1.2fr)', alignItems: 'start' }}>
+                {/* Tabla de Ventas (Izquierda, más grande) */}
+                <motion.div className="premium-card" variants={itemVariants}>
                     <div className="card-header">
-                        <div className="card-title-wrapper">
-                            <Icon name="alert-circle" size={24} color="#f59e0b" />
-                            <h2 className="card-title">Alertas de Stock</h2>
-                        </div>
+                        <h2 className="card-title">Últimas Ventas</h2>
                     </div>
-                    <div className="stock-alerts-list">
-                        {alertas.map(p => (
-                            <div key={p.id} className="stock-alert-item">
-                                <div className="alert-icon">
-                                    <Icon name="package" size={20} color="#dc2626" />
-                                </div>
-                                <div className="alert-info">
-                                    <strong>{p.nombre}</strong>
-                                    <span className="alert-details">Stock: {p.stock_actual} / Mínimo: {p.stock_minimo}</span>
-                                </div>
-                                <span className="badge badge-danger">Bajo</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Tabla Interactiva de Ventas del Día */}
-            <div className="card-grid" style={{ gridTemplateColumns: selectedVenta ? '1fr 380px' : '1fr', marginTop: '1.5rem' }}>
-                <div className="card">
-                    <div className="card-header">
-                        <h2 className="card-title">💰 Lista de Ventas del Día</h2>
-                    </div>
-                    <div className="table-container">
-                        <table className="table">
+                    <div className="modern-table-container">
+                        <table className="modern-table">
                             <thead>
                                 <tr>
-                                    <th>#</th>
                                     <th>Hora</th>
                                     <th>Barbero</th>
                                     <th>Método</th>
                                     <th style={{ textAlign: 'right' }}>Total</th>
-                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {ventas.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                                            No hay ventas registradas para hoy
-                                        </td>
+                                        <td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Sin ventas hoy</td>
                                     </tr>
                                 ) : (
-                                    ventas.map(v => (
-                                        <tr key={v.id} style={{
-                                            background: selectedVenta?.id === v.id ? 'rgba(201, 162, 39, 0.1)' : undefined
-                                        }}>
-                                            <td style={{ color: '#1a1a1a' }}>{v.id}</td>
-                                            <td style={{ color: '#1a1a1a' }}>{new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
-                                            <td style={{ color: '#1a1a1a' }}>{v.barbero || '-'}</td>
+                                    ventas.slice(0, 8).map(v => (
+                                        <tr key={v.id}>
+                                            <td style={{ fontWeight: 600 }}>{new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
+                                            <td>{v.barbero || 'General'}</td>
                                             <td>
-                                                <span className={`badge ${v.metodo_pago === 'Efectivo' ? 'badge-success' :
-                                                    v.metodo_pago === 'Tarjeta' ? 'badge-info' : 'badge-warning'
-                                                    }`}>
+                                                <span className={`glow-badge ${v.metodo_pago === 'Efectivo' ? 'success' : v.metodo_pago === 'Tarjeta' ? 'info' : 'warning'}`}>
                                                     {v.metodo_pago}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'right', fontWeight: 600, color: '#1a1a1a' }}>${v.total_venta.toFixed(2)}</td>
-                                            <td>
-                                                <button
-                                                    className="btn btn-secondary btn-sm"
-                                                    onClick={() => verDetalle(v.id)}
-                                                >
-                                                    <Icon name="eye" size={16} />
-                                                    <span>Ver</span>
-                                                </button>
+                                            <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--primary-light)' }}>
+                                                ${v.total_venta.toFixed(2)}
                                             </td>
                                         </tr>
                                     ))
@@ -199,75 +194,60 @@ export default function DashboardPage() {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Panel de Detalle */}
-                {selectedVenta && (
-                    <div className="card">
-                        <div className="card-header">
-                            <h2 className="card-title">Detalle Venta #{selectedVenta.id}</h2>
-                            <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => { setSelectedVenta(null); setDetalles([]); }}
-                            >
-                                <Icon name="x-circle" size={16} />
-                            </button>
+                {/* Columna Derecha: Bento Grid Citas + Alertas */}
+                <motion.div variants={containerVariants} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                    {/* Bento Grid: Próximas Citas */}
+                    <motion.div className="premium-card" variants={itemVariants} style={{ padding: '1.25rem' }}>
+                        <div className="card-header" style={{ marginBottom: '0.5rem' }}>
+                            <h2 className="card-title" style={{ fontSize: '1.1rem' }}>Próximas Citas</h2>
                         </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                <strong>Barbero:</strong> {selectedVenta.barbero || 'Sin asignar'}<br />
-                                <strong>Método:</strong> {selectedVenta.metodo_pago}<br />
-                                <strong>Hora:</strong> {new Date(selectedVenta.fecha).toLocaleTimeString('es-MX')}
-                            </p>
-                        </div>
-
-                        <h4 style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                            Items Vendidos:
-                        </h4>
-
-                        {detalles.length === 0 ? (
-                            <p style={{ color: 'var(--text-muted)' }}>Sin detalles</p>
+                        {citasHoy.length === 0 ? (
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No hay citas pendientes.</p>
                         ) : (
-                            <div>
-                                {detalles.map((d, i) => (
-                                    <div key={i} style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        padding: '0.75rem',
-                                        background: 'var(--bg-input)',
-                                        borderRadius: 'var(--radius-md)',
-                                        marginBottom: '0.5rem'
-                                    }}>
-                                        <div>
-                                            <strong style={{ color: 'var(--text-primary)' }}>{d.nombre_servicio || d.producto}</strong>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                                {d.cantidad} x ${d.precio_unitario.toFixed(2)}
-                                            </div>
-                                        </div>
-                                        <div style={{ color: 'var(--primary)', fontWeight: 600 }}>
-                                            ${d.subtotal.toFixed(2)}
+                            <div className="bento-grid" style={{ gridTemplateColumns: '1fr' }}>
+                                {citasHoy.map(cita => (
+                                    <div key={cita.id} className="bento-item">
+                                        <div className="bento-time">{cita.hora}</div>
+                                        <div className="bento-service">{cita.nombre_servicio}</div>
+                                        <div className="bento-client">
+                                            <Icon name="user" size={14} />
+                                            {cita.cliente_nombre.split(' ')[0]}
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         )}
+                    </motion.div>
 
-                        <div style={{
-                            marginTop: '1rem',
-                            paddingTop: '1rem',
-                            borderTop: '1px solid var(--border-color)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            fontSize: '1.1rem',
-                            fontWeight: 700
-                        }}>
-                            <span style={{ color: 'var(--text-primary)' }}>Total:</span>
-                            <span style={{ color: 'var(--primary)' }}>${selectedVenta.total_venta.toFixed(2)}</span>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+                    {/* Stock Alerts */}
+                    {alertas.length > 0 && isEncargado() && (
+                        <motion.div className="premium-card" variants={itemVariants} style={{ padding: '1.25rem', borderColor: 'rgba(244, 63, 94, 0.3)' }}>
+                            <div className="card-header" style={{ marginBottom: '1rem' }}>
+                                <div className="card-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Icon name="alert-triangle" size={20} color="#F43F5E" />
+                                    <h2 className="card-title" style={{ fontSize: '1.1rem', color: '#fb7185' }}>Stock Crítico</h2>
+                                </div>
+                            </div>
+                            <div>
+                                {alertas.slice(0, 3).map(p => (
+                                    <div key={p.id} className="stock-alert-item">
+                                        <div style={{ flex: 1 }}>
+                                            <strong style={{ display: 'block', color: 'var(--text-primary)', fontSize: '0.9rem' }}>{p.nombre}</strong>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mínimo: {p.stock_minimo}</span>
+                                        </div>
+                                        <div className="glow-badge danger">
+                                            Quedan {p.stock_actual}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </motion.div>
+            </div >
+        </motion.div >
     );
 }
