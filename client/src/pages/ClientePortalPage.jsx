@@ -65,7 +65,8 @@ export default function ClientePortalPage() {
             setWallet(walletRes.data);
             setCitas(citasRes.data);
         } catch (error) {
-            console.error('Error cargando datos:', error);
+            console.error('Error cargando datos del wallet o citas:', error.response?.data || error);
+            toast.error(error.response?.data?.error || 'Tu sesión expiró o los datos no están disponibles. Por favor, cierra sesión y vuelve a entrar.');
         } finally {
             setLoading(false);
         }
