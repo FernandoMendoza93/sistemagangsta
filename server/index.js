@@ -61,6 +61,7 @@ async function initializeDatabase() {
     try {
         console.log('🚀 Ejecutando scripts de migración multi-tenant antes de levantar base...');
         await import('./scripts/migrate-multitenant.js');
+        await import('./scripts/manual-stamp-update.js');
 
         console.log('🔍 Inicializando SQLite...');
         const Database = (await import('better-sqlite3')).default;
