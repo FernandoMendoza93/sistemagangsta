@@ -7,7 +7,7 @@ import { Calendar, CheckCircle, XCircle, User, Clock, CheckSquare, X, MessageCir
 import './CitasPage.css';
 
 const START_HOUR = 10;
-const END_HOUR = 21;
+const END_HOUR = 22;
 const MINUTE_HEIGHT = 1.6;
 
 export default function CitasPage() {

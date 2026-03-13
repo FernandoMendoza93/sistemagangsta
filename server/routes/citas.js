@@ -19,9 +19,9 @@ function addMinutes(timeStr, minsToAdd) {
 
 // Utilidad: Obtener horario de apertura/cierre según día de semana
 function getHorarioDia(dayOfWeek) {
-    if (dayOfWeek === 5) return { apertura: '17:30', cierre: '21:00' }; // Viernes
-    if (dayOfWeek === 6) return { apertura: '10:00', cierre: '21:00' }; // Sabado
-    if (dayOfWeek === 0) return { apertura: '10:30', cierre: '18:30' }; // Domingo
+    if (dayOfWeek === 5) return { apertura: '14:00', cierre: '21:15' }; // Viernes (Slot de 20:30 a 21:15)
+    if (dayOfWeek === 6) return { apertura: '10:00', cierre: '21:15' }; // Sabado (Slot de 20:30 a 21:15)
+    if (dayOfWeek === 0) return { apertura: '10:30', cierre: '19:15' }; // Domingo (Slot de 18:30 a 19:15)
     return { apertura: '10:00', cierre: '20:00' }; // Lunes-Jueves
 }
 
