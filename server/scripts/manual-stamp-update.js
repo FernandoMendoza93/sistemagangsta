@@ -19,7 +19,7 @@ function applyManualStamps() {
         db = new Database(dbPath);
 
         // Target: Clientes bloqueados ayer/hoy.
-        const targets = ['Zara Jarquín', 'Ángel de Jesús', 'José Luis Rodríguez'];
+        const targets = ['Zaira Jarquín', 'Ángel de Jesús', 'José Luis Rodríguez'];
         // Fecha estricta en zona horaria obligatoria
         const hoy = dayjs().tz("America/Mexico_City").format('YYYY-MM-DD');
         const barberia_id_target = 1;
