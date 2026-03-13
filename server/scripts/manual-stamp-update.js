@@ -1,15 +1,20 @@
-const Database = require('better-sqlite3');
-const { join } = require('path');
-const dayjs = require('dayjs');
-const utc = require('dayjs/plugin/utc.js');
-const timezone = require('dayjs/plugin/timezone.js');
+import Database from 'better-sqlite3';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault("America/Mexico_City");
 
-function applyManualStamps() {
-    console.log('[MANUAL_UPDATE] Iniciando inyección de sellos de rescate...');
+// Recrear __dirname en ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export default function applyManualStamps() {
+    console.log('[MANUAL_UPDATE] Iniciando inyección de sellos de rescate ESM...');
 
     // 🏛️ INFRAESTRUCTURA INMUTABLE: Respetar ruta dinámica de Railway
     const dbPath = process.env.DATABASE_URL || join(__dirname, '..', 'data', 'database.sqlite');
@@ -29,7 +34,7 @@ function applyManualStamps() {
             const cliente = db.prepare(`SELECT id, nombre FROM clientes WHERE nombre LIKE ? AND barberia_id = ?`).get(`%${nombre}%`, barberia_id_target);
 
             if (cliente) {
-                // Verificar si ya se inyectó el sello hoy (Seguro de Auto-destrucción contra loops de reinicio)
+                // Verificar si ya se inyectó el sello hoy (Seguro de Auto-destrucción)
                 const selloExistente = db.prepare(`
                     SELECT id FROM visitas_lealtad 
                     WHERE id_cliente = ? AND fecha = ? AND barberia_id = ?
@@ -50,18 +55,11 @@ function applyManualStamps() {
             }
         }
 
-        console.log('[MANUAL_UPDATE] Proceso de sellos de rescate finalizado.');
+        console.log('[MANUAL_UPDATE] Proceso de sellos de rescate ESM finalizado.');
 
     } catch (error) {
-        console.error('[MANUAL_UPDATE_ERROR] Fallo al ejecutar el script de rescate:', error.message);
+        console.error('[MANUAL_UPDATE_ERROR] Fallo al ejecutar el script de rescate ESM:', error.message);
     } finally {
         if (db) db.close();
     }
-}
-
-// Permitir importación o ejecución directa
-if (require.main === module) {
-    applyManualStamps();
-} else {
-    module.exports = applyManualStamps;
 }
