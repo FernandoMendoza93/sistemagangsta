@@ -11,6 +11,7 @@ import POSPage from './pages/POSPage';
 import VentasPage from './pages/VentasPage';
 import CitasPage from './pages/CitasPage';
 import InventarioPage from './pages/InventarioPage';
+import HorariosPage from './pages/HorariosPage';
 import CorteCajaPage from './pages/CorteCajaPage';
 import ReportesPage from './pages/ReportesPage';
 import PersonalPage from './pages/PersonalPage';
@@ -177,6 +178,9 @@ function AppRoutes() {
         } />
         <Route path="/panel/clientes" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><ClientesPage /></ProtectedRoute>
+        } />
+        <Route path="/panel/horarios" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><HorariosPage /></ProtectedRoute>
         } />
 
         <Route path="/panel/servicios" element={

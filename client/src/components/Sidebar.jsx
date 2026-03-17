@@ -126,6 +126,11 @@ export default function Sidebar({ isOpen, onToggle }) {
                                     <span>Personal</span>
                                 </NavLink>
 
+                                <NavLink to="/panel/horarios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                    <i className="bi bi-clock-history"></i>
+                                    <span>Horarios</span>
+                                </NavLink>
+
                                 <NavLink to="/panel/comisiones" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                                     <i className="bi bi-gem"></i>
                                     <span>Comisiones</span>

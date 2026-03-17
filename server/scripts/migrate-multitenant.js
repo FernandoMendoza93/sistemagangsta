@@ -12,15 +12,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const dbPath = process.env.DATABASE_URL || join(__dirname, '../data/database.sqlite');
 
-if (!existsSync(dbPath)) {
-    console.error('Database not found at', dbPath);
-    process.exit(1);
+const isNewDB = !existsSync(dbPath);
+
+// Backup with timestamp — NEVER overwrites the original
+if (!isNewDB) {
+    const now = new Date();
+    const ts = now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') + '_' +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0') +
+        String(now.getSeconds()).padStart(2, '0');
+    const backupPath = join(dirname(dbPath), `database_backup_${ts}.sqlite`);
+    copyFileSync(dbPath, backupPath);
+    console.log(`Backup created: ${backupPath}`);
+} else {
+    console.log('Fresh install — no backup needed. Schema + init_data.sql will build it from index.js.');
 }
 
-// Backup
-const backupPath = dbPath.replace('.db', `.backup-${Date.now()}.db`);
-copyFileSync(dbPath, backupPath);
-console.log(`Backup created: ${backupPath}`);
+// Only run migration if the DB already existed (not a fresh install)
+if (isNewDB) {
+    console.log('Skipping migration steps — fresh database will be built by index.js schema.');
+} else {
 
 const db = new Database(dbPath);
 db.pragma('foreign_keys = OFF'); // Disable for migration
@@ -199,8 +212,44 @@ for (const table of indexedTables) {
 }
 
 db.pragma('foreign_keys = ON');
+db.exec(`
+    CREATE TABLE IF NOT EXISTS horarios_barberos (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_barbero  INTEGER NOT NULL,
+        dia_semana  INTEGER NOT NULL CHECK(dia_semana BETWEEN 0 AND 6),
+        hora_inicio TEXT NOT NULL,
+        hora_fin    TEXT NOT NULL,
+        activo      INTEGER DEFAULT 1,
+        barberia_id INTEGER NOT NULL REFERENCES barberias(id),
+        FOREIGN KEY (id_barbero) REFERENCES barberos(id),
+        UNIQUE(id_barbero, dia_semana, barberia_id)
+    )
+`);
+
+// Seed initial schedule if table is empty for this tenant
+const horarioCount = db.prepare('SELECT COUNT(*) AS cnt FROM horarios_barberos WHERE barberia_id = 1').get()?.cnt || 0;
+if (horarioCount === 0) {
+    db.exec(`
+        INSERT OR IGNORE INTO horarios_barberos (id_barbero, dia_semana, hora_inicio, hora_fin, activo, barberia_id)
+        VALUES
+            (1, 5, '14:00', '21:30', 1, 1),
+            (1, 6, '10:00', '21:30', 1, 1),
+            (1, 0, '10:30', '19:30', 1, 1),
+            (2, 5, '14:00', '21:30', 1, 1),
+            (2, 6, '10:00', '21:30', 1, 1),
+            (2, 0, '10:30', '19:30', 1, 1)
+    `);
+    console.log('  Seeded initial horarios_barberos for The Gangsta');
+} else {
+    console.log('  horarios_barberos already seeded — skipping');
+}
+console.log('  horarios_barberos table ready');
+
+db.pragma('foreign_keys = ON');
 db.close();
 
 console.log('\n=== Migration complete! ===');
 console.log('The Gangsta is now tenant #1');
 console.log('SuperAdmin: superadmin@flow.com / admin123');
+
+} // end if(!isNewDB)

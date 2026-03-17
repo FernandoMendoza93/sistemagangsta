@@ -19,10 +19,10 @@ Este archivo representa la memoria persistente y las reglas operativas del Agent
   - Backend API: `http://localhost:3000`
   - Frontend React: `http://localhost:5173`
   - *Evitar iniciar múltiples terminales en puertos colisionados.*
-- **Credenciales Frecuentes (Datos Semilla)**:
-  - SuperAdmin: `superadmin@flow.com` / `admin123`
-  - Admin (Tenant 1): `admin@barberia.com` / `admin123`
-  - Cliente Prueba (Pedro): Teléfono `9511289141` / `admin123`
+- **Credenciales Frecuentes y Rutas de Acceso**:
+  - **SuperAdmin** (Ruta: `/login` ➡️ `/admin/barberias`): `superadmin@flow.com` / `admin123`
+  - **Admin** (Ruta: `/login` ➡️ `/panel`): `admin@barberia.com` / `admin123`
+  - **Cliente Prueba** (Ruta: `/mi-perfil` ➡️ `/mi-perfil/portal`): Teléfono `9511289141` / `admin123`
 - **Motor de Base de Datos**: SQLite (Multi-tenant) con `better-sqlite3`.
 - **Rutas y Volúmenes**: 
   - La conexión SQLite DEBE usar siempre la validación para Railway: `const dbPath = process.env.DATABASE_URL || join(__dirname, 'data', 'database.sqlite');`

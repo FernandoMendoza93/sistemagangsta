@@ -182,6 +182,7 @@ const clientesRoutes = (await import('./routes/clientes.js')).default;
 const citasRoutes = (await import('./routes/citas.js')).default;
 const loyaltyRoutes = (await import('./routes/loyalty.js')).default;
 const superadminRoutes = (await import('./routes/superadmin.js')).default;
+const horariosRoutes = (await import('./routes/horarios.js')).default;
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
@@ -196,6 +197,7 @@ app.use('/api/clientes', clientesRoutes);
 app.use('/api/citas', citasRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/superadmin', superadminRoutes);
+app.use('/api/horarios', horariosRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {

@@ -17,12 +17,18 @@ function addMinutes(timeStr, minsToAdd) {
     return date.toTimeString().slice(0, 5);
 }
 
-// Utilidad: Obtener horario de apertura/cierre según día de semana
-function getHorarioDia(dayOfWeek) {
-    if (dayOfWeek === 5) return { apertura: '14:00', cierre: '21:30' }; // Viernes (Fuerza margen para slot de 20:30)
-    if (dayOfWeek === 6) return { apertura: '10:00', cierre: '21:30' }; // Sabado  (Fuerza margen para slot de 20:30)
-    if (dayOfWeek === 0) return { apertura: '10:30', cierre: '19:30' }; // Domingo (Fuerza margen para slot de 18:30)
-    return { apertura: '10:00', cierre: '20:00' }; // Lunes-Jueves
+// Utilidad: Obtener horario del barbero desde DB (reemplaza el hardcode getHorarioDia)
+function getHorarioFromDB(db, id_barbero, dayOfWeek, barberia_id) {
+    const horario = db.prepare(`
+        SELECT hora_inicio as apertura, hora_fin as cierre
+        FROM horarios_barberos
+        WHERE id_barbero = ? AND dia_semana = ? AND barberia_id = ? AND activo = 1
+    `).get(id_barbero, dayOfWeek, barberia_id);
+    
+    if (horario) {
+        horario.intervalo = 45; // Slot duration en minutos
+    }
+    return horario;
 }
 
 // GET /api/citas/mis-citas - Citas del cliente logueado
@@ -68,9 +74,16 @@ router.post('/', verifyToken, (req, res) => {
             return res.status(400).json({ error: 'Fecha, hora y servicio son requeridos' });
         }
 
+        // Elegir primer barbero activo del tenant si no se especificó
         if (!id_barbero) {
-            id_barbero = 1;
+            const primero = db.prepare('SELECT id FROM barberos WHERE barberia_id = ? AND estado = \'Activo\' LIMIT 1').get(req.barberia_id);
+            if (!primero) return res.status(400).json({ error: 'No hay barberos disponibles en este negocio' });
+            id_barbero = primero.id;
         }
+
+        // Verificar que el barbero pertenece a este tenant
+        const barberoValido = db.prepare('SELECT id FROM barberos WHERE id = ? AND barberia_id = ? AND estado = \'Activo\'').get(id_barbero, req.barberia_id);
+        if (!barberoValido) return res.status(400).json({ error: 'Barbero no disponible en este negocio' });
 
         // Verificar que el servicio pertenece al tenant
         const servicio = db.prepare('SELECT duracion_aprox FROM servicios WHERE id = ? AND barberia_id = ?').get(id_servicio, req.barberia_id);
@@ -83,7 +96,11 @@ router.post('/', verifyToken, (req, res) => {
 
         const dateObj = dayjs.tz(fecha, "America/Mexico_City");
         const dayOfWeek = dateObj.day();
-        const horarioLaboral = getHorarioDia(dayOfWeek);
+        const horarioLaboral = getHorarioFromDB(db, id_barbero, dayOfWeek, req.barberia_id);
+
+        if (!horarioLaboral) {
+            return res.status(400).json({ error: `El barbero seleccionado no trabaja ese día de la semana` });
+        }
 
         if (hora < horarioLaboral.apertura) {
             return res.status(400).json({ error: 'La hora seleccionada es antes de la apertura del local' });
@@ -131,19 +148,50 @@ router.post('/', verifyToken, (req, res) => {
     }
 });
 
+// GET /api/citas/diasDisponibles?id_barbero=X — días de la semana en que trabaja el barbero
+router.get('/diasDisponibles', verifyToken, requireTenant, (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id_barbero } = req.query;
+
+        if (!id_barbero) {
+            return res.status(400).json({ error: 'id_barbero requerido' });
+        }
+
+        const horarios = db.prepare(`
+            SELECT dia_semana FROM horarios_barberos
+            WHERE id_barbero = ? AND barberia_id = ? AND activo = 1
+            ORDER BY dia_semana ASC
+        `).all(id_barbero, req.barberia_id);
+
+        res.json({ dias: horarios.map(h => h.dia_semana) });
+    } catch (error) {
+        console.error('Error obteniendo días disponibles:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // GET /api/citas/disponibilidad - Horas ocupadas por fecha y barbero
 router.get('/disponibilidad', verifyToken, (req, res) => {
     try {
         const db = req.app.locals.db;
-        const { fecha, id_barbero = 1 } = req.query;
+        const { fecha, id_barbero } = req.query;
 
         if (!fecha) {
             return res.status(400).json({ error: 'Fecha requerida' });
         }
+        if (!id_barbero) {
+            return res.status(400).json({ error: 'id_barbero requerido' });
+        }
 
         const dateObj = dayjs.tz(fecha, "America/Mexico_City");
         const dayOfWeek = dateObj.day();
-        const horarioLaboral = getHorarioDia(dayOfWeek);
+        const horarioLaboral = getHorarioFromDB(db, id_barbero, dayOfWeek, req.barberia_id);
+
+        if (!horarioLaboral) {
+            // Barbero no trabaja ese día
+            return res.json({ horario: null, ocupadas: [] });
+        }
 
         const citasOcupadas = db.prepare(`
             SELECT c.hora as inicio, s.duracion_aprox

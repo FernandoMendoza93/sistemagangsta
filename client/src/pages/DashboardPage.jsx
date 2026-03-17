@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import CierreServicioModal from '../components/CierreServicioModal';
 import './DashboardPage.css';
 
 const getLocalDate = () => {
@@ -18,13 +19,15 @@ const getLocalDate = () => {
 
 
 export default function DashboardPage() {
-    const { user, isEncargado } = useAuth();
+    const { user, isEncargado, isBarbero } = useAuth();
     const [resumen, setResumen] = useState(null);
     const [alertas, setAlertas] = useState([]);
     const [ventas, setVentas] = useState([]);
     const [citasHoy, setCitasHoy] = useState([]);
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [citaSeleccionada, setCitaSeleccionada] = useState(null);
+    const [showModal, setShowModal] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -75,6 +78,7 @@ export default function DashboardPage() {
     };
 
     return (
+        <>
         <motion.div
             className="dashboard-container"
             initial="hidden"
@@ -124,35 +128,37 @@ export default function DashboardPage() {
                 </motion.div>
             </motion.div>
 
-            {/* Gráfica de Ingresos */}
-            <motion.div className="premium-card" variants={itemVariants} style={{ marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
-                <div className="card-header" style={{ marginBottom: '0' }}>
-                    <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Icon name="trending-up" size={20} color="var(--primary)" />
-                        Flujo de Ingresos (Semana)
-                    </h2>
-                </div>
-                <div className="chart-container">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: 'rgba(10,10,11,0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
-                                itemStyle={{ color: 'var(--primary)' }}
-                            />
-                            <Area type="monotone" dataKey="ingresos" stroke="var(--primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngresos)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            </motion.div>
+            {/* Gráfica de Ingresos — oculta para Barberos (solo ven sus propios datos) */}
+            {!isBarbero() && (
+                <motion.div className="premium-card" variants={itemVariants} style={{ marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
+                    <div className="card-header" style={{ marginBottom: '0' }}>
+                        <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Icon name="trending-up" size={20} color="var(--primary)" />
+                            Flujo de Ingresos (Semana)
+                        </h2>
+                    </div>
+                    <div className="chart-container">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: 'rgba(10,10,11,0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                    itemStyle={{ color: 'var(--primary)' }}
+                                />
+                                <Area type="monotone" dataKey="ingresos" stroke="var(--primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngresos)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </motion.div>
+            )}
 
             <div className="card-grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1.2fr)', alignItems: 'start' }}>
                 {/* Tabla de Ventas (Izquierda, más grande) */}
@@ -209,13 +215,36 @@ export default function DashboardPage() {
                         ) : (
                             <div className="bento-grid" style={{ gridTemplateColumns: '1fr' }}>
                                 {citasHoy.map(cita => (
-                                    <div key={cita.id} className="bento-item">
+                                    <div key={cita.id} className="bento-item" style={{ gap: '0.4rem' }}>
                                         <div className="bento-time">{cita.hora}</div>
                                         <div className="bento-service">{cita.nombre_servicio}</div>
                                         <div className="bento-client">
                                             <Icon name="user" size={14} />
                                             {cita.cliente_nombre.split(' ')[0]}
                                         </div>
+                                        <button
+                                            onClick={() => { setCitaSeleccionada(cita); setShowModal(true); }}
+                                            style={{
+                                                marginTop: '0.4rem',
+                                                padding: '0.35rem 0.8rem',
+                                                borderRadius: '8px',
+                                                border: '1px solid rgba(255,107,74,0.4)',
+                                                background: 'rgba(255,107,74,0.12)',
+                                                color: '#FF6B4A',
+                                                fontSize: '0.77rem',
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '5px',
+                                                transition: 'background 0.2s'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,107,74,0.22)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,107,74,0.12)'}
+                                        >
+                                            <Icon name="check-circle" size={13} />
+                                            Completar
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -247,7 +276,21 @@ export default function DashboardPage() {
                         </motion.div>
                     )}
                 </motion.div>
-            </div >
-        </motion.div >
+            </div>
+        </motion.div>
+
+        {/* Modal de Cierre de Servicio */}
+        {showModal && citaSeleccionada && (
+            <CierreServicioModal
+                cita={citaSeleccionada}
+                onClose={() => { setShowModal(false); setCitaSeleccionada(null); }}
+                onSuccess={() => {
+                    setShowModal(false);
+                    setCitaSeleccionada(null);
+                    loadData();
+                }}
+            />
+        )}
+        </>
     );
 }

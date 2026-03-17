@@ -92,7 +92,9 @@ export const ventasService = {
     getResumenHoy: () => api.get('/ventas/resumen/hoy'),
     getResumenSemana: () => api.get('/ventas/resumen/semana'),
     confirmar: (id) => api.post(`/ventas/${id}/confirmar`),
-    cancelar: (id) => api.post(`/ventas/${id}/cancelar`)
+    cancelar: (id) => api.post(`/ventas/${id}/cancelar`),
+    completarCita: (id_cita, items_extra, metodo_pago) =>
+        api.post('/ventas/completar-cita', { id_cita, items_extra, metodo_pago })
 };
 
 // Corte de Caja
@@ -139,7 +141,8 @@ export const citasService = {
     getMisCitas: () => api.get('/citas/mis-citas'),
     getMiPerfil: () => api.get('/citas/perfil'),
     crear: (data) => api.post('/citas', data),
-    getDisponibilidad: (fecha, id_barbero = 1) => api.get('/citas/disponibilidad', { params: { fecha, id_barbero } }),
+    getDisponibilidad: (fecha, id_barbero) => api.get('/citas/disponibilidad', { params: { fecha, id_barbero } }),
+    getDiasDisponibles: (id_barbero) => api.get('/citas/diasDisponibles', { params: { id_barbero } }),
     getAll: (fecha, estado) => api.get('/citas', { params: { fecha, estado } }),
     cambiarEstado: (id, estado) => api.put(`/citas/${id}/estado`, { estado }),
     getServiciosActivos: () => api.get('/servicios/activos'),
@@ -150,5 +153,14 @@ export const citasService = {
 export const loyaltyService = {
     scan: (token) => api.post('/loyalty/scan', { token })
 };
+
+// Horarios de barberos (Admin)
+export const horariosService = {
+    getAll: () => api.get('/horarios'),
+    getByBarbero: (id_barbero) => api.get(`/horarios/${id_barbero}`),
+    updateDia: (id_barbero, dia, data) => api.put(`/horarios/${id_barbero}/${dia}`, data),
+    updateBatch: (id_barbero, horarios) => api.put(`/horarios/${id_barbero}/batch`, { horarios })
+};
+
 
 export default api;
