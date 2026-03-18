@@ -61,7 +61,7 @@ export default function DashboardPage() {
     };
 
     if (loading) {
-        return <div className="loading"><div className="spinner" style={{ borderColor: 'var(--primary)' }}></div></div>;
+        return <div className="loading"><div className="spinner" style={{ borderColor: 'var(--accent-primary)' }}></div></div>;
     }
 
     const containerVariants = {
@@ -88,9 +88,9 @@ export default function DashboardPage() {
             <motion.div className="page-header dashboard-header-glow" variants={itemVariants}>
                 <div>
                     <h1 className="page-title" style={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
-                        Bienvenido, <span style={{ color: 'var(--primary)' }}>{user?.nombre}</span>
+                        Bienvenido, <span style={{ color: 'var(--accent-primary)' }}>{user?.nombre}</span>
                     </h1>
-                    <p className="page-subtitle" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="page-subtitle" style={{ color: 'var(--text-muted)' }}>
                         Panel de Control - {new Date().toLocaleDateString('es-MX', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
                 </div>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
                 <motion.div className="premium-card" variants={itemVariants} style={{ marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
                     <div className="card-header" style={{ marginBottom: '0' }}>
                         <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Icon name="trending-up" size={20} color="var(--primary)" />
+                            <Icon name="trending-up" size={20} color="var(--accent-primary)" />
                             Flujo de Ingresos (Semana)
                         </h2>
                     </div>
@@ -142,18 +142,18 @@ export default function DashboardPage() {
                             <AreaChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                 <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
                                 <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: 'rgba(10,10,11,0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
-                                    itemStyle={{ color: 'var(--primary)' }}
+                                    contentStyle={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--glass-border)', borderRadius: '8px', color: 'var(--text-main)' }}
+                                    itemStyle={{ color: 'var(--accent-primary)' }}
                                 />
-                                <Area type="monotone" dataKey="ingresos" stroke="var(--primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngresos)" />
+                                <Area type="monotone" dataKey="ingresos" stroke="var(--accent-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngresos)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -191,7 +191,7 @@ export default function DashboardPage() {
                                                     {v.metodo_pago}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--primary-light)' }}>
+                                            <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent-secondary)' }}>
                                                 ${v.total_venta.toFixed(2)}
                                             </td>
                                         </tr>
@@ -228,19 +228,18 @@ export default function DashboardPage() {
                                                 marginTop: '0.4rem',
                                                 padding: '0.35rem 0.8rem',
                                                 borderRadius: '8px',
-                                                border: '1px solid rgba(255,107,74,0.4)',
-                                                background: 'rgba(255,107,74,0.12)',
-                                                color: '#FF6B4A',
+                                                border: '1px solid var(--accent-primary)',
+                                                background: 'transparent',
+                                                color: 'var(--accent-primary)',
                                                 fontSize: '0.77rem',
                                                 fontWeight: 700,
                                                 cursor: 'pointer',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '5px',
-                                                transition: 'background 0.2s'
+                                                transition: 'all 0.2s'
                                             }}
-                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,107,74,0.22)'}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,107,74,0.12)'}
+                                            className="hover:bg-[var(--accent-primary)] hover:text-[var(--bg-surface)]"
                                         >
                                             <Icon name="check-circle" size={13} />
                                             Completar

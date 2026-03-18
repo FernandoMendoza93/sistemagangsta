@@ -170,9 +170,10 @@ CREATE TABLE IF NOT EXISTS ventas_detalle (
 
 CREATE TABLE IF NOT EXISTS categorias (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT NOT NULL UNIQUE,
+    nombre TEXT NOT NULL,
     descripcion TEXT,
-    barberia_id INTEGER REFERENCES barberias(id)
+    barberia_id INTEGER REFERENCES barberias(id),
+    UNIQUE(nombre, barberia_id)
 );
 
 CREATE TABLE IF NOT EXISTS productos (

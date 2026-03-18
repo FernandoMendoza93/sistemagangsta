@@ -1,23 +1,55 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle } from 'lucide-react';
+import { authService } from '../services/api';
+import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle, Store } from 'lucide-react';
 import './ClienteLoginPage.css';
 
 export default function ClienteLoginPage() {
-    const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
+    const { slug } = useParams();
+    const [activeTab, setActiveTab] = useState('login');
     const [telefono, setTelefono] = useState('');
     const [nombre, setNombre] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Barbería dinámica
+    const [barberia, setBarberia] = useState(null);
+    const [barberiaLoading, setBarberiaLoading] = useState(true);
+    const [barberiaError, setBarberiaError] = useState(null);
+
     const { loginCliente, user } = useAuth();
     const navigate = useNavigate();
 
-    // Si ya está logueado como cliente, ir al portal
+    // Cargar info de barbería al montar
+    useEffect(() => {
+        if (!slug) {
+            setBarberiaError('URL inválida. Escanea el código QR de tu barbería.');
+            setBarberiaLoading(false);
+            return;
+        }
+
+        authService.getBarberiaInfo(slug)
+            .then(res => {
+                setBarberia(res.data);
+            })
+            .catch(err => {
+                if (err.response?.status === 404) {
+                    setBarberiaError('Esta barbería no existe. Verifica el enlace o escanea el QR nuevamente.');
+                } else if (err.response?.status === 403) {
+                    setBarberiaError('Esta barbería está inactiva por el momento. Contacta a tu barbero.');
+                } else {
+                    setBarberiaError('No pudimos cargar la información. Intenta de nuevo en un momento.');
+                }
+            })
+            .finally(() => setBarberiaLoading(false));
+    }, [slug]);
+
+    // Si ya está logueado como cliente, ir al portal de su barbería
     if (user && user.rol === 'Cliente') {
-        return <Navigate to="/mi-perfil/portal" replace />;
+        return <Navigate to={`/portal/${slug}/panel`} replace />;
     }
 
     function formatPhone(value) {
@@ -43,9 +75,10 @@ export default function ClienteLoginPage() {
             await loginCliente(
                 digits,
                 activeTab === 'register' ? nombre : undefined,
-                password
+                password,
+                slug
             );
-            navigate('/mi-perfil/portal');
+            navigate(`/portal/${slug}/panel`);
         } catch (err) {
             const data = err.response?.data;
             if (data?.needsRegistration) {
@@ -63,28 +96,70 @@ export default function ClienteLoginPage() {
         }
     }
 
+    // Estado de carga de barbería
+    if (barberiaLoading) {
+        return (
+            <div className="cliente-login-page">
+                <div className="cliente-login-card fade-in-on-load" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+                    <div className="cliente-spinner" style={{ margin: '0 auto 1.5rem' }}></div>
+                    <p style={{ color: 'var(--text-secondary)' }}>Cargando portal...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Estado de error de barbería
+    if (barberiaError) {
+        return (
+            <div className="cliente-login-page">
+                <div className="cliente-login-card fade-in-on-load" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+                    <div className="logo-ring" style={{ margin: '0 auto 1.5rem', width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,107,74,0.12)', border: '2px solid rgba(255,107,74,0.3)' }}>
+                        <Store size={36} color="#FF6B4A" strokeWidth={1.5} />
+                    </div>
+                    <h2 style={{ color: '#1a1a1a', marginBottom: '0.75rem', fontSize: '1.25rem' }}>Portal no disponible</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>{barberiaError}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Color dinámico de la barbería
+    const acento = barberia?.color_acento || '#FF6B4A';
+
     return (
         <div className="cliente-login-page">
-            <div className="cliente-login-card fade-in-on-load">
-                {/* Logo */}
+            <div className="cliente-login-card fade-in-on-load" style={{ '--color-acento': acento }}>
+                {/* Logo dinámico */}
                 <div className="cliente-login-logo">
-                    <div className="logo-ring">
-                        <Scissors size={40} color="#FF6B4A" strokeWidth={1} />
-                    </div>
-                    <h1>Gangsta Barbershop</h1>
-                    <p className="tagline">Barber Shop</p>
+                    {barberia?.logo_url ? (
+                        <div className="logo-ring" style={{ borderColor: `${acento}50`, background: `${acento}15`, padding: '6px', overflow: 'hidden' }}>
+                            <img
+                                src={barberia.logo_url}
+                                alt={barberia.nombre}
+                                style={{ width: 68, height: 68, objectFit: 'cover', borderRadius: '50%' }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="logo-ring" style={{ borderColor: `${acento}50`, background: `${acento}15` }}>
+                            <Scissors size={40} color={acento} strokeWidth={1} />
+                        </div>
+                    )}
+                    <h1 style={{ color: '#1a1a1a' }}>{barberia?.nombre}</h1>
+                    <p className="tagline">Portal de Clientes</p>
                 </div>
 
                 {/* Tabs */}
                 <div className="cliente-tabs">
                     <button
                         className={`cliente-tab ${activeTab === 'login' ? 'active' : ''}`}
+                        style={activeTab === 'login' ? { borderBottomColor: acento, color: acento } : {}}
                         onClick={() => { setActiveTab('login'); setError(''); }}
                     >
                         Iniciar Sesión
                     </button>
                     <button
                         className={`cliente-tab ${activeTab === 'register' ? 'active' : ''}`}
+                        style={activeTab === 'register' ? { borderBottomColor: acento, color: acento } : {}}
                         onClick={() => { setActiveTab('register'); setError(''); }}
                     >
                         Registrarme
@@ -110,7 +185,6 @@ export default function ClienteLoginPage() {
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="cliente-login-form">
-                    {/* Name Input (only for new registration) */}
                     {activeTab === 'register' && (
                         <div className="cliente-input-group slide-in">
                             <div className="cliente-input-icon"><User size={20} strokeWidth={1.5} /></div>
@@ -125,7 +199,6 @@ export default function ClienteLoginPage() {
                         </div>
                     )}
 
-                    {/* Phone Input */}
                     <div className="cliente-input-group">
                         <div className="cliente-input-icon"><Phone size={20} strokeWidth={1.5} /></div>
                         <input
@@ -139,7 +212,6 @@ export default function ClienteLoginPage() {
                         />
                     </div>
 
-                    {/* Password Input */}
                     <div className="cliente-input-group">
                         <div className="cliente-input-icon"><Lock size={20} strokeWidth={1.5} /></div>
                         <input
@@ -167,11 +239,11 @@ export default function ClienteLoginPage() {
                         </p>
                     )}
 
-                    {/* Submit */}
                     <button
                         type="submit"
                         className="cliente-submit-btn"
                         disabled={loading}
+                        style={{ background: `linear-gradient(135deg, ${acento}, ${acento}cc)` }}
                     >
                         {loading ? (
                             <div className="cliente-spinner"></div>

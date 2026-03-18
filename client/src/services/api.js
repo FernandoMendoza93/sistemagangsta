@@ -25,7 +25,10 @@ api.interceptors.response.use(
             localStorage.removeItem('user');
 
             // Si el cliente estaba en el portal, regresarlo a su login
-            if (window.location.pathname.startsWith('/mi-perfil')) {
+            const pathParts = window.location.pathname.split('/');
+            if (pathParts[1] === 'portal' && pathParts[2]) {
+                window.location.href = `/portal/${pathParts[2]}`;
+            } else if (window.location.pathname.startsWith('/mi-perfil')) {
                 window.location.href = '/mi-perfil';
             } else {
                 window.location.href = '/login';
@@ -35,11 +38,12 @@ api.interceptors.response.use(
     }
 );
 
-// Auth
+// Auth del staff
 export const authService = {
     login: (email, password) => api.post('/auth/login', { email, password }),
     register: (data) => api.post('/auth/register', data),
-    me: () => api.get('/auth/me')
+    me: () => api.get('/auth/me'),
+    getBarberiaInfo: (slug) => api.get(`/auth/barberia-info/${slug}`)
 };
 
 // Usuarios
@@ -133,7 +137,8 @@ export const clientesService = {
 
 // Auth del Cliente (por teléfono)
 export const clienteAuthService = {
-    login: (telefono, nombre, password) => api.post('/auth/cliente', { telefono, nombre, password })
+    login: (telefono, nombre, password, slug) =>
+        api.post('/auth/cliente', { telefono, nombre, password, barberia_slug: slug })
 };
 
 // Citas
@@ -162,5 +167,11 @@ export const horariosService = {
     updateBatch: (id_barbero, horarios) => api.put(`/horarios/${id_barbero}/batch`, { horarios })
 };
 
+// SuperAdmin
+export const superAdminService = {
+    getMetrics: () => api.get('/superadmin/metrics'),
+    getBarberias: () => api.get('/superadmin/barberias'),
+    updateEstadoBarberia: (id, estado) => api.put(`/superadmin/barberias/${id}/estado`, { estado })
+};
 
 export default api;

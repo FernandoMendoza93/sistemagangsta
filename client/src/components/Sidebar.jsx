@@ -1,8 +1,10 @@
-import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useNavigate, NavLink } from 'react-router-dom';
 
 export default function Sidebar({ isOpen, onToggle }) {
     const { user, logout, isAdmin, isEncargado } = useAuth();
+    const { theme } = useTheme();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -43,23 +45,30 @@ export default function Sidebar({ isOpen, onToggle }) {
                 onClick={() => onToggle?.(false)}
             />
 
-            <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+            <aside 
+                className={`sidebar ${isOpen ? 'sidebar-open' : ''} ${theme?.clase_glass || ''}`}
+                style={{ 
+                    backgroundColor: 'var(--bg-surface)', 
+                    borderColor: 'var(--glass-border)',
+                    color: 'var(--text-main)'
+                }}
+            >
                 <div className="sidebar-overlay"></div>
                 <div className="sidebar-content">
-                    <div className="sidebar-header">
+                    <div className="sidebar-header" style={{ backgroundColor: 'transparent', borderBottomColor: 'var(--glass-border)' }}>
                         <div className="sidebar-logo">
                             {logoUrl ? (
-                                <img src={logoUrl} alt={barberiaName} className="sidebar-logo-img" />
+                                <img src={logoUrl} alt={barberiaName} className="sidebar-logo-img" style={{ borderColor: 'var(--accent-primary)' }} />
                             ) : (
-                                <div className="sidebar-logo-initials">{initials}</div>
+                                <div className="sidebar-logo-initials" style={{ background: 'var(--gradient-gold)' }}>{initials}</div>
                             )}
                         </div>
-                        <h1 className="sidebar-brand">{barberiaName}</h1>
-                        <p className="sidebar-tagline">Panel de Gestion</p>
+                        <h1 className="sidebar-brand" style={{ color: 'var(--text-main)' }}>{barberiaName}</h1>
+                        <p className="sidebar-tagline" style={{ color: 'var(--text-muted)' }}>Panel de Gestion</p>
                     </div>
 
                     <nav className="sidebar-nav">
-                        <div className="nav-section-title">Principal</div>
+                        <div className="nav-section-title" style={{ color: 'var(--accent-primary)' }}>Principal</div>
 
                         <NavLink to="/panel" end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
                             <i className="bi bi-speedometer2"></i>
@@ -135,18 +144,23 @@ export default function Sidebar({ isOpen, onToggle }) {
                                     <i className="bi bi-gem"></i>
                                     <span>Comisiones</span>
                                 </NavLink>
+
+                                <NavLink to="/panel/configuracion" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                    <i className="bi bi-qr-code"></i>
+                                    <span>Configuración</span>
+                                </NavLink>
                             </>
                         )}
                     </nav>
 
-                    <div className="sidebar-footer">
-                        <div className="user-info">
-                            <div className="user-avatar">
+                    <div className="sidebar-footer" style={{ borderTopColor: 'var(--glass-border)', backgroundColor: 'transparent' }}>
+                        <div className="user-info" style={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--glass-border)' }}>
+                            <div className="user-avatar" style={{ backgroundColor: 'rgba(var(--accent-primary-rgb, 255, 95, 64), 0.1)', color: 'var(--accent-primary)' }}>
                                 <i className="bi bi-person-fill"></i>
                             </div>
                             <div className="user-details">
-                                <div className="user-name">{user?.nombre}</div>
-                                <div className="user-role">
+                                <div className="user-name" style={{ color: 'var(--text-main)' }}>{user?.nombre}</div>
+                                <div className="user-role" style={{ color: 'var(--accent-primary)' }}>
                                     <i className="bi bi-shield-check me-1"></i>
                                     {user?.rol}
                                 </div>

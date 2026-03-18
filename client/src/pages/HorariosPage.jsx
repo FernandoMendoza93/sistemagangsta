@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Save, User, UserCheck, AlertCircle } from 'lucide-react';
 import { horariosService, citasService } from '../services/api';
 import toast from 'react-hot-toast';
-import './HorariosPage.css';
 
 const DIAS_SEMANA = [
     { num: 0, nombre: 'Domingo' },
@@ -45,7 +44,6 @@ export default function HorariosPage() {
         setLoading(true);
         try {
             const res = await horariosService.getByBarbero(barbero.id);
-            // Mappear los horarios del server (o crear defaults si no existen)
             const horasDB = res.data.horarios || [];
             
             const horasFormateadas = DIAS_SEMANA.map(dia => {
@@ -53,7 +51,6 @@ export default function HorariosPage() {
                 if (existe) {
                     return { ...existe, modificado: false };
                 }
-                // Default si no hay registro
                 return {
                     dia_semana: dia.num,
                     hora_inicio: '10:00',
@@ -88,7 +85,6 @@ export default function HorariosPage() {
 
         setSaving(true);
         try {
-            // Mandar todos los horarios del barbero actual para sobreescribir la semana
             await horariosService.updateBatch(selectedBarbero.id, horarios.map(h => ({
                 dia_semana: h.dia_semana,
                 hora_inicio: h.hora_inicio,
@@ -97,8 +93,6 @@ export default function HorariosPage() {
             })));
             
             toast.success(`¡Jornada semanal de ${selectedBarbero.nombre} actualizada con éxito!`, { duration: 4000 });
-            
-            // Limpiar flag de modificados locales
             setHorarios(prev => prev.map(h => ({ ...h, modificado: false })));
         } catch (error) {
             console.error('Error guardando en lote:', error);
@@ -112,12 +106,14 @@ export default function HorariosPage() {
 
     if (loading && !selectedBarbero) {
         return (
-            <div className="layout-content">
-                <div className="page-header">
-                    <div className="header-icon primary"><Clock size={24} /></div>
-                    <div className="header-info">
-                        <h1>Horarios del Personal</h1>
-                        <p>Cargando configuraciones...</p>
+            <div className="p-4 sm:p-8">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-coral/10 flex items-center justify-center">
+                        <Clock className="w-6 h-6 text-coral" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-gray-900 m-0">Horarios del Personal</h1>
+                        <p className="text-gray-500 m-0">Cargando configuraciones...</p>
                     </div>
                 </div>
             </div>
@@ -125,104 +121,116 @@ export default function HorariosPage() {
     }
 
     return (
-        <div className="layout-content">
-            <div className="page-header">
-                <div className="header-icon primary"><Clock size={24} /></div>
-                <div className="header-info">
-                    <h1>Horarios del Personal</h1>
-                    <p>Configura los días y horas laborales de cada barbero</p>
+        <div className="p-4 sm:p-8 font-sans max-w-7xl mx-auto">
+            <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-coral/10 flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-coral" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-extrabold text-gray-900 m-0">Horarios del Personal</h1>
+                    <p className="text-gray-500 text-sm sm:text-base m-0">Configura los días y horas laborales de cada barbero</p>
                 </div>
             </div>
 
-            <div className="alert bg-blue-50 border-blue-200 text-blue-800 mb-6 flex items-start gap-3 p-4 rounded-xl">
-                <AlertCircle size={20} className="mt-0.5 text-blue-600 flex-shrink-0" />
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 mb-8 flex items-start gap-3 p-4 rounded-xl">
+                <AlertCircle className="w-5 h-5 mt-0.5 text-blue-600 flex-shrink-0" />
                 <div className="text-sm">
                     <strong>Importante:</strong> Los horarios definidos aquí controlan qué días y a qué horas los clientes pueden agendar con este barbero en el Portal de Reservas. Si un día está apagado, no aparecerá en el calendario de turnos.
                 </div>
             </div>
 
-            <div className="horarios-grid">
+            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
+                
                 {/* Panel Izquierdo: Lista de Barberos */}
-                <div className="barberos-panel bento-card">
-                    <h3><User size={18} /> Selecciona un Barbero</h3>
-                    <div className="barbero-list">
-                        {barberos.map(b => (
-                            <button
-                                key={b.id}
-                                className={`btn-barbero ${selectedBarbero?.id === b.id ? 'active' : ''}`}
-                                onClick={() => handleSelectBarbero(b)}
-                            >
-                                <div className="barb-avatar">
-                                    {b.nombre.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="barb-info">
-                                    <span className="b-nombre">{b.nombre}</span>
-                                    {selectedBarbero?.id === b.id && <span className="b-badge">Seleccionado</span>}
-                                </div>
-                                {selectedBarbero?.id === b.id && <UserCheck size={18} className="icon-check" />}
-                            </button>
-                        ))}
+                <div className="bg-white/85 border border-black/5 rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl">
+                    <h3 className="m-0 mb-5 text-lg text-gray-900 font-extrabold flex items-center gap-2">
+                        <User className="w-5 h-5" /> Selecciona un Barbero
+                    </h3>
+                    <div className="flex flex-col gap-3">
+                        {barberos.map(b => {
+                            const isActive = selectedBarbero?.id === b.id;
+                            return (
+                                <button
+                                    key={b.id}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-200 w-full text-left relative min-h-[44px] ${isActive ? 'bg-[#FFF5F2] border-2 border-coral shadow-[0_4px_15px_rgba(255,107,74,0.15)]' : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'}`}
+                                    onClick={() => handleSelectBarbero(b)}
+                                >
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-lg text-white shadow-sm ${isActive ? 'bg-gradient-to-br from-coral to-[#FF5A2A]' : 'bg-gradient-to-br from-gray-800 to-gray-600'}`}>
+                                        {b.nombre.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`font-bold text-sm sm:text-base ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>{b.nombre}</span>
+                                        {isActive && <span className="text-[0.7rem] text-coral font-bold mt-0.5 uppercase tracking-wider">Seleccionado</span>}
+                                    </div>
+                                    {isActive && <UserCheck className="w-5 h-5 absolute right-4 text-coral" />}
+                                </button>
+                            );
+                        })}
                         {barberos.length === 0 && (
-                            <p className="no-data">No hay barberos activos registrados.</p>
+                            <p className="text-gray-500 text-sm text-center py-4">No hay barberos activos registrados.</p>
                         )}
                     </div>
                 </div>
 
                 {/* Panel Derecho: Configuración de la semana */}
-                <div className="dias-panel bento-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ margin: 0 }}>Jornada Semanal — {selectedBarbero?.nombre}</h3>
+                <div className="bg-white/85 border border-black/5 rounded-[20px] p-4 sm:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h3 className="m-0 text-lg sm:text-xl text-gray-900 font-extrabold flex items-center">
+                            Jornada Semanal — <span className="text-coral ml-2">{selectedBarbero?.nombre}</span>
+                        </h3>
+                        {/* 44px Interaction Target */}
                         <button 
-                            className={`btn-save-batch ${hayCambiosSinGuardar ? 'pulsing' : ''}`}
+                            className={`flex items-center justify-center min-h-[44px] px-6 gap-2 rounded-xl border-none font-bold transition-all duration-300 w-full sm:w-auto shadow-sm ${hayCambiosSinGuardar ? 'bg-coral text-white hover:bg-[#e55a3b] hover:-translate-y-0.5 hover:shadow-lg' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                             onClick={handleSaveBatch}
                             disabled={!hayCambiosSinGuardar || saving}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                padding: '10px 16px', borderRadius: '8px', border: 'none',
-                                background: hayCambiosSinGuardar ? 'var(--primary)' : 'var(--bg-glass-strong)',
-                                color: hayCambiosSinGuardar ? '#fff' : 'var(--text-muted)',
-                                fontWeight: 600, cursor: hayCambiosSinGuardar && !saving ? 'pointer' : 'not-allowed',
-                                transition: 'all 0.3s'
-                            }}
                         >
-                            <Save size={18} />
+                            <Save className={`${saving ? 'animate-pulse' : ''} w-5 h-5`} />
                             {saving ? 'Guardando...' : 'Guardar Todos los Cambios'}
                         </button>
                     </div>
-                    <div className="semana-list">
-                        {horarios.map(dia => (
-                            <div key={dia.dia_semana} className={`dia-row ${dia.activo ? 'activo' : 'inactivo'}`}>
-                                <div className="dia-col-toggle">
-                                    <label className="toggle-switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={dia.activo === 1}
-                                            onChange={(e) => handleHorarioChange(dia.dia_semana, 'activo', e.target.checked ? 1 : 0)}
-                                        />
-                                        <span className="slider"></span>
-                                    </label>
-                                    <span className="dia-name">{DIAS_SEMANA[dia.dia_semana].nombre}</span>
-                                </div>
+                    
+                    <div className="flex flex-col gap-3">
+                        {horarios.map(dia => {
+                            const isActivo = dia.activo === 1;
+                            return (
+                                <div key={dia.dia_semana} className={`grid grid-cols-1 sm:grid-cols-[140px_1fr_10px] items-center gap-4 sm:gap-6 p-4 rounded-2xl transition-all duration-200 ${isActivo ? 'bg-white border hover:border-emerald-300 border-l-4 border-l-emerald-500 shadow-sm' : 'bg-gray-50 border border-gray-200 opacity-70'}`}>
+                                    
+                                    <div className="flex items-center gap-3">
+                                        {/* Toggle Touch Target 44px */}
+                                        <label className="relative inline-flex items-center cursor-pointer min-h-[44px]">
+                                            <input 
+                                                type="checkbox" 
+                                                className="sr-only peer" 
+                                                checked={isActivo}
+                                                onChange={(e) => handleHorarioChange(dia.dia_semana, 'activo', e.target.checked ? 1 : 0)}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[12px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                        </label>
+                                        <span className={`font-bold text-[0.95rem] ${isActivo ? 'text-gray-900' : 'text-gray-500'}`}>{DIAS_SEMANA[dia.dia_semana].nombre}</span>
+                                    </div>
 
-                                <div className="dia-col-horas">
-                                    <input
-                                        type="time"
-                                        className="form-control time-input"
-                                        value={dia.hora_inicio}
-                                        onChange={(e) => handleHorarioChange(dia.dia_semana, 'hora_inicio', e.target.value)}
-                                        disabled={!dia.activo}
-                                    />
-                                    <span className="time-sep">a</span>
-                                    <input
-                                        type="time"
-                                        className="form-control time-input"
-                                        value={dia.hora_fin}
-                                        onChange={(e) => handleHorarioChange(dia.dia_semana, 'hora_fin', e.target.value)}
-                                        disabled={!dia.activo}
-                                    />
+                                    <div className="flex items-center gap-2 sm:gap-3">
+                                        {/* Mobile-friendly time inputs */}
+                                        <input
+                                            type="time"
+                                            className={`w-full sm:w-[130px] text-center font-bold px-3 py-2 border rounded-xl min-h-[44px] transition-colors focus:outline-none focus:ring-2 focus:ring-coral/50 ${isActivo ? 'bg-white border-gray-300 text-gray-900' : 'bg-transparent border-transparent text-gray-400'}`}
+                                            value={dia.hora_inicio}
+                                            onChange={(e) => handleHorarioChange(dia.dia_semana, 'hora_inicio', e.target.value)}
+                                            disabled={!isActivo}
+                                        />
+                                        <span className="text-gray-400 text-sm font-semibold">a</span>
+                                        <input
+                                            type="time"
+                                            className={`w-full sm:w-[130px] text-center font-bold px-3 py-2 border rounded-xl min-h-[44px] transition-colors focus:outline-none focus:ring-2 focus:ring-coral/50 ${isActivo ? 'bg-white border-gray-300 text-gray-900' : 'bg-transparent border-transparent text-gray-400'}`}
+                                            value={dia.hora_fin}
+                                            onChange={(e) => handleHorarioChange(dia.dia_semana, 'hora_fin', e.target.value)}
+                                            disabled={!isActivo}
+                                        />
+                                    </div>
+                                    <div className="hidden sm:block"></div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>
