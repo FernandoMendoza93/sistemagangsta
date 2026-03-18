@@ -67,6 +67,20 @@ router.get('/resumen/hoy', verifyToken, requireTenant, (req, res) => {
         const db = req.app.locals.db;
         const mxDate = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
 
+        // Aislamiento de Barbero: solo ve sus propias métricas
+        let extraCondition = '';
+        let extraParams = [];
+        if (req.user.rol === ROLES.BARBERO) {
+            const barbero = db.prepare('SELECT id FROM barberos WHERE id_usuario = ? AND barberia_id = ?').get(req.user.id, req.barberia_id);
+            if (barbero) {
+                extraCondition = 'AND id_barbero = ?';
+                extraParams = [barbero.id];
+            } else {
+                // Barbero sin perfil asignado: devolver ceros
+                return res.json({ total_ventas: 0, ingresos_totales: 0, efectivo: 0, tarjeta: 0, transferencia: 0 });
+            }
+        }
+
         const resumen = db.prepare(`
             SELECT 
                 COUNT(*) as total_ventas,
@@ -75,8 +89,8 @@ router.get('/resumen/hoy', verifyToken, requireTenant, (req, res) => {
                 COALESCE(SUM(CASE WHEN metodo_pago = 'Tarjeta' THEN total_venta ELSE 0 END), 0) as tarjeta,
                 COALESCE(SUM(CASE WHEN metodo_pago = 'Transferencia' THEN total_venta ELSE 0 END), 0) as transferencia
             FROM ventas_cabecera
-            WHERE date(fecha) = ? AND estado = 'completada' AND barberia_id = ?
-        `).get(mxDate, req.barberia_id);
+            WHERE date(fecha) = ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
+        `).get(mxDate, req.barberia_id, ...extraParams);
 
         res.json(resumen);
     } catch (error) {
@@ -93,14 +107,27 @@ router.get('/resumen/semana', verifyToken, requireTenant, (req, res) => {
         const hace7 = hoy.subtract(6, 'day').format("YYYY-MM-DD");
         const hoyStr = hoy.format("YYYY-MM-DD");
 
+        // Aislamiento de Barbero: solo ve sus propias métricas semanales
+        let extraCondition = '';
+        let extraParams = [];
+        if (req.user.rol === ROLES.BARBERO) {
+            const barbero = db.prepare('SELECT id FROM barberos WHERE id_usuario = ? AND barberia_id = ?').get(req.user.id, req.barberia_id);
+            if (barbero) {
+                extraCondition = 'AND id_barbero = ?';
+                extraParams = [barbero.id];
+            } else {
+                return res.json([]);
+            }
+        }
+
         // Get totals grouped by date for last 7 days
         const rows = db.prepare(`
             SELECT date(fecha) as dia, COALESCE(SUM(total_venta), 0) as ingresos
             FROM ventas_cabecera
-            WHERE date(fecha) BETWEEN ? AND ? AND estado = 'completada' AND barberia_id = ?
+            WHERE date(fecha) BETWEEN ? AND ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
             GROUP BY date(fecha)
             ORDER BY date(fecha) ASC
-        `).all(hace7, hoyStr, req.barberia_id);
+        `).all(hace7, hoyStr, req.barberia_id, ...extraParams);
 
         // Build a complete 7-day array (fill gaps with 0)
         const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -283,6 +310,149 @@ router.post('/:id/cancelar', verifyToken, requireTenant, (req, res) => {
     } catch (error) {
         console.error('Error cancelando venta:', error);
         res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// POST /api/ventas/completar-cita — Crea venta + marca cita Completada en una sola transacción SQLite
+router.post('/completar-cita', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id_cita, items_extra = [], metodo_pago = 'Efectivo' } = req.body;
+
+        if (!id_cita) {
+            return res.status(400).json({ error: 'id_cita es requerido' });
+        }
+
+        // Leer cita base con todos los datos necesarios
+        const cita = db.prepare(`
+            SELECT c.id, c.estado, c.id_cliente, c.id_servicio, c.id_barbero, c.barberia_id,
+                   s.precio, s.nombre_servicio
+            FROM citas c
+            LEFT JOIN servicios s ON c.id_servicio = s.id
+            WHERE c.id = ? AND c.barberia_id = ?
+        `).get(id_cita, req.barberia_id);
+
+        if (!cita) {
+            return res.status(404).json({ error: 'Cita no encontrada' });
+        }
+        if (cita.estado === 'Completada') {
+            return res.status(409).json({ error: 'Esta cita ya fue completada' });
+        }
+        if (cita.estado === 'Cancelada') {
+            return res.status(409).json({ error: 'No se puede completar una cita cancelada' });
+        }
+
+        // Validar stock de productos extra antes de abrir la transacción
+        for (const item of items_extra) {
+            if (item.id_producto) {
+                const producto = db.prepare('SELECT stock_actual FROM productos WHERE id = ? AND barberia_id = ?').get(item.id_producto, req.barberia_id);
+                if (!producto) return res.status(400).json({ error: `Producto ${item.id_producto} no encontrado` });
+                if (producto.stock_actual < item.cantidad) {
+                    return res.status(400).json({ error: `Stock insuficiente. Disponible: ${producto.stock_actual}` });
+                }
+            }
+        }
+
+        // Transacción atómica: si cualquier paso falla, todo se revierte
+        const ejecutarCierre = db.transaction(() => {
+            const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+
+            // Construir lista completa de items (servicio base + extras)
+            const allItems = [];
+
+            // Item base: servicio de la cita (si existe)
+            if (cita.id_servicio && cita.precio) {
+                allItems.push({
+                    id_servicio: cita.id_servicio,
+                    id_producto: null,
+                    cantidad: 1,
+                    precio_unitario: cita.precio
+                });
+            }
+
+            // Items extra del modal
+            for (const item of items_extra) {
+                allItems.push({
+                    id_servicio: item.id_servicio || null,
+                    id_producto: item.id_producto || null,
+                    cantidad: item.cantidad || 1,
+                    precio_unitario: item.precio_unitario
+                });
+            }
+
+            // Calcular total
+            let totalVenta = 0;
+            for (const item of allItems) {
+                totalVenta += item.precio_unitario * item.cantidad;
+            }
+
+            // 1. Crear venta cabecera
+            const ventaResult = db.prepare(`
+                INSERT INTO ventas_cabecera (id_barbero, total_venta, metodo_pago, notas, estado, fecha, barberia_id)
+                VALUES (?, ?, ?, ?, 'completada', ?, ?)
+            `).run(
+                cita.id_barbero || null,
+                totalVenta,
+                metodo_pago,
+                `Cierre de cita #${id_cita}`,
+                mxDateTime,
+                req.barberia_id
+            );
+            const ventaId = ventaResult.lastInsertRowid;
+
+            // 2. Crear ventas_detalle + comisiones + movimientos
+            for (const item of allItems) {
+                const subtotal = item.precio_unitario * item.cantidad;
+
+                const detalleResult = db.prepare(`
+                    INSERT INTO ventas_detalle (id_venta_cabecera, id_servicio, id_producto, cantidad, precio_unitario, subtotal, barberia_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                `).run(ventaId, item.id_servicio, item.id_producto, item.cantidad, item.precio_unitario, subtotal, req.barberia_id);
+
+                const detalleId = detalleResult.lastInsertRowid;
+
+                // Descontar stock si es producto
+                if (item.id_producto) {
+                    db.prepare('UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ? AND barberia_id = ?')
+                        .run(item.cantidad, item.id_producto, req.barberia_id);
+
+                    db.prepare(`
+                        INSERT INTO movimientos_inventario (id_producto, tipo, cantidad, motivo, id_usuario, barberia_id)
+                        VALUES (?, 'Salida', ?, ?, ?, ?)
+                    `).run(item.id_producto, item.cantidad, `Cierre cita #${id_cita} → Venta #${ventaId}`, req.user.id, req.barberia_id);
+                }
+
+                // Registrar comisión si es servicio con barbero asignado
+                if (item.id_servicio && cita.id_barbero) {
+                    const barbero = db.prepare('SELECT porcentaje_comision FROM barberos WHERE id = ? AND barberia_id = ?').get(cita.id_barbero, req.barberia_id);
+                    if (barbero) {
+                        const comision = subtotal * barbero.porcentaje_comision;
+                        db.prepare(`
+                            INSERT INTO comisiones_pendientes (id_barbero, id_venta_detalle, monto, barberia_id)
+                            VALUES (?, ?, ?, ?)
+                        `).run(cita.id_barbero, detalleId, comision, req.barberia_id);
+                    }
+                }
+            }
+
+            // 3. Marcar cita como Completada (último paso — transacción garantiza atomicidad)
+            db.prepare("UPDATE citas SET estado = 'Completada' WHERE id = ? AND barberia_id = ?")
+                .run(id_cita, req.barberia_id);
+
+            return { ventaId, totalVenta };
+        });
+
+        const resultado = ejecutarCierre();
+
+        console.log(`✅ Cita #${id_cita} completada → Venta #${resultado.ventaId} (Total: $${resultado.totalVenta})`);
+        res.status(201).json({
+            message: 'Servicio cerrado exitosamente',
+            id_venta: resultado.ventaId,
+            total: resultado.totalVenta
+        });
+    } catch (error) {
+        console.error('Error completando cita:', error);
+        res.status(500).json({ error: 'Error en el servidor al cerrar el servicio' });
     }
 });
 

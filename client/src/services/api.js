@@ -30,7 +30,11 @@ api.interceptors.response.use(
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
 
-                if (path.startsWith('/mi-perfil')) {
+                // Si el cliente estaba en el portal, regresarlo a su login
+                const pathParts = window.location.pathname.split('/');
+                if (pathParts[1] === 'portal' && pathParts[2]) {
+                    window.location.href = `/portal/${pathParts[2]}`;
+                } else if (path.startsWith('/mi-perfil')) {
                     window.location.href = '/mi-perfil';
                 } else {
                     window.location.href = '/login';
@@ -41,11 +45,12 @@ api.interceptors.response.use(
     }
 );
 
-// Auth
+// Auth del staff
 export const authService = {
     login: (email, password) => api.post('/auth/login', { email, password }),
     register: (data) => api.post('/auth/register', data),
-    me: () => api.get('/auth/me')
+    me: () => api.get('/auth/me'),
+    getBarberiaInfo: (slug) => api.get(`/auth/barberia-info/${slug}`)
 };
 
 // Usuarios
@@ -98,7 +103,9 @@ export const ventasService = {
     getResumenHoy: () => api.get('/ventas/resumen/hoy'),
     getResumenSemana: () => api.get('/ventas/resumen/semana'),
     confirmar: (id) => api.post(`/ventas/${id}/confirmar`),
-    cancelar: (id) => api.post(`/ventas/${id}/cancelar`)
+    cancelar: (id) => api.post(`/ventas/${id}/cancelar`),
+    completarCita: (id_cita, items_extra, metodo_pago) =>
+        api.post('/ventas/completar-cita', { id_cita, items_extra, metodo_pago })
 };
 
 // Corte de Caja
@@ -137,7 +144,8 @@ export const clientesService = {
 
 // Auth del Cliente (por teléfono)
 export const clienteAuthService = {
-    login: (telefono, nombre, password) => api.post('/auth/cliente', { telefono, nombre, password })
+    login: (telefono, nombre, password, slug) =>
+        api.post('/auth/cliente', { telefono, nombre, password, barberia_slug: slug })
 };
 
 // Citas
@@ -146,7 +154,8 @@ export const citasService = {
     getMiPerfil: () => api.get('/citas/perfil'),
     crear: (data) => api.post('/citas', data),
     actualizar: (id, data) => api.put(`/citas/${id}`, data),
-    getDisponibilidad: (fecha, id_barbero = 1) => api.get('/citas/disponibilidad', { params: { fecha, id_barbero } }),
+    getDisponibilidad: (fecha, id_barbero) => api.get('/citas/disponibilidad', { params: { fecha, id_barbero } }),
+    getDiasDisponibles: (id_barbero) => api.get('/citas/diasDisponibles', { params: { id_barbero } }),
     getAll: (fecha, estado) => api.get('/citas', { params: { fecha, estado } }),
     cambiarEstado: (id, estado) => api.put(`/citas/${id}/estado`, { estado }),
     getServiciosActivos: () => api.get('/servicios/activos'),
@@ -156,6 +165,21 @@ export const citasService = {
 // Loyalty (QR)
 export const loyaltyService = {
     scan: (token) => api.post('/loyalty/scan', { token })
+};
+
+// Horarios de barberos (Admin)
+export const horariosService = {
+    getAll: () => api.get('/horarios'),
+    getByBarbero: (id_barbero) => api.get(`/horarios/${id_barbero}`),
+    updateDia: (id_barbero, dia, data) => api.put(`/horarios/${id_barbero}/${dia}`, data),
+    updateBatch: (id_barbero, horarios) => api.put(`/horarios/${id_barbero}/batch`, { horarios })
+};
+
+// SuperAdmin
+export const superAdminService = {
+    getMetrics: () => api.get('/superadmin/metrics'),
+    getBarberias: () => api.get('/superadmin/barberias'),
+    updateEstadoBarberia: (id, estado) => api.put(`/superadmin/barberias/${id}/estado`, { estado })
 };
 
 export default api;

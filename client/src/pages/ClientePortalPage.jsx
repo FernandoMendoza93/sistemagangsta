@@ -16,12 +16,14 @@ export default function ClientePortalPage() {
     const [servicios, setServicios] = useState([]);
     const [barberos, setBarberos] = useState([]);
     const [showAgendarModal, setShowAgendarModal] = useState(false);
-    const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '1', fecha: '', hora: '', notas: '' });
-    const [editingCita, setEditingCita] = useState(null); // cita existente que se está modificando
-    const [citaExistenteEnFecha, setCitaExistenteEnFecha] = useState(null); // cita detectada en la fecha seleccionada
+    const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '', fecha: '', hora: '', notas: '' });
+    const [editingCita, setEditingCita] = useState(null);
+    const [citaExistenteEnFecha, setCitaExistenteEnFecha] = useState(null);
     const [loading, setLoading] = useState(true);
     const [horasOcupadas, setHorasOcupadas] = useState([]);
     const [horarioLaboral, setHorarioLaboral] = useState(null);
+    const [diasActivos, setDiasActivos] = useState([]);
+    const [pasoModal, setPasoModal] = useState(1); // 1=Barbero 2=Servicio+Notas 3=Fecha/Hora
 
     useEffect(() => {
         loadData();
@@ -40,7 +42,7 @@ export default function ClientePortalPage() {
                 const data = JSON.parse(event.data);
                 if (data.type === 'STAMP_ADDED') {
                     toast.success('🎉 ' + data.message);
-                    loadData(); // Refresh wallet and UI instantly
+                    loadData();
                 }
             } catch (err) {
                 console.error("Error parsing SSE data", err);
@@ -88,6 +90,10 @@ export default function ClientePortalPage() {
         setCitaForm({ id_servicio: '', id_barbero: '', fecha: '', hora: '', notas: '' });
         setEditingCita(null);
         setCitaExistenteEnFecha(null);
+        setDiasActivos([]);
+        setHorasOcupadas([]);
+        setHorarioLaboral(null);
+        setPasoModal(1);
         setShowAgendarModal(true);
     }
 
@@ -109,30 +115,35 @@ export default function ClientePortalPage() {
         }
     }
 
-    async function handleFechaChange(fecha) {
-        if (!citaForm.id_servicio) {
-            toast.warning('Por favor, selecciona un servicio antes de elegir la fecha.');
-            return;
+    async function handleSeleccionarBarbero(id_barbero) {
+        setCitaForm(prev => ({ ...prev, id_barbero, fecha: '', hora: '' }));
+        setHorasOcupadas([]);
+        setHorarioLaboral(null);
+        setCitaExistenteEnFecha(null);
+        try {
+            const res = await citasService.getDiasDisponibles(id_barbero);
+            setDiasActivos(res.data.dias || []);
+        } catch {
+            setDiasActivos([]);
         }
+        setPasoModal(2);
+    }
 
-        setCitaForm({ ...citaForm, fecha, hora: '' });
+    async function handleFechaChange(fecha) {
+        setCitaForm(prev => ({ ...prev, fecha, hora: '' }));
         setCitaExistenteEnFecha(null);
 
-        if (!fecha) {
-            setHorasOcupadas([]);
-            setHorarioLaboral(null);
-            return;
-        }
+        if (!fecha || !citaForm.id_barbero) return;
 
         // Detectar si el cliente ya tiene una cita activa en esta fecha
         const citaEnFecha = citas.find(c => c.fecha === fecha && c.estado !== 'Cancelada');
         if (citaEnFecha && !editingCita) {
             setCitaExistenteEnFecha(citaEnFecha);
-            return; // No cargar disponibilidad aún, primero que el usuario decida
+            return;
         }
 
         try {
-            const res = await citasService.getDisponibilidad(fecha, 1);
+            const res = await citasService.getDisponibilidad(fecha, citaForm.id_barbero);
             setHorasOcupadas(res.data.ocupadas || []);
             setHorarioLaboral(res.data.horario || null);
         } catch (error) {
@@ -146,16 +157,17 @@ export default function ClientePortalPage() {
         const cita = citaExistenteEnFecha;
         setEditingCita(cita);
         setCitaExistenteEnFecha(null);
-        setCitaForm({
-            id_servicio: citaForm.id_servicio,
-            id_barbero: cita.id_barbero || '1',
+        setCitaForm(prev => ({
+            ...prev,
+            id_servicio: prev.id_servicio,
+            id_barbero: cita.id_barbero || prev.id_barbero,
             fecha: cita.fecha,
             hora: '',
             notas: cita.notas || ''
-        });
+        }));
 
         try {
-            const res = await citasService.getDisponibilidad(cita.fecha, 1);
+            const res = await citasService.getDisponibilidad(cita.fecha, citaForm.id_barbero);
             setHorasOcupadas(res.data.ocupadas || []);
             setHorarioLaboral(res.data.horario || null);
         } catch (error) {
@@ -181,15 +193,16 @@ export default function ClientePortalPage() {
         }
     }
 
-    // Generar proximos dias disponibles (Viernes, Sabado, Domingo)
+    // Generar dias disponibles del barbero basados en diasActivos (desde DB)
     function generarDiasDisponibles() {
+        if (diasActivos.length === 0) return [];
         const dias = [];
         const hoy = new Date();
         let fechaActual = new Date(hoy);
 
         while (dias.length < 12) {
             const numDia = fechaActual.getDay();
-            if (numDia === 0 || numDia === 5 || numDia === 6) {
+            if (diasActivos.includes(numDia)) {
                 const y = fechaActual.getFullYear();
                 const m = String(fechaActual.getMonth() + 1).padStart(2, '0');
                 const d = String(fechaActual.getDate()).padStart(2, '0');
@@ -197,11 +210,7 @@ export default function ClientePortalPage() {
                 const nombreDiaCorto = fechaActual.toLocaleDateString('es-MX', { weekday: 'short' });
                 const numeroDia = fechaActual.getDate();
                 const nombreMesCorto = fechaActual.toLocaleDateString('es-MX', { month: 'short' });
-
-                dias.push({
-                    fechaISO,
-                    displayStr: `${nombreDiaCorto} ${numeroDia} ${nombreMesCorto}`
-                });
+                dias.push({ fechaISO, displayStr: `${nombreDiaCorto} ${numeroDia} ${nombreMesCorto}` });
             }
             fechaActual.setDate(fechaActual.getDate() + 1);
         }
@@ -433,10 +442,11 @@ export default function ClientePortalPage() {
                 </button>
             </div>
 
-            {/* Modal Agendar Cita */}
+            {/* Modal Agendar Cita — 3 pasos */}
             {showAgendarModal && (
                 <div className="modal-overlay" onClick={() => setShowAgendarModal(false)}>
                     <div className="modal-content bottom-sheet" onClick={(e) => e.stopPropagation()}>
+                        {/* Header */}
                         <div className="modal-header">
                             <h2>
                                 <Calendar size={22} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
@@ -446,116 +456,186 @@ export default function ClientePortalPage() {
                                 <X size={20} />
                             </button>
                         </div>
-                        <form onSubmit={handleAgendarCita}>
-                            <div className="form-group">
-                                <label><Scissors size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Servicio</label>
-                                <select
-                                    className="form-control"
-                                    value={citaForm.id_servicio}
-                                    onChange={(e) => {
-                                        setCitaForm({ ...citaForm, id_servicio: e.target.value, hora: '' });
-                                        if (citaForm.fecha) handleFechaChange(citaForm.fecha);
-                                    }}
-                                    required
-                                >
-                                    <option value="">Selecciona un servicio</option>
-                                    {servicios.map(s => (
-                                        <option key={s.id} value={s.id}>{s.nombre_servicio} - ${s.precio}</option>
-                                    ))}
-                                </select>
-                            </div>
 
-                            <div className="form-group">
-                                <label><Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Fechas Disponibles</label>
-                                <div className="dias-carousel">
-                                    {diasDisponibles.map(dia => (
-                                        <button
-                                            key={dia.fechaISO}
-                                            type="button"
-                                            className={`dia-chip ${citaForm.fecha === dia.fechaISO ? 'selected' : ''}`}
-                                            onClick={() => handleFechaChange(dia.fechaISO)}
+                        {/* Indicador de pasos */}
+                        <div className="paso-indicator">
+                            {[1, 2, 3].map(p => (
+                                <div
+                                    key={p}
+                                    className={`paso-pill ${pasoModal === p ? 'active' : pasoModal > p ? 'done' : ''}`}
+                                    onClick={() => pasoModal > p && setPasoModal(p)}
+                                />
+                            ))}
+                        </div>
+
+                        {/* ─── PASO 1: Seleccionar Barbero ─── */}
+                        {pasoModal === 1 && (
+                            <div className="paso-container">
+                                <div className="paso-label">
+                                    <User size={15} />
+                                    Elige tu barbero
+                                </div>
+                                <div className="barbero-cards-grid">
+                                    {barberos.map(b => (
+                                        <div
+                                            key={b.id}
+                                            className={`barbero-card ${citaForm.id_barbero == b.id ? 'selected' : ''}`}
+                                            onClick={() => handleSeleccionarBarbero(b.id)}
                                         >
-                                            <span className="dia-nombre">{dia.displayStr.split(' ')[0]}</span>
-                                            <span className="dia-numero">{dia.displayStr.split(' ')[1]}</span>
-                                            <span className="dia-mes">{dia.displayStr.split(' ')[2]}</span>
-                                        </button>
+                                            <div className="barbero-avatar">
+                                                {b.nombre?.charAt(0).toUpperCase()}
+                                            </div>
+                                            <span className="barbero-nombre">{b.nombre?.split(' ')[0]}</span>
+                                            {citaForm.id_barbero == b.id && (
+                                                <CheckCircle size={14} className="barbero-check" />
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                             </div>
+                        )}
 
-                            <div className="form-group">
-                                <label><Clock size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Horarios Disponibles</label>
-
-                                {/* Aviso de cita existente en esta fecha */}
-                                {citaExistenteEnFecha ? (
-                                    <div className="cita-existente-aviso">
-                                        <div className="aviso-info">
-                                            <Calendar size={18} color="#FF5F40" />
-                                            <div>
-                                                <p className="aviso-titulo">Ya tienes una cita este dia</p>
-                                                <p className="aviso-detalle">
-                                                    {citaExistenteEnFecha.nombre_servicio} a las {citaExistenteEnFecha.hora} hrs
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="aviso-acciones">
-                                            <button type="button" className="btn-modificar-cita" onClick={handleModificarCita}>
-                                                Modificar mi cita
-                                            </button>
-                                            <button type="button" className="btn-otro-dia" onClick={() => {
-                                                setCitaExistenteEnFecha(null);
-                                                setCitaForm({ ...citaForm, fecha: '', hora: '' });
-                                            }}>
-                                                Elegir otro dia
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (!citaForm.fecha || !citaForm.id_servicio) ? (
-                                    <p>Selecciona el servicio y la fecha primero para ver los espacios.</p>
-                                ) : horasDisponibles.length === 0 ? (
-                                    <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
-                                ) : (
-                                    <div className="time-grid">
-                                        {horasDisponibles.map(slot => (
-                                            <button
-                                                key={slot.hora}
-                                                type="button"
-                                                className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
-                                                onClick={() => !slot.ocupado && setCitaForm({ ...citaForm, hora: slot.hora })}
-                                                disabled={slot.ocupado}
-                                            >
-                                                <span className="time-text">{slot.hora}</span>
-                                                {slot.ocupado && <span style={{ color: '#EF4444', fontSize: '0.72rem', display: 'block', marginTop: '2px' }}>Ocupado</span>}
-                                            </button>
+                        {/* ─── PASO 2: Servicio + Notas ─── */}
+                        {pasoModal === 2 && (
+                            <div className="paso-container">
+                                <div className="form-group">
+                                    <label><Scissors size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Servicio</label>
+                                    <select
+                                        className="form-control"
+                                        value={citaForm.id_servicio}
+                                        onChange={(e) => setCitaForm(prev => ({ ...prev, id_servicio: e.target.value }))}
+                                        required
+                                    >
+                                        <option value="">Selecciona un servicio</option>
+                                        {servicios.map(s => (
+                                            <option key={s.id} value={s.id}>{s.nombre_servicio} — ${s.precio}</option>
                                         ))}
-                                    </div>
+                                    </select>
+                                </div>
+
+                                <div className="form-group">
+                                    <label><Star size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Notas al barbero (Opcional)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ej. Quiero desvanecido medio..."
+                                        value={citaForm.notas}
+                                        onChange={(e) => setCitaForm(prev => ({ ...prev, notas: e.target.value }))}
+                                        className="form-control"
+                                        maxLength="100"
+                                    />
+                                </div>
+
+                                {citaForm.id_servicio && (
+                                    <button
+                                        type="button"
+                                        className="btn-primary w-100"
+                                        onClick={() => setPasoModal(3)}
+                                    >
+                                        Elegir Fecha y Hora →
+                                    </button>
                                 )}
                             </div>
+                        )}
 
-                            <div className="form-group">
-                                <label><Star size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Notas al barbero (Opcional)</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ej. Quiero desvanecido medio..."
-                                    value={citaForm.notas}
-                                    onChange={(e) => setCitaForm({ ...citaForm, notas: e.target.value })}
-                                    className="form-control"
-                                    maxLength="100"
-                                />
-                            </div>
+                        {/* ─── PASO 3: Fecha y Hora + Confirmar ─── */}
+                        {pasoModal === 3 && (
+                            <form onSubmit={handleAgendarCita} className="paso-container">
+                                <div className="form-group">
+                                    <label><Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Fechas Disponibles</label>
+                                    {diasDisponibles.length === 0 ? (
+                                        <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Este barbero no tiene turnos configurados.</p>
+                                    ) : (
+                                        <div className="dias-carousel">
+                                            {diasDisponibles.map(dia => (
+                                                <button
+                                                    key={dia.fechaISO}
+                                                    type="button"
+                                                    className={`dia-chip ${citaForm.fecha === dia.fechaISO ? 'selected' : ''}`}
+                                                    onClick={() => handleFechaChange(dia.fechaISO)}
+                                                >
+                                                    <span className="dia-nombre">{dia.displayStr.split(' ')[0]}</span>
+                                                    <span className="dia-numero">{dia.displayStr.split(' ')[1]}</span>
+                                                    <span className="dia-mes">{dia.displayStr.split(' ')[2]}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
-                            <button
-                                type="submit"
-                                className="btn-confirmar-cita"
-                                disabled={!citaForm.fecha || !citaForm.hora || !citaForm.id_servicio || citaExistenteEnFecha}
-                            >
-                                <CheckCircle size={18} />
-                                {editingCita ? 'Guardar Cambios' : 'Confirmar Cita'}
-                            </button>
-                        </form>
+                                <div className="form-group">
+                                    <label><Clock size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Horarios Disponibles</label>
+
+                                    {/* Aviso de cita existente en esta fecha */}
+                                    {citaExistenteEnFecha ? (
+                                        <div className="cita-existente-aviso">
+                                            <div className="aviso-info">
+                                                <Calendar size={18} color="#FF5F40" />
+                                                <div>
+                                                    <p className="aviso-titulo">Ya tienes una cita este dia</p>
+                                                    <p className="aviso-detalle">
+                                                        {citaExistenteEnFecha.nombre_servicio} a las {citaExistenteEnFecha.hora} hrs
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="aviso-acciones">
+                                                <button type="button" className="btn-modificar-cita" onClick={handleModificarCita}>
+                                                    Modificar mi cita
+                                                </button>
+                                                <button type="button" className="btn-otro-dia" onClick={() => {
+                                                    setCitaExistenteEnFecha(null);
+                                                    setCitaForm(prev => ({ ...prev, fecha: '', hora: '' }));
+                                                }}>
+                                                    Elegir otro dia
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : !citaForm.fecha ? (
+                                        <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Selecciona una fecha primero.</p>
+                                    ) : horasDisponibles.length === 0 ? (
+                                        <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
+                                    ) : (
+                                        <div className="time-grid">
+                                            {horasDisponibles.map(slot => (
+                                                <button
+                                                    key={slot.hora}
+                                                    type="button"
+                                                    className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
+                                                    onClick={() => !slot.ocupado && setCitaForm(prev => ({ ...prev, hora: slot.hora }))}
+                                                    disabled={slot.ocupado}
+                                                >
+                                                    <span className="time-text">{slot.hora}</span>
+                                                    {slot.ocupado && <span style={{ color: '#EF4444', fontSize: '0.72rem', display: 'block', marginTop: '2px' }}>Ocupado</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Resumen rápido */}
+                                {citaForm.hora && (
+                                    <>
+                                        <div className="resumen-cita">
+                                            <span>📅 {citaForm.fecha} a las {citaForm.hora}</span>
+                                            <span>✂️ {barberos.find(b => b.id == citaForm.id_barbero)?.nombre?.split(' ')[0]}</span>
+                                            <span>🛍️ {servicios.find(s => s.id == citaForm.id_servicio)?.nombre_servicio}</span>
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            className="btn-confirmar-cita"
+                                            disabled={!citaForm.hora || citaExistenteEnFecha}
+                                        >
+                                            <CheckCircle size={18} />
+                                            {editingCita ? 'Guardar Cambios' : 'Confirmar Cita'}
+                                        </button>
+                                    </>
+                                )}
+                            </form>
+                        )}
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
 import SuperAdminSidebar from './components/SuperAdminSidebar';
 import LandingPage from './pages/LandingPage';
@@ -11,6 +12,7 @@ import POSPage from './pages/POSPage';
 import VentasPage from './pages/VentasPage';
 import CitasPage from './pages/CitasPage';
 import InventarioPage from './pages/InventarioPage';
+import HorariosPage from './pages/HorariosPage';
 import CorteCajaPage from './pages/CorteCajaPage';
 import ReportesPage from './pages/ReportesPage';
 import PersonalPage from './pages/PersonalPage';
@@ -22,6 +24,7 @@ import ClientePortalPage from './pages/ClientePortalPage';
 import ClaimPointPage from './pages/ClaimPointPage';
 import ScannerPage from './pages/ScannerPage';
 import RegisterPage from './pages/RegisterPage';
+import ConfiguracionPage from './pages/ConfiguracionPage';
 import { Toaster } from 'sonner';
 import './index.css';
 
@@ -138,6 +141,13 @@ function AppRoutes() {
       <Route path="/registrar" element={user ? <Navigate to={getRedirectPath()} replace /> : <RegisterPage />} />
 
       {/* ====== CLIENT PORTAL (no sidebar) ====== */}
+      {/* Ruta dinámica por slug de barbería */}
+      <Route path="/portal/:slug" element={<ClienteLoginPage />} />
+      <Route path="/portal/:slug/panel" element={
+        <ClienteProtectedRoute><ClientePortalPage /></ClienteProtectedRoute>
+      } />
+      <Route path="/portal/:slug/sello/:token" element={<ClaimPointPage />} />
+      {/* Compatibilidad legada — redirige si el usuario ya tiene slug guardado */}
       <Route path="/mi-perfil" element={<ClienteLoginPage />} />
       <Route path="/mi-perfil/portal" element={
         <ClienteProtectedRoute><ClientePortalPage /></ClienteProtectedRoute>
@@ -178,6 +188,9 @@ function AppRoutes() {
         <Route path="/panel/clientes" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><ClientesPage /></ProtectedRoute>
         } />
+        <Route path="/panel/horarios" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><HorariosPage /></ProtectedRoute>
+        } />
 
         <Route path="/panel/servicios" element={
           <ProtectedRoute allowedRoles={['Admin']}><ServiciosPage /></ProtectedRoute>
@@ -188,6 +201,9 @@ function AppRoutes() {
         <Route path="/panel/comisiones" element={
           <ProtectedRoute allowedRoles={['Admin']}><ComisionesPage /></ProtectedRoute>
         } />
+        <Route path="/panel/configuracion" element={
+          <ProtectedRoute allowedRoles={['Admin']}><ConfiguracionPage /></ProtectedRoute>
+        } />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -195,25 +211,48 @@ function AppRoutes() {
   );
 }
 
+function ThemeApplier({ children }) {
+  const { user } = useAuth();
+  const { applyTheme, resetTheme } = useTheme();
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const publicRoutes = ['/login', '/registrar', '/'];
+    const isPublic = publicRoutes.includes(pathname) || pathname.startsWith('/admin/login');
+
+    if (isPublic) {
+      resetTheme();
+    } else if (user && user.bg_main) {
+      applyTheme(user, user.barberia_id);
+    }
+  }, [user, pathname, applyTheme, resetTheme]);
+
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
-        <Toaster
-          position="top-center"
-          theme="light"
-          richColors
-          toastOptions={{
-            style: {
-              fontFamily: "'Inter', sans-serif",
-              borderRadius: '16px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
-              border: 'none',
-              padding: '14px 20px',
-            }
-          }}
-        />
+        <ThemeProvider>
+          <ThemeApplier>
+            <AppRoutes />
+          </ThemeApplier>
+          <Toaster
+            position="top-center"
+            theme="light"
+            richColors
+            toastOptions={{
+              style: {
+                fontFamily: "'Inter', sans-serif",
+                borderRadius: '16px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                border: 'none',
+                padding: '14px 20px',
+              }
+            }}
+          />
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

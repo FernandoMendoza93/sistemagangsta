@@ -5,7 +5,7 @@ import multer from 'multer';
 import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { JWT_SECRET } from '../middleware/auth.js';
+import { JWT_SECRET, verifyToken } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,6 +25,36 @@ const upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 const router = express.Router();
 
+// GET /api/auth/mi-barberia — Returns the calling admin's own barberia info (slug, logo, color)
+router.get('/mi-barberia', verifyToken, async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        const barberia_id = req.user?.barberia_id;
+
+        if (!barberia_id) {
+            return res.status(400).json({ error: 'Este usuario no tiene una barbería asignada' });
+        }
+
+        const barberia = await dbQuery.get(
+            `SELECT b.id, b.nombre, b.logo_url, b.color_acento, b.slug, b.plan, b.fecha_vencimiento, b.activo,
+                    t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
+             FROM barberias b
+             LEFT JOIN temas t ON b.tema_id = t.id
+             WHERE b.id = ?`,
+            [barberia_id]
+        );
+
+        if (!barberia) {
+            return res.status(404).json({ error: 'Barbería no encontrada' });
+        }
+
+        res.json(barberia);
+    } catch (error) {
+        console.error('Error obteniendo mi-barberia:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // POST /api/auth/login — Staff login
 router.post('/login', async (req, res) => {
     try {
@@ -39,10 +69,12 @@ router.post('/login', async (req, res) => {
         const user = await dbQuery.get(`
             SELECT u.id, u.nombre, u.email, u.password_hash, u.activo, u.barberia_id,
                    r.nombre_rol as rol,
-                   b.nombre as barberia_nombre, b.color_acento, b.logo_url, b.activo as barberia_activa
+                   b.nombre as barberia_nombre, b.color_acento, b.logo_url, b.activo as barberia_activa,
+                   b.slug as barberia_slug
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberias b ON u.barberia_id = b.id
+            LEFT JOIN temas t ON b.tema_id = t.id
             WHERE u.email = ?
         `, [email]);
 
@@ -66,7 +98,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
-        // JWT con barberia_id
+        // JWT con barberia_id + slug + theme info (opcional para reducir carga, mejor fetch me)
         const token = jwt.sign(
             {
                 id: user.id,
@@ -75,6 +107,7 @@ router.post('/login', async (req, res) => {
                 rol: user.rol,
                 barberia_id: user.barberia_id || null,
                 barberia_nombre: user.barberia_nombre || null,
+                barberia_slug: user.barberia_slug || null,
                 logo_url: user.logo_url || null
             },
             JWT_SECRET,
@@ -94,8 +127,16 @@ router.post('/login', async (req, res) => {
                 rol: user.rol,
                 barberia_id: user.barberia_id,
                 barberia_nombre: user.barberia_nombre,
+                barberia_slug: user.barberia_slug,
                 color_acento: user.color_acento,
                 logo_url: user.logo_url,
+                bg_main: user.bg_main,
+                bg_surface: user.bg_surface,
+                accent_primary: user.accent_primary,
+                accent_secondary: user.accent_secondary,
+                text_main: user.text_main,
+                text_muted: user.text_muted,
+                clase_glass: user.clase_glass,
                 barbero: barbero || null
             }
         });
@@ -168,10 +209,12 @@ router.get('/me', async (req, res) => {
 
         const user = await dbQuery.get(`
             SELECT u.id, u.nombre, u.email, u.barberia_id, r.nombre_rol as rol,
-                   b.nombre as barberia_nombre, b.color_acento, b.logo_url
+                   b.nombre as barberia_nombre, b.logo_url, b.slug as barberia_slug,
+                   t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberias b ON u.barberia_id = b.id
+            LEFT JOIN temas t ON b.tema_id = t.id
             WHERE u.id = ?
         `, [decoded.id]);
 
@@ -298,6 +341,49 @@ router.post('/cliente', async (req, res) => {
     }
 });
 
+// GET /api/auth/barberia-info/:slug — Public endpoint to fetch barberia branding
+router.get('/barberia-info/:slug', async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const dbQuery = req.app.locals.dbQuery;
+
+        const barberia = await dbQuery.get(
+            `SELECT b.nombre, b.logo_url, b.color_acento, b.activo,
+                    t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
+             FROM barberias b
+             LEFT JOIN temas t ON b.tema_id = t.id
+             WHERE b.slug = ?`,
+            [slug]
+        );
+
+        if (!barberia) {
+            return res.status(404).json({ error: 'Barbería no encontrada' });
+        }
+
+        if (!barberia.activo) {
+            return res.status(403).json({ error: 'Esta barbería no está activa. Contacta a tu administrador.' });
+        }
+
+        res.json({
+            nombre: barberia.nombre,
+            logo_url: barberia.logo_url,
+            tema: {
+                bg_main: barberia.bg_main,
+                bg_surface: barberia.bg_surface,
+                accent_primary: barberia.accent_primary,
+                accent_secondary: barberia.accent_secondary,
+                text_main: barberia.text_main,
+                text_muted: barberia.text_muted,
+                clase_glass: barberia.clase_glass
+            }
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo info de barbería:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // POST /api/auth/register-barberia — Public registration (multipart for logo)
 router.post('/register-barberia', upload.single('logo'), async (req, res) => {
     try {
@@ -361,6 +447,19 @@ router.post('/register-barberia', upload.single('logo'), async (req, res) => {
             await dbQuery.run(
                 'INSERT INTO servicios (nombre_servicio, precio, duracion_aprox, barberia_id) VALUES (?, ?, ?, ?)',
                 [servNombre, precio_s, duracion, barberia_id]
+            );
+        }
+
+        // Create default categories
+        const defaultCategories = [
+            ['Venta', 'Productos para venta al cliente'],
+            ['Insumo Limpieza', 'Productos de limpieza y desinfección'],
+            ['Herramientas', 'Instrumentos de trabajo']
+        ];
+        for (const [catNombre, catDesc] of defaultCategories) {
+            await dbQuery.run(
+                'INSERT INTO categorias (nombre, descripcion, barberia_id) VALUES (?, ?, ?)',
+                [catNombre, catDesc, barberia_id]
             );
         }
 

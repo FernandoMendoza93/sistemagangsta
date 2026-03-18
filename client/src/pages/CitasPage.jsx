@@ -3,6 +3,7 @@ import { citasService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import ConfirmModal from '../components/ConfirmModal';
+import CierreServicioModal from '../components/CierreServicioModal';
 import { Calendar, CheckCircle, XCircle, User, Clock, CheckSquare, X, MessageCircle } from 'lucide-react';
 import './CitasPage.css';
 
@@ -24,6 +25,10 @@ export default function CitasPage() {
     // Cancel Confirm State
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancelTargetId, setCancelTargetId] = useState(null);
+
+    // Cierre Modal State
+    const [showCierreModal, setShowCierreModal] = useState(false);
+    const [selectedCierreCita, setSelectedCierreCita] = useState(null);
 
     useEffect(() => {
         loadCitas();
@@ -54,7 +59,11 @@ export default function CitasPage() {
     };
 
     const handleConfirmar = (id) => cambiarEstado(id, 'Confirmada');
-    const handleCompletar = (id) => cambiarEstado(id, 'Completada');
+    const handleCompletarClick = (cita) => {
+        setSelectedCita(null); // Cerrar el modal de detalles
+        setSelectedCierreCita(cita);
+        setShowCierreModal(true);
+    };
     const handleCancelar = (id) => {
         setCancelTargetId(id);
         setShowCancelConfirm(true);
@@ -224,7 +233,7 @@ export default function CitasPage() {
                                 <button
                                     className="confirm-modal-btn"
                                     style={{ background: '#10b981', color: 'white', width: '100%' }}
-                                    onClick={() => handleCompletar(selectedCita.id)}
+                                    onClick={() => handleCompletarClick(selectedCita)}
                                 >
                                     ✓ Marcar como Completada
                                 </button>
@@ -270,6 +279,21 @@ export default function CitasPage() {
                 onConfirm={confirmCancel}
                 onCancel={() => { setShowCancelConfirm(false); setCancelTargetId(null); }}
             />
+
+            {/* Cierre Servicio Modal */}
+            {showCierreModal && selectedCierreCita && (
+                <CierreServicioModal
+                    cita={selectedCierreCita}
+                    onClose={() => {
+                        setShowCierreModal(false);
+                        setSelectedCierreCita(null);
+                    }}
+                    onSuccess={() => {
+                        toast.success('Servicio cerrado y cobrado correctamente');
+                        loadCitas();
+                    }}
+                />
+            )}
         </div>
     );
 }

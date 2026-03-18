@@ -55,7 +55,7 @@ function initializeDatabase() {
         -- Tabla de Categorías
         CREATE TABLE IF NOT EXISTS categorias (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre_categoria TEXT NOT NULL UNIQUE
+            nombre_categoria TEXT NOT NULL
         );
 
         -- Tabla de Productos

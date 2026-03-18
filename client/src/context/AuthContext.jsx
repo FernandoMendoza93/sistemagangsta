@@ -130,8 +130,8 @@ export function AuthProvider({ children }) {
         return res.data;
     };
 
-    const loginCliente = async (telefono, nombre, password) => {
-        const res = await clienteAuthService.login(telefono, nombre, password);
+    const loginCliente = async (telefono, nombre, password, slug) => {
+        const res = await clienteAuthService.login(telefono, nombre, password, slug);
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         setUser(res.data.user);

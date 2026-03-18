@@ -19,10 +19,10 @@ Este archivo representa la memoria persistente y las reglas operativas del Agent
   - Backend API: `http://localhost:3000`
   - Frontend React: `http://localhost:5173`
   - *Evitar iniciar múltiples terminales en puertos colisionados.*
-- **Credenciales Frecuentes (Datos Semilla)**:
-  - SuperAdmin: `superadmin@flow.com` / `admin123`
-  - Admin (Tenant 1): `admin@barberia.com` / `admin123`
-  - Cliente Prueba (Pedro): Teléfono `9511289141` / `admin123`
+- **Credenciales Frecuentes y Rutas de Acceso**:
+  - **SuperAdmin** (Ruta: `/login` ➡️ `/admin/barberias`): `superadmin@flow.com` / `admin123`
+  - **Admin** (Ruta: `/login` ➡️ `/panel`): `admin@barberia.com` / `admin123`
+  - **Cliente Prueba** (Ruta: `/mi-perfil` ➡️ `/mi-perfil/portal`): Teléfono `9511289141` / `admin123`
 - **Motor de Base de Datos**: SQLite (Multi-tenant) con `better-sqlite3`.
 - **Rutas y Volúmenes**: 
   - La conexión SQLite DEBE usar siempre la validación para Railway: `const dbPath = process.env.DATABASE_URL || join(__dirname, 'data', 'database.sqlite');`
@@ -46,3 +46,19 @@ Esta lista debe crecer con el tiempo para recordar al Agente los problemas pasad
   
 - **[Engram 002 - Migraciones de SQLite en Railway]**: En despliegues nuevos en producción, si la base de datos de Railway ya existe (Volumen Persistente) pero carece de nuevas tablas (ej. `visitas_lealtad`), el archivo maestro `schema.sql` NO las creará automáticamente para evitar corromper datos previos.
   * *Prevención:* Toda tabla o columna estructural nueva debe inyectarse con un comando `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE` directamente en el script de arranque dinámico (`server/scripts/migrate-multitenant.js`) para que se procese de forma garantizada antes de inicializar Express.
+
+## 6. 📱 ESTÁNDAR MOBILE-FIRST Y ADN VISUAL (Ley Estricta)
+- **Responsividad (TailwindCSS)**: Queda TERMINANTEMENTE PROHIBIDO entregar vistas que no sean 100% Mobile-First usando Tailwind (clases `sm:`, `md:`, `lg:`).
+- **Colores Sagrados**: Los acentos deben ser estrictamente el Naranja Coral (`#FF6B4A`) y la paleta definida en el manual de diseño.
+- **Tipografía**: Aplica únicamente las fuentes declaradas en el archivo de diseño para encabezados y cuerpo de texto.
+- **UX Táctil**: Botones y modales (CierreServicioModal, Selector de Barberos) deben ser cómodos para el pulgar (área mínima 44px x 44px).
+- **Protocolo de Entrega**: Antes de hacer commit, debes auto-validar que el diseño no se rompa en resoluciones pequeñas y que los colores respeten el contraste del Glassmorphism.
+
+## 7. ⌨️ PROTOCOLO DE INTERACCIÓN CON FORMULARIOS (Anti-Autofill Bug)
+DEBIDO a injerencias del auto-completado de navegadores como Chrome, los inputs (como logins o crear staff) pueden terminar combinando cadenas nuevas con credenciales viciadas guardadas en memoria.
+- **Acción Estricta**: Cada vez que un Agente interactúe con un `<input>`, debe ejecutar la siguiente limpieza antes de usar la acción "Type":
+  1. `Focus` (Clic o Tab en el Input)
+  2. `Select All` (Ctrl+A / Cmd+A)
+  3. `Delete / Backspace`
+  4. `Type` (Escribir la cadena real)
+- ¡Aplicar este protocolo para Login, Cierre de citas y Creación de Horarios!

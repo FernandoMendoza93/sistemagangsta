@@ -170,9 +170,10 @@ CREATE TABLE IF NOT EXISTS ventas_detalle (
 
 CREATE TABLE IF NOT EXISTS categorias (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT NOT NULL UNIQUE,
+    nombre TEXT NOT NULL,
     descripcion TEXT,
-    barberia_id INTEGER REFERENCES barberias(id)
+    barberia_id INTEGER REFERENCES barberias(id),
+    UNIQUE(nombre, barberia_id)
 );
 
 CREATE TABLE IF NOT EXISTS productos (
@@ -277,6 +278,24 @@ CREATE INDEX IF NOT EXISTS idx_servicios_barberia ON servicios(barberia_id);
 CREATE INDEX IF NOT EXISTS idx_productos_barberia ON productos(barberia_id);
 
 -- =============================================
+-- TABLA DE HORARIOS POR BARBERO
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS horarios_barberos (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_barbero  INTEGER NOT NULL,
+    dia_semana  INTEGER NOT NULL CHECK(dia_semana BETWEEN 0 AND 6), -- 0=Dom ... 6=Sáb
+    hora_inicio TEXT NOT NULL,  -- 'HH:MM'
+    hora_fin    TEXT NOT NULL,  -- 'HH:MM'
+    activo      INTEGER DEFAULT 1,
+    barberia_id INTEGER NOT NULL REFERENCES barberias(id),
+    FOREIGN KEY (id_barbero) REFERENCES barberos(id),
+    UNIQUE(id_barbero, dia_semana, barberia_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_horarios_barbero ON horarios_barberos(id_barbero, dia_semana, barberia_id);
+
+-- =============================================
 -- DATOS INICIALES (Roles + SuperAdmin)
 -- =============================================
 
@@ -346,9 +365,21 @@ VALUES (5, 'Toallas Desechables', 'Paquete de 100 toallas', 5, 2, 60.00, 0, 2, 1
 INSERT OR IGNORE INTO productos (id, nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo, barberia_id)
 VALUES (6, 'Desinfectante Barbacide', 'Para herramientas', 8, 2, 120.00, 0, 2, 1, 1);
 
+-- Horarios de The Gangsta (mismos que estaban hardcodeados en getHorarioDia)
+-- dia_semana: 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
+INSERT OR IGNORE INTO horarios_barberos (id_barbero, dia_semana, hora_inicio, hora_fin, activo, barberia_id)
+VALUES
+    (1, 5, '14:00', '21:30', 1, 1),  -- Fernando: Viernes
+    (1, 6, '10:00', '21:30', 1, 1),  -- Fernando: Sábado
+    (1, 0, '10:30', '19:30', 1, 1),  -- Fernando: Domingo
+    (2, 5, '14:00', '21:30', 1, 1),  -- Eliza: Viernes
+    (2, 6, '10:00', '21:30', 1, 1),  -- Eliza: Sábado
+    (2, 0, '10:30', '19:30', 1, 1);  -- Eliza: Domingo
+
 -- =============================================
 -- INFORMACIÓN DE ACCESO
 -- =============================================
 -- SuperAdmin:  superadmin@flow.com / admin123
 -- Admin TG:    admin@barberia.com / admin123
 -- Staff TG:    alejandro.lopez@gmail.com / admin123
+
