@@ -28,11 +28,9 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(null);
 
-    // If no pre-data, redirect back to landing
+    // Scroll to top on mount
     useEffect(() => {
-        if (!preData.nombre && !preData.email) {
-            // Allow direct access but don't force redirect
-        }
+        window.scrollTo(0, 0);
     }, []);
 
     function handleLogoChange(e) {
@@ -187,8 +185,14 @@ export default function RegisterPage() {
                             <label className="reg-label">Telefono / WhatsApp</label>
                             <input
                                 className={`reg-field-input ${formData.telefono_whatsapp ? 'has-value' : ''}`}
+                                type="tel"
+                                inputMode="numeric"
+                                maxLength={12}
                                 value={formData.telefono_whatsapp}
-                                onChange={e => setFormData({ ...formData, telefono_whatsapp: e.target.value })}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                                    setFormData({ ...formData, telefono_whatsapp: val });
+                                }}
                                 placeholder="Ej. 529511955349"
                                 required
                             />

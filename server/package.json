@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",
-        "better-sqlite3": "^9.6.0",
+        "better-sqlite3": "^12.6.2",
         "cors": "^2.8.5",
         "crypto-js": "^4.2.0",
         "dayjs": "^1.11.19",

@@ -21,14 +21,20 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            // No redirigir si estamos en una página de login — el 401 ahí
+            // significa credenciales incorrectas, no sesión expirada
+            const path = window.location.pathname;
+            const isLoginPage = path === '/login' || path === '/mi-perfil';
 
-            // Si el cliente estaba en el portal, regresarlo a su login
-            if (window.location.pathname.startsWith('/mi-perfil')) {
-                window.location.href = '/mi-perfil';
-            } else {
-                window.location.href = '/login';
+            if (!isLoginPage) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+
+                if (path.startsWith('/mi-perfil')) {
+                    window.location.href = '/mi-perfil';
+                } else {
+                    window.location.href = '/login';
+                }
             }
         }
         return Promise.reject(error);
@@ -139,6 +145,7 @@ export const citasService = {
     getMisCitas: () => api.get('/citas/mis-citas'),
     getMiPerfil: () => api.get('/citas/perfil'),
     crear: (data) => api.post('/citas', data),
+    actualizar: (id, data) => api.put(`/citas/${id}`, data),
     getDisponibilidad: (fecha, id_barbero = 1) => api.get('/citas/disponibilidad', { params: { fecha, id_barbero } }),
     getAll: (fecha, estado) => api.get('/citas', { params: { fecha, estado } }),
     cambiarEstado: (id, estado) => api.put(`/citas/${id}/estado`, { estado }),

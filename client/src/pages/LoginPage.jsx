@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Scissors, Mail, Lock, CheckCircle } from 'lucide-react';
+import { Scissors, Mail, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -9,6 +9,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -79,7 +80,7 @@ export default function LoginPage() {
                                 <Lock size={18} strokeWidth={1.5} />
                             </div>
                             <input
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 className="login-input"
                                 placeholder="Tu contrasena"
                                 value={password}
@@ -87,6 +88,14 @@ export default function LoginPage() {
                                 required
                                 autoComplete="current-password"
                             />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPassword(!showPassword)}
+                                tabIndex={-1}
+                            >
+                                {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
+                            </button>
                         </div>
 
                         {/* Submit Button */}

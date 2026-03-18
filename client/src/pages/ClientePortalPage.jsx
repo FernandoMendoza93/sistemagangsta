@@ -17,6 +17,8 @@ export default function ClientePortalPage() {
     const [barberos, setBarberos] = useState([]);
     const [showAgendarModal, setShowAgendarModal] = useState(false);
     const [citaForm, setCitaForm] = useState({ id_servicio: '', id_barbero: '1', fecha: '', hora: '', notas: '' });
+    const [editingCita, setEditingCita] = useState(null); // cita existente que se está modificando
+    const [citaExistenteEnFecha, setCitaExistenteEnFecha] = useState(null); // cita detectada en la fecha seleccionada
     const [loading, setLoading] = useState(true);
     const [horasOcupadas, setHorasOcupadas] = useState([]);
     const [horarioLaboral, setHorarioLaboral] = useState(null);
@@ -84,18 +86,26 @@ export default function ClientePortalPage() {
             console.error('Error cargando servicios/barberos:', error);
         }
         setCitaForm({ id_servicio: '', id_barbero: '', fecha: '', hora: '', notas: '' });
+        setEditingCita(null);
+        setCitaExistenteEnFecha(null);
         setShowAgendarModal(true);
     }
 
     async function handleAgendarCita(e) {
         e.preventDefault();
         try {
-            await citasService.crear(citaForm);
-            toast.success('¡Cita Agendada! Te esperamos');
+            if (editingCita) {
+                await citasService.actualizar(editingCita.id, citaForm);
+                toast.success('Cita modificada exitosamente');
+            } else {
+                await citasService.crear(citaForm);
+                toast.success('¡Cita Agendada! Te esperamos');
+            }
             setShowAgendarModal(false);
+            setEditingCita(null);
             loadData();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'No se pudo agendar');
+            toast.error(error.response?.data?.error || 'No se pudo procesar la cita');
         }
     }
 
@@ -106,10 +116,19 @@ export default function ClientePortalPage() {
         }
 
         setCitaForm({ ...citaForm, fecha, hora: '' });
+        setCitaExistenteEnFecha(null);
+
         if (!fecha) {
             setHorasOcupadas([]);
             setHorarioLaboral(null);
             return;
+        }
+
+        // Detectar si el cliente ya tiene una cita activa en esta fecha
+        const citaEnFecha = citas.find(c => c.fecha === fecha && c.estado !== 'Cancelada');
+        if (citaEnFecha && !editingCita) {
+            setCitaExistenteEnFecha(citaEnFecha);
+            return; // No cargar disponibilidad aún, primero que el usuario decida
         }
 
         try {
@@ -120,6 +139,27 @@ export default function ClientePortalPage() {
             console.error('Error obteniendo disponibilidad:', error);
             setHorasOcupadas([]);
             setHorarioLaboral(null);
+        }
+    }
+
+    async function handleModificarCita() {
+        const cita = citaExistenteEnFecha;
+        setEditingCita(cita);
+        setCitaExistenteEnFecha(null);
+        setCitaForm({
+            id_servicio: citaForm.id_servicio,
+            id_barbero: cita.id_barbero || '1',
+            fecha: cita.fecha,
+            hora: '',
+            notas: cita.notas || ''
+        });
+
+        try {
+            const res = await citasService.getDisponibilidad(cita.fecha, 1);
+            setHorasOcupadas(res.data.ocupadas || []);
+            setHorarioLaboral(res.data.horario || null);
+        } catch (error) {
+            console.error('Error obteniendo disponibilidad:', error);
         }
     }
 
@@ -400,7 +440,7 @@ export default function ClientePortalPage() {
                         <div className="modal-header">
                             <h2>
                                 <Calendar size={22} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                                Nueva Cita
+                                {editingCita ? 'Modificar Cita' : 'Nueva Cita'}
                             </h2>
                             <button className="close-btn" onClick={() => setShowAgendarModal(false)}>
                                 <X size={20} />
@@ -445,7 +485,32 @@ export default function ClientePortalPage() {
 
                             <div className="form-group">
                                 <label><Clock size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Horarios Disponibles</label>
-                                {(!citaForm.fecha || !citaForm.id_servicio) ? (
+
+                                {/* Aviso de cita existente en esta fecha */}
+                                {citaExistenteEnFecha ? (
+                                    <div className="cita-existente-aviso">
+                                        <div className="aviso-info">
+                                            <Calendar size={18} color="#FF5F40" />
+                                            <div>
+                                                <p className="aviso-titulo">Ya tienes una cita este dia</p>
+                                                <p className="aviso-detalle">
+                                                    {citaExistenteEnFecha.nombre_servicio} a las {citaExistenteEnFecha.hora} hrs
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="aviso-acciones">
+                                            <button type="button" className="btn-modificar-cita" onClick={handleModificarCita}>
+                                                Modificar mi cita
+                                            </button>
+                                            <button type="button" className="btn-otro-dia" onClick={() => {
+                                                setCitaExistenteEnFecha(null);
+                                                setCitaForm({ ...citaForm, fecha: '', hora: '' });
+                                            }}>
+                                                Elegir otro dia
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (!citaForm.fecha || !citaForm.id_servicio) ? (
                                     <p>Selecciona el servicio y la fecha primero para ver los espacios.</p>
                                 ) : horasDisponibles.length === 0 ? (
                                     <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
@@ -481,10 +546,11 @@ export default function ClientePortalPage() {
 
                             <button
                                 type="submit"
-                                className="btn-primary w-100"
-                                disabled={!citaForm.fecha || !citaForm.hora || !citaForm.id_servicio}
+                                className="btn-confirmar-cita"
+                                disabled={!citaForm.fecha || !citaForm.hora || !citaForm.id_servicio || citaExistenteEnFecha}
                             >
-                                Confirmar Cita
+                                <CheckCircle size={18} />
+                                {editingCita ? 'Guardar Cambios' : 'Confirmar Cita'}
                             </button>
                         </form>
                     </div>

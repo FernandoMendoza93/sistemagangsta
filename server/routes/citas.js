@@ -219,6 +219,89 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
     }
 });
 
+// PUT /api/citas/:id - Modificar cita (solo el cliente dueño)
+router.put('/:id', verifyToken, (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        if (req.user.rol !== 'Cliente') {
+            return res.status(403).json({ error: 'Solo los clientes pueden modificar sus citas' });
+        }
+
+        const { id } = req.params;
+        let { id_servicio, id_barbero, fecha, hora, notas } = req.body;
+
+        if (!fecha || !hora || !id_servicio) {
+            return res.status(400).json({ error: 'Fecha, hora y servicio son requeridos' });
+        }
+
+        // Verificar que la cita pertenece al cliente
+        const citaExistente = db.prepare(
+            'SELECT id FROM citas WHERE id = ? AND id_cliente = ? AND barberia_id = ? AND estado != ?'
+        ).get(id, req.user.id, req.barberia_id, 'Cancelada');
+
+        if (!citaExistente) {
+            return res.status(404).json({ error: 'Cita no encontrada o ya cancelada' });
+        }
+
+        if (!id_barbero) id_barbero = 1;
+
+        // Verificar servicio
+        const servicio = db.prepare('SELECT duracion_aprox FROM servicios WHERE id = ? AND barberia_id = ?').get(id_servicio, req.barberia_id);
+        if (!servicio) {
+            return res.status(404).json({ error: 'Servicio no encontrado' });
+        }
+
+        const duracionTotal = servicio.duracion_aprox + 15;
+        const horaFin = addMinutes(hora, duracionTotal);
+
+        const dateObj = dayjs.tz(fecha, "America/Mexico_City");
+        const dayOfWeek = dateObj.day();
+        const horarioLaboral = getHorarioDia(dayOfWeek);
+
+        if (hora < horarioLaboral.apertura) {
+            return res.status(400).json({ error: 'La hora seleccionada es antes de la apertura del local' });
+        }
+
+        if (horaFin > horarioLaboral.cierre) {
+            return res.status(400).json({
+                error: 'El servicio excede el horario de cierre',
+                detalles: `El servicio termina a las ${horaFin}, pero cerramos a las ${horarioLaboral.cierre}`
+            });
+        }
+
+        // Validación Tetris — excluir la cita que se está editando
+        const citasExistentes = db.prepare(`
+            SELECT c.hora as hora_inicio, s.duracion_aprox
+            FROM citas c
+            JOIN servicios s ON c.id_servicio = s.id
+            WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ? AND c.id != ?
+        `).all(id_barbero, fecha, req.barberia_id, id);
+
+        for (const cita of citasExistentes) {
+            const exInicio = cita.hora_inicio;
+            const exFin = addMinutes(exInicio, cita.duracion_aprox + 15);
+
+            if (hora < exFin && horaFin > exInicio) {
+                return res.status(409).json({
+                    error: 'Este horario ya ha sido reservado o choca con otra cita',
+                    detalles: `Ya existe ocupación entre las ${exInicio} y ${exFin}`
+                });
+            }
+        }
+
+        db.prepare(`
+            UPDATE citas SET id_servicio = ?, id_barbero = ?, fecha = ?, hora = ?, notas = ?
+            WHERE id = ? AND id_cliente = ? AND barberia_id = ?
+        `).run(id_servicio, id_barbero, fecha, hora, notas || null, id, req.user.id, req.barberia_id);
+
+        res.json({ message: 'Cita modificada exitosamente' });
+    } catch (error) {
+        console.error('Error modificando cita:', error);
+        res.status(500).json({ error: 'Error en el servidor al modificar la cita' });
+    }
+});
+
 // PUT /api/citas/:id/estado - Cambiar estado (Admin/Encargado/Barbero)
 router.put('/:id/estado', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
     try {

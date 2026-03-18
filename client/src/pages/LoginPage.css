@@ -167,6 +167,23 @@
     color: #FF5F40;
 }
 
+.login-input-group .password-toggle {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #9CA3AF;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.3s;
+}
+
+.login-input-group .password-toggle:hover {
+    color: #FF5F40;
+}
+
 /* Submit Button */
 .login-submit-btn {
     display: flex;

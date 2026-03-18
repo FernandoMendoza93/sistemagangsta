@@ -822,6 +822,103 @@
     text-decoration: line-through;
 }
 
+/* Aviso cita existente en fecha */
+.cita-existente-aviso {
+    background: #FFF7ED;
+    border: 1px solid #FDBA74;
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.cita-existente-aviso .aviso-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.cita-existente-aviso .aviso-titulo {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #9A3412;
+    margin: 0;
+}
+
+.cita-existente-aviso .aviso-detalle {
+    font-size: 0.82rem;
+    color: #C2410C;
+    margin: 0.2rem 0 0;
+}
+
+.cita-existente-aviso .aviso-acciones {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.cita-existente-aviso .btn-modificar-cita {
+    flex: 1;
+    padding: 0.6rem;
+    background: #FF5F40;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cita-existente-aviso .btn-modificar-cita:hover {
+    background: #E5533A;
+}
+
+.cita-existente-aviso .btn-otro-dia {
+    flex: 1;
+    padding: 0.6rem;
+    background: #fff;
+    color: #374151;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cita-existente-aviso .btn-otro-dia:hover {
+    background: #F3F4F6;
+}
+
+/* Botón confirmar/guardar cita en modal */
+.btn-confirmar-cita {
+    width: 100%;
+    border: none;
+    border-radius: 100px;
+    padding: 0.85rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    background: #FF7F50;
+    color: #FFF;
+    box-shadow: 0 6px 20px rgba(255, 127, 80, 0.25);
+    transition: transform 0.2s, opacity 0.2s;
+    margin-top: 0.5rem;
+}
+
+.btn-confirmar-cita:active {
+    transform: scale(0.97);
+}
+
+.btn-confirmar-cita:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .portal-submit-btn {
     background: linear-gradient(135deg, #c9a227, #a88420);
     color: #0a0a1a;
