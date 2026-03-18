@@ -1064,4 +1064,29 @@
     opacity: 0.45;
     cursor: not-allowed;
     transform: none;
+}
+
+/* Botón primario genérico (usado en pasos del modal) */
+.btn-primary {
+    background: #FF7F50;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 100px;
+    padding: 0.85rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+}
+
+.w-100 {
+    width: 100%;
 }

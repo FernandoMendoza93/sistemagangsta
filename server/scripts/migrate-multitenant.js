@@ -254,9 +254,9 @@ const defaultCategories = ['Venta', 'Herramientas', 'Insumo Limpieza'];
 
 for (const b of barberias) {
     for (const cat of defaultCategories) {
-        const exists = db.prepare('SELECT id FROM categorias WHERE nombre = ? AND barberia_id = ?').get(cat, b.id);
+        const exists = db.prepare('SELECT id FROM categorias WHERE nombre = ?').get(cat);
         if (!exists) {
-            db.prepare('INSERT INTO categorias (nombre, barberia_id) VALUES (?, ?)').run(cat, b.id);
+            db.prepare('INSERT OR IGNORE INTO categorias (nombre, barberia_id) VALUES (?, ?)').run(cat, b.id);
             console.log(`  Added category "${cat}" to barberia #${b.id}`);
         }
     }

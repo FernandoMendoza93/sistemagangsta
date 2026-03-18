@@ -268,7 +268,7 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
 });
 
 // PUT /api/citas/:id - Modificar cita (solo el cliente dueño)
-router.put('/:id', verifyToken, (req, res) => {
+router.put('/:id', verifyToken, requireTenant, (req, res) => {
     try {
         const db = req.app.locals.db;
 
@@ -305,7 +305,11 @@ router.put('/:id', verifyToken, (req, res) => {
 
         const dateObj = dayjs.tz(fecha, "America/Mexico_City");
         const dayOfWeek = dateObj.day();
-        const horarioLaboral = getHorarioDia(dayOfWeek);
+        const horarioLaboral = getHorarioFromDB(db, id_barbero, dayOfWeek, req.barberia_id);
+
+        if (!horarioLaboral) {
+            return res.status(400).json({ error: 'El barbero no trabaja este día' });
+        }
 
         if (hora < horarioLaboral.apertura) {
             return res.status(400).json({ error: 'La hora seleccionada es antes de la apertura del local' });

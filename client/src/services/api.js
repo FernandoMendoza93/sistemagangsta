@@ -24,14 +24,15 @@ api.interceptors.response.use(
             // No redirigir si estamos en una página de login — el 401 ahí
             // significa credenciales incorrectas, no sesión expirada
             const path = window.location.pathname;
-            const isLoginPage = path === '/login' || path === '/mi-perfil';
+            const pathParts = path.split('/');
+            const isPortalLogin = pathParts[1] === 'portal' && pathParts[2] && !pathParts[3];
+            const isLoginPage = path === '/login' || path === '/mi-perfil' || isPortalLogin;
 
             if (!isLoginPage) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
 
                 // Si el cliente estaba en el portal, regresarlo a su login
-                const pathParts = window.location.pathname.split('/');
                 if (pathParts[1] === 'portal' && pathParts[2]) {
                     window.location.href = `/portal/${pathParts[2]}`;
                 } else if (path.startsWith('/mi-perfil')) {
