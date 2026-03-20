@@ -22,7 +22,6 @@
     transform-style: preserve-3d;
 }
 
-/* Common to both sides */
 .membership-front,
 .membership-back {
     position: absolute;
@@ -31,17 +30,15 @@
     backface-visibility: hidden;
     border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 25px var(--shadow-color);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     overflow: hidden;
 }
 
-/* Front Side */
 .membership-front {
     color: white;
-    /* Background set dynamically in component */
 }
 
 .card-header {
@@ -89,7 +86,7 @@
 .card-chip {
     width: 40px;
     height: 30px;
-    background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     border-radius: 4px;
     margin-bottom: 12px;
     position: relative;
@@ -116,7 +113,6 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Stamps and Rewards */
 .stamps-tracker {
     margin-top: auto;
 }
@@ -141,12 +137,12 @@
 
 .stamps-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #FF7F50, #FF6B6B);
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
     border-radius: 4px;
 }
 
 .reward-banner {
-    background: linear-gradient(90deg, #10B981, #059669);
+    background: linear-gradient(90deg, var(--success), #059669);
     color: white;
     padding: 8px 12px;
     border-radius: 8px;
@@ -160,17 +156,9 @@
 }
 
 @keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-    }
-
-    70% {
-        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-    }
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 .flip-hint {
@@ -186,31 +174,31 @@
 
 /* Back Side */
 .membership-back {
-    background: #FAF9F6;
-    color: #1A1A2E;
+    background: var(--bg-main);
+    color: var(--text-main);
     transform: rotateY(180deg);
     align-items: center;
     text-align: center;
-    border: 1px solid #E5E7EB;
+    border: 1px solid var(--border-color);
 }
 
 .qr-header h3 {
     margin: 0 0 4px 0;
     font-size: 1.1rem;
-    color: #1A1A2E;
+    color: var(--text-main);
 }
 
 .qr-header p {
     margin: 0;
     font-size: 0.75rem;
-    color: #6B7280;
+    color: var(--text-muted);
 }
 
 .qr-wrapper {
-    background: white;
+    background: #FFFFFF;
     padding: 10px;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px var(--shadow-color);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -219,10 +207,10 @@
 }
 
 .qr-placeholder {
-    color: #9CA3AF;
+    color: var(--text-muted);
     font-size: 0.8rem;
 }
 
 .dark-hint {
-    color: #9CA3AF;
+    color: var(--text-muted);
 }

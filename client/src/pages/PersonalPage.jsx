@@ -91,7 +91,7 @@ export default function PersonalPage() {
             <div className="page-header">
                 <div className="header-title-wrapper">
                     <div className="title-icon">
-                        <Icon name="users" size={28} color="#2563eb" />
+                        <Icon name="users" size={28} color="var(--accent-primary)" />
                     </div>
                     <h1 className="page-title">Personal</h1>
                 </div>
@@ -101,26 +101,30 @@ export default function PersonalPage() {
                 </button>
             </div>
 
-            <div className="card">
-                <div className="table-container">
-                    <table className="table">
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' }}>
+                <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                         <thead>
-                            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                {['Nombre','Email','Rol','Estado','Acciones'].map(h => (
+                                    <th key={h} style={{ background: 'var(--bg-input)', color: 'var(--text-muted)', padding: '0.75rem 1.25rem', textAlign: 'left', borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                                ))}
+                            </tr>
                         </thead>
                         <tbody>
                             {usuarios.map(u => (
                                 <tr key={u.id}>
-                                    <td><strong style={{ color: '#1a1a1a' }}>{u.nombre}</strong></td>
-                                    <td style={{ color: '#1a1a1a' }}>{u.email}</td>
-                                    <td><span className={`badge ${u.rol === 'Admin' ? 'badge-warning' : u.rol === 'Encargado' ? 'badge-info' : 'badge-success'}`}>{u.rol}</span></td>
-                                    <td><span className={`badge ${u.activo ? 'badge-success' : 'badge-danger'}`}>{u.activo ? 'Activo' : 'Inactivo'}</span></td>
-                                    <td>
-                                        <div className="acciones-cell">
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontWeight: 700 }}>{u.nombre}</td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--text-main)' }}>{u.email}</td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}><span className={`badge ${u.rol === 'Admin' ? 'badge-warning' : u.rol === 'Encargado' ? 'badge-info' : 'badge-success'}`}>{u.rol}</span></td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}><span className={`badge ${u.activo ? 'badge-success' : 'badge-danger'}`}>{u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                             <button className="btn btn-primary btn-sm" onClick={() => openEditModal(u)} title="Editar usuario">
                                                 <Icon name="edit" size={14} color="white" />
                                                 <span>Editar</span>
                                             </button>
-                                            <button className="btn btn-secondary btn-sm" onClick={() => toggleActivo(u.id, u.activo)}>
+                                            <button className="btn btn-sm" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.4rem 0.8rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => toggleActivo(u.id, u.activo)}>
                                                 {u.activo ? 'Desactivar' : 'Activar'}
                                             </button>
                                         </div>

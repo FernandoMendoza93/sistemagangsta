@@ -5,9 +5,9 @@
 
 .register-page {
     min-height: 100vh;
-    background: #FAF9F6;
+    background: var(--bg-main);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    color: #111827;
+    color: var(--text-main);
     display: flex;
     flex-direction: column;
 }
@@ -21,16 +21,16 @@
     max-width: 1200px;
     width: 100%;
     margin: 0 auto;
-    background: #FFFFFF;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 15px var(--shadow-color);
 }
 
 .reg-page-nav-brand {
     font-family: 'Montserrat', sans-serif;
     font-size: 1.4rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text-main);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -39,7 +39,7 @@
 }
 
 .reg-page-nav-brand span {
-    color: #FF5F40;
+    color: var(--accent-primary);
 }
 
 /* Main Content */
@@ -53,11 +53,11 @@
 .reg-page-card {
     width: 100%;
     max-width: 580px;
-    background: #FFFFFF;
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 24px;
     padding: 2.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 30px var(--shadow-color);
 }
 
 .reg-page-card h1 {
@@ -67,12 +67,12 @@
     text-align: center;
     margin: 0 0 0.3rem;
     letter-spacing: -0.5px;
-    color: #111827;
+    color: var(--text-main);
 }
 
 .reg-page-subtitle {
     text-align: center;
-    color: #6B7280;
+    color: var(--text-muted);
     font-size: 0.9rem;
     margin: 0 0 2rem;
     font-weight: 500;
@@ -94,11 +94,11 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #9CA3AF;
+    color: var(--text-muted);
 }
 
 .reg-step.active {
-    color: #FF5F40;
+    color: var(--accent-primary);
 }
 
 .reg-step.done {
@@ -108,7 +108,7 @@
 .reg-step-separator {
     width: 24px;
     height: 2px;
-    background: #E5E7EB;
+    background: var(--border-color);
     border-radius: 1px;
 }
 
@@ -117,7 +117,7 @@
     font-family: 'Montserrat', sans-serif;
     font-size: 0.95rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text-main);
     margin: 1.75rem 0 1rem;
     display: flex;
     align-items: center;
@@ -142,17 +142,17 @@
     display: block;
     font-size: 0.82rem;
     font-weight: 600;
-    color: #4B5563;
+    color: var(--text-muted);
     margin-bottom: 0.4rem;
 }
 
 .reg-field-input {
     width: 100%;
     padding: 0.8rem 1rem;
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
-    color: #111827;
+    color: var(--text-main);
     font-size: 0.92rem;
     font-family: 'Inter', sans-serif;
     outline: none;
@@ -160,13 +160,13 @@
 }
 
 .reg-field-input::placeholder {
-    color: #9CA3AF;
+    color: var(--text-muted);
 }
 
 .reg-field-input:focus {
-    background: #FFFFFF;
-    border-color: #FF5F40;
-    box-shadow: 0 0 0 3px rgba(255, 95, 64, 0.1);
+    background: var(--bg-surface);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
 }
 
 .reg-field-input.has-value {
@@ -185,7 +185,7 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: #F3F4F6;
+    background: var(--bg-hover);
     border: 2px dashed #D1D5DB;
     display: flex;
     align-items: center;
@@ -196,7 +196,7 @@
 }
 
 .logo-preview.has-image {
-    border: 3px solid rgba(255, 95, 64, 0.3);
+    border: 3px solid rgba(var(--accent-primary-rgb), 0.3);
     border-style: solid;
 }
 
@@ -212,7 +212,7 @@
 
 .logo-upload-info p {
     font-size: 0.8rem;
-    color: #6B7280;
+    color: var(--text-muted);
     margin: 0.25rem 0 0;
 }
 
@@ -221,10 +221,10 @@
     align-items: center;
     gap: 0.35rem;
     padding: 0.5rem 1rem;
-    background: #F3F4F6;
-    border: 1px solid #E5E7EB;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
-    color: #4B5563;
+    color: var(--text-muted);
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
@@ -232,8 +232,8 @@
 }
 
 .btn-upload:hover {
-    background: #E5E7EB;
-    color: #111827;
+    background: var(--border-color);
+    color: var(--text-main);
 }
 
 /* Plan selector */
@@ -246,8 +246,8 @@
 
 .reg-plan-option {
     padding: 1.25rem;
-    background: #F9FAFB;
-    border: 2px solid #E5E7EB;
+    background: var(--bg-input);
+    border: 2px solid var(--border-color);
     border-radius: 16px;
     cursor: pointer;
     text-align: center;
@@ -256,38 +256,38 @@
 }
 
 .reg-plan-option:hover {
-    border-color: rgba(255, 95, 64, 0.3);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
 }
 
 .reg-plan-option.selected {
-    border-color: #FF5F40;
-    background: rgba(255, 95, 64, 0.03);
-    box-shadow: 0 4px 15px rgba(255, 95, 64, 0.1);
+    border-color: var(--accent-primary);
+    background: rgba(var(--accent-primary-rgb), 0.03);
+    box-shadow: 0 4px 15px rgba(var(--accent-primary-rgb), 0.1);
 }
 
 .reg-plan-option .plan-name {
     font-family: 'Montserrat', sans-serif;
     font-size: 1rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text-main);
     margin: 0 0 0.3rem;
 }
 
 .reg-plan-option.selected .plan-name {
-    color: #FF5F40;
+    color: var(--accent-primary);
 }
 
 .reg-plan-option .plan-price {
     font-family: 'Montserrat', sans-serif;
     font-size: 1.5rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text-main);
     margin: 0;
 }
 
 .reg-plan-option .plan-period {
     font-size: 0.75rem;
-    color: #6B7280;
+    color: var(--text-muted);
     font-weight: 500;
 }
 
@@ -295,8 +295,8 @@
     position: absolute;
     top: -10px;
     right: 12px;
-    background: #FF5F40;
-    color: #fff;
+    background: var(--accent-primary);
+    color: var(--text-inverse);
     font-size: 0.6rem;
     font-weight: 700;
     padding: 3px 8px;
@@ -307,8 +307,8 @@
 
 /* Payment section */
 .payment-box {
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -322,7 +322,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #111827;
+    color: var(--text-main);
 }
 
 .payment-detail {
@@ -339,13 +339,13 @@
 
 .payment-detail-label {
     font-size: 0.82rem;
-    color: #6B7280;
+    color: var(--text-muted);
     font-weight: 500;
 }
 
 .payment-detail-value {
     font-size: 0.88rem;
-    color: #111827;
+    color: var(--text-main);
     font-weight: 700;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
@@ -353,11 +353,11 @@
 .payment-note {
     margin-top: 1rem;
     padding: 0.75rem;
-    background: rgba(255, 95, 64, 0.04);
-    border: 1px solid rgba(255, 95, 64, 0.12);
+    background: rgba(var(--accent-primary-rgb), 0.04);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.12);
     border-radius: 10px;
     font-size: 0.78rem;
-    color: #6B7280;
+    color: var(--text-muted);
     line-height: 1.5;
 }
 
@@ -389,15 +389,15 @@
 .btn-activate {
     width: 100%;
     padding: 0.95rem;
-    background: #FF5F40;
-    color: #fff;
+    background: var(--accent-primary);
+    color: var(--text-inverse);
     border: none;
     border-radius: 100px;
     font-size: 1.05rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.25s ease;
-    box-shadow: 0 6px 20px rgba(255, 95, 64, 0.25);
+    box-shadow: 0 6px 20px rgba(var(--accent-primary-rgb), 0.25);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -407,7 +407,7 @@
 .btn-activate:hover {
     background: #E54D30;
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(255, 95, 64, 0.35);
+    box-shadow: 0 8px 24px rgba(var(--accent-primary-rgb), 0.35);
 }
 
 .btn-activate:disabled {
@@ -443,7 +443,7 @@
 }
 
 .reg-success-page p {
-    color: #6B7280;
+    color: var(--text-muted);
     font-size: 0.92rem;
     margin: 0.25rem 0;
 }
@@ -451,14 +451,14 @@
 .btn-go-login {
     margin-top: 1.5rem;
     padding: 0.85rem 2rem;
-    background: #FF5F40;
-    color: #fff;
+    background: var(--accent-primary);
+    color: var(--text-inverse);
     border: none;
     border-radius: 100px;
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(255, 95, 64, 0.25);
+    box-shadow: 0 6px 20px rgba(var(--accent-primary-rgb), 0.25);
     transition: all 0.25s ease;
 }
 

@@ -131,7 +131,7 @@ export default function POSPage() {
             <div className="page-header">
                 <div className="header-title-wrapper">
                     <div className="title-icon">
-                        <Icon name="shopping-cart" size={28} color="#2563eb" />
+                        <Icon name="shopping-cart" size={28} color="var(--accent-primary)" />
                     </div>
                     <h1 className="page-title">Punto de Venta</h1>
                 </div>
@@ -175,7 +175,7 @@ export default function POSPage() {
                                 <div className="service-name">{s.nombre_servicio}</div>
                                 <div className="service-price">${s.precio.toFixed(2)}</div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                    <Icon name="clock" size={14} color="#6b7280" />
+                                    <Icon name="clock" size={14} color="var(--text-muted)" />
                                     {s.duracion_aprox} min
                                 </div>
                             </div>
@@ -195,7 +195,7 @@ export default function POSPage() {
                 <div className="cart-panel">
                     <div className="cart-header">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
-                            <Icon name="shopping-cart" size={20} color="#374151" />
+                            <Icon name="shopping-cart" size={20} color="var(--text-main)" />
                             <h3 style={{ margin: 0 }}>Carrito</h3>
                         </div>
                     </div>

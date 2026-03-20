@@ -160,7 +160,7 @@ export default function CorteCajaPage() {
                 <div className="page-header-pro">
                     <div className="header-title-wrapper">
                         <div className="title-icon">
-                            <Icon name="cash" size={28} color="#2563eb" />
+                            <Icon name="cash" size={28} color="var(--accent-primary)" />
                         </div>
                         <div>
                             <h1 className="corte-title">Corte de Caja</h1>
@@ -208,12 +208,12 @@ export default function CorteCajaPage() {
             <div className="page-header-pro">
                 <div className="header-title-wrapper">
                     <div className="title-icon">
-                        <Icon name="cash" size={28} color="#2563eb" />
+                        <Icon name="cash" size={28} color="var(--accent-primary)" />
                     </div>
                     <div>
                         <h1 className="corte-title">Corte de Caja</h1>
                         <p className="turno-info-pro corte-subtitle">
-                            <Icon name="clock" size={16} color="#6b7280" />
+                            <Icon name="clock" size={16} color="var(--text-muted)" />
                             <span>Encargado: {encargado || user?.nombre} • Inicio: {fechaInicio} {hora_apertura || ''}</span>
                         </p>
                     </div>

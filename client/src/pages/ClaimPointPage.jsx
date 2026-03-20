@@ -116,14 +116,14 @@ export default function ClaimPointPage() {
                 <div className="cliente-login-card" style={{ textAlign: 'center' }}>
                     <div className="cliente-login-logo">
                         <div className="logo-ring">
-                            <Icon name="scissors" size={36} color="#FF5F40" />
+                            <Icon name="scissors" size={36} color="var(--accent-primary, #FF5F40)" />
                         </div>
                         <h1>The Gangsta</h1>
                         <p className="tagline">Barber Shop</p>
                     </div>
                     <div style={{ padding: '2rem' }}>
                         <div className="cliente-spinner" style={{ margin: '0 auto' }}></div>
-                        <p style={{ color: '#6B7280', marginTop: '1rem', fontWeight: 500 }}>
+                        <p style={{ color: 'var(--text-muted, #6B7280)', marginTop: '1rem', fontWeight: 500 }}>
                             {status === 'claiming' ? 'Verificando y reclamando sello...' : 'Cargando información...'}
                         </p>
                     </div>
@@ -144,11 +144,11 @@ export default function ClaimPointPage() {
                             <CheckCircle size={64} color="#10B981" />
                         </div>
                     </div>
-                    <h2 style={{ color: '#111827', marginBottom: '0.5rem', fontWeight: 800 }}>¡Sello Reclamado!</h2>
-                    <p style={{ color: '#4B5563', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-                        Ahora tienes <strong style={{ color: '#FF5F40' }}>{puntos} sellos</strong> en total.
+                    <h2 style={{ color: 'var(--text-main, #111827)', marginBottom: '0.5rem', fontWeight: 800 }}>¡Sello Reclamado!</h2>
+                    <p style={{ color: 'var(--text-muted, #4B5563)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                        Ahora tienes <strong style={{ color: 'var(--accent-primary, #FF5F40)' }}>{puntos} sellos</strong> en total.
                     </p>
-                    <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '2rem', fontWeight: 500 }}>
+                    <p style={{ color: 'var(--text-muted, #6B7280)', fontSize: '0.9rem', marginBottom: '2rem', fontWeight: 500 }}>
                         {paraPremio > 0
                             ? `Estás a ${paraPremio} corte${paraPremio > 1 ? 's' : ''} de tu acceso VIP.`
                             : '¡Tienes un corte VIP disponible!'
@@ -173,19 +173,19 @@ export default function ClaimPointPage() {
                 <div className="cliente-login-card" style={{ textAlign: 'center', padding: '30px 20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
                         <div style={{ background: 'rgba(255, 95, 64, 0.1)', padding: '16px', borderRadius: '50%' }}>
-                            <QrCode size={40} color="#FF5F40" />
+                            <QrCode size={40} color="var(--accent-primary, #FF5F40)" />
                         </div>
                     </div>
-                    <h2 style={{ color: '#111827', marginBottom: '0.5rem', fontSize: '1.3rem', fontWeight: 800 }}>Escanea el Código QR</h2>
-                    <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    <h2 style={{ color: 'var(--text-main, #111827)', marginBottom: '0.5rem', fontSize: '1.3rem', fontWeight: 800 }}>Escanea el Código QR</h2>
+                    <p style={{ color: 'var(--text-muted, #6B7280)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
                         Apunta la cámara al código que te muestra el barbero al terminar.
                     </p>
 
                     <div style={{
                         borderRadius: '20px',
                         overflow: 'hidden',
-                        border: '3px solid #FF5F40',
-                        backgroundColor: '#F9FAFB',
+                        border: '3px solid var(--accent-primary, #FF5F40)',
+                        backgroundColor: 'var(--bg-input, #F9FAFB)',
                         marginBottom: '1.5rem',
                         boxShadow: '0 10px 25px rgba(255,95,64,0.1)'
                     }}>
@@ -201,7 +201,7 @@ export default function ClaimPointPage() {
 
                     <button
                         className="tab-btn"
-                        style={{ width: '100%', background: '#F3F4F6', color: '#4B5563' }}
+                        style={{ width: '100%', background: 'var(--bg-input, #F3F4F6)', color: 'var(--text-muted, #4B5563)' }}
                         onClick={() => navigate('/mi-perfil/portal')}
                     >
                         Cancelar y volver al menú
@@ -225,11 +225,11 @@ export default function ClaimPointPage() {
                         </div>
                     </div>
 
-                    <h2 style={{ color: '#111827', marginBottom: '0.5rem', fontWeight: 800 }}>
+                    <h2 style={{ color: 'var(--text-main, #111827)', marginBottom: '0.5rem', fontWeight: 800 }}>
                         {isUsed ? 'Código ya usado' : 'No disponible'}
                     </h2>
 
-                    <p style={{ color: '#6B7280', whiteSpace: 'pre-line', marginBottom: '2rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                    <p style={{ color: 'var(--text-muted, #6B7280)', whiteSpace: 'pre-line', marginBottom: '2rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
                         {error}
                     </p>
 
@@ -243,7 +243,7 @@ export default function ClaimPointPage() {
 
                     <button
                         className="tab-btn"
-                        style={{ width: '100%', background: '#F3F4F6', color: '#4B5563' }}
+                        style={{ width: '100%', background: 'var(--bg-input, #F3F4F6)', color: 'var(--text-muted, #4B5563)' }}
                         onClick={() => navigate('/mi-perfil/portal')}
                     >
                         Volver al Portal
@@ -259,14 +259,14 @@ export default function ClaimPointPage() {
             <div className="cliente-login-card">
                 <div className="cliente-login-logo">
                     <div className="logo-ring">
-                        <Icon name="scissors" size={36} color="#FF5F40" />
+                        <Icon name="scissors" size={36} color="var(--accent-primary, #FF5F40)" />
                     </div>
                     <h1>The Gangsta</h1>
                     <p className="tagline">Barber Shop</p>
                 </div>
 
                 <div className="cliente-welcome-section">
-                    <h2><Scissors size={20} style={{ marginRight: '6px', verticalAlign: 'middle', color: '#FF5F40' }} /> ¡Tu visita te espera!</h2>
+                    <h2><Scissors size={20} style={{ marginRight: '6px', verticalAlign: 'middle', color: 'var(--accent-primary, #FF5F40)' }} /> ¡Tu visita te espera!</h2>
                     <p>Inicia sesión primero para poder registrar tu asistencia.</p>
                 </div>
 
@@ -308,8 +308,8 @@ export default function ClaimPointPage() {
                     </button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#6B7280', fontSize: '0.9rem' }}>
-                    ¿No tienes cuenta? <a href="/mi-perfil" style={{ color: '#FF5F40', fontWeight: 600, textDecoration: 'none' }}>Regístrate aquí</a>
+                <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-muted, #6B7280)', fontSize: '0.9rem' }}>
+                    ¿No tienes cuenta? <a href="/mi-perfil" style={{ color: 'var(--accent-primary, #FF5F40)', fontWeight: 600, textDecoration: 'none' }}>Regístrate aquí</a>
                 </p>
             </div>
         </div>

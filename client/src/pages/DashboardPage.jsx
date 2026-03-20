@@ -97,33 +97,33 @@ export default function DashboardPage() {
             </motion.div>
 
             <motion.div className="card-grid" variants={containerVariants}>
-                <motion.div className="stat-card" variants={itemVariants}>
-                    <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10B981' }}>
+                <motion.div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.25rem 1.5rem', boxShadow: '0 8px 32px var(--shadow-color)', display: 'flex', alignItems: 'center', gap: '1rem' }} variants={itemVariants}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
                         <Icon name="dollar-sign" size={28} />
                     </div>
-                    <div className="stat-info">
-                        <div className="stat-value">${resumen?.ingresos_totales?.toFixed(2) || '0.00'}</div>
-                        <div className="stat-label">Ingresos del Día</div>
+                    <div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${resumen?.ingresos_totales?.toFixed(2) || '0.00'}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Ingresos del Día</div>
                     </div>
                 </motion.div>
 
-                <motion.div className="stat-card" variants={itemVariants}>
-                    <div className="stat-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', color: '#3B82F6' }}>
+                <motion.div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.25rem 1.5rem', boxShadow: '0 8px 32px var(--shadow-color)', display: 'flex', alignItems: 'center', gap: '1rem' }} variants={itemVariants}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6' }}>
                         <Icon name="shopping-cart" size={28} />
                     </div>
-                    <div className="stat-info">
-                        <div className="stat-value">{resumen?.total_ventas || 0}</div>
-                        <div className="stat-label">Ventas Totales</div>
+                    <div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{resumen?.total_ventas || 0}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Ventas Totales</div>
                     </div>
                 </motion.div>
 
-                <motion.div className="stat-card" variants={itemVariants}>
-                    <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}>
+                <motion.div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.25rem 1.5rem', boxShadow: '0 8px 32px var(--shadow-color)', display: 'flex', alignItems: 'center', gap: '1rem' }} variants={itemVariants}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B' }}>
                         <Icon name="credit-card" size={28} />
                     </div>
-                    <div className="stat-info">
-                        <div className="stat-value">${resumen?.tarjeta?.toFixed(2) || '0.00'}</div>
-                        <div className="stat-label">Tarjeta / Transf.</div>
+                    <div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${resumen?.tarjeta?.toFixed(2) || '0.00'}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tarjeta / Transf.</div>
                     </div>
                 </motion.div>
             </motion.div>
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                             <div className="card-header" style={{ marginBottom: '1rem' }}>
                                 <div className="card-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <Icon name="alert-triangle" size={20} color="#F43F5E" />
-                                    <h2 className="card-title" style={{ fontSize: '1.1rem', color: '#fb7185' }}>Stock Crítico</h2>
+                                    <h2 className="card-title" style={{ fontSize: '1.1rem', color: 'var(--danger, #fb7185)' }}>Stock Crítico</h2>
                                 </div>
                             </div>
                             <div>

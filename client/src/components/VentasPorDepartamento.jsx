@@ -12,7 +12,7 @@ export default function VentasPorDepartamento({ rentabilidad }) {
             <div className="ventas-dept-professional">
                 <div className="section-header">
                     <div className="header-icon">
-                        <Icon name="bar-chart" size={20} color="#0891b2" />
+                        <Icon name="bar-chart" size={20} color="var(--accent-primary)" />
                     </div>
                     <h3>Ventas por Departamento</h3>
                 </div>
@@ -25,7 +25,7 @@ export default function VentasPorDepartamento({ rentabilidad }) {
         <div className="ventas-dept-professional">
             <div className="section-header">
                 <div className="header-icon">
-                    <Icon name="bar-chart" size={20} color="#0891b2" />
+                    <Icon name="bar-chart" size={20} color="var(--accent-primary)" />
                 </div>
                 <h3>Ventas por Departamento</h3>
             </div>

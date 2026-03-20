@@ -16,7 +16,6 @@ export default function ConfiguracionPage() {
     const [copied, setCopied] = useState(false);
     const qrRef = useRef(null);
 
-    // La URL base del portal de esta barbería — se computa desde el estado del API fetch
     const slug = barberia?.slug || user?.barberia_slug || null;
     const portalUrl = slug
         ? `${window.location.origin}/portal/${slug}`
@@ -30,7 +29,6 @@ export default function ConfiguracionPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            // Fetch barberia info & themes
             const [barberiaRes, themesRes] = await Promise.all([
                 fetch(`/api/super/barberias/${user.barberia_id}/config`, { headers: { Authorization: `Bearer ${token}` } }),
                 fetch('/api/super/temas', { headers: { Authorization: `Bearer ${token}` } })
@@ -41,7 +39,7 @@ export default function ConfiguracionPage() {
                 setBarberia(data);
                 if (data.bg_main) applyTheme(data, data.id);
             }
-            
+
             if (themesRes.ok) {
                 const themesData = await themesRes.json();
                 setThemes(themesData);
@@ -60,18 +58,17 @@ export default function ConfiguracionPage() {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/super/barberias/${barberia.id}/tema`, {
                 method: 'PATCH',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}` 
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({ tema_id: theme.id })
             });
 
             if (res.ok) {
                 applyTheme(theme, barberia.id);
-                // IMPORTANTE: Evitar que el nombre del tema sobrescriba el nombre de la barbería
-                setBarberia(prev => ({ 
-                    ...prev, 
+                setBarberia(prev => ({
+                    ...prev,
                     tema_id: theme.id,
                     bg_main: theme.bg_main,
                     bg_surface: theme.bg_surface,
@@ -107,14 +104,12 @@ export default function ConfiguracionPage() {
         const svgEl = qrRef.current?.querySelector('svg');
         if (!svgEl) return;
 
-        // Serializar el SVG y convertir a PNG via canvas
         const canvas = document.createElement('canvas');
         const size = 512;
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
 
-        // Fondo blanco
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, size, size);
 
@@ -141,41 +136,51 @@ export default function ConfiguracionPage() {
         img.src = svgUrl;
     }
 
+    const cardStyle = {
+        background: 'var(--bg-surface)',
+        borderRadius: '20px',
+        boxShadow: '0 4px 20px var(--shadow-color)',
+        border: '1px solid var(--border-color)',
+        padding: '1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.25rem'
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coral"></div>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
+                <div className="spinner" style={{ borderColor: 'var(--accent-primary)' }}></div>
             </div>
         );
     }
 
     return (
-        <div className="p-4 md:p-8 max-w-4xl mx-auto">
+        <div style={{ padding: '1rem 2rem', maxWidth: '900px', margin: '0 auto' }}>
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <div style={{ marginBottom: '2rem' }}>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     ⚙️ Configuración
                 </h1>
-                <p className="text-gray-500 mt-1">Gestiona tu portal de clientes y la identidad de tu barbería</p>
+                <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Gestiona tu portal de clientes y la identidad de tu barbería</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 {/* ══════════════ QR GENERATOR ══════════════ */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                            <QrCode size={22} className="text-coral" style={{ color: '#FF6B4A' }} />
+                <div style={cardStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <QrCode size={22} style={{ color: 'var(--accent-primary)' }} />
                         </div>
                         <div>
-                            <h2 className="font-semibold text-gray-900 text-lg">Código QR del Portal</h2>
-                            <p className="text-xs text-gray-400">Imprímelo y pégalo en tu local</p>
+                            <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Código QR del Portal</h2>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Imprímelo y pégalo en tu local</p>
                         </div>
                     </div>
 
-                    {/* QR Code */}
                     {portalUrl ? (
-                        <div ref={qrRef} className="flex justify-center">
-                            <div className="bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-inner inline-block">
+                        <div ref={qrRef} style={{ display: 'flex', justifyContent: 'center' }}>
+                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '16px', border: '2px solid var(--border-color)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', display: 'inline-block' }}>
                                 <QRCode
                                     value={portalUrl}
                                     size={200}
@@ -185,31 +190,46 @@ export default function ConfiguracionPage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex justify-center p-8 bg-gray-50 rounded-xl">
-                            <p className="text-gray-400 text-sm text-center">
-                                No se encontró el slug de tu barbería.<br/>
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', background: 'var(--bg-input)', borderRadius: '12px' }}>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center' }}>
+                                No se encontró el slug de tu barbería.<br />
                                 Contacta al soporte de Flow.
                             </p>
                         </div>
                     )}
 
-                    {/* URL del portal */}
                     {portalUrl && (
-                        <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-2">
-                            <LinkIcon size={14} className="text-gray-400 shrink-0" />
-                            <span className="text-xs text-gray-600 truncate font-mono">{portalUrl}</span>
+                        <div style={{ background: 'var(--bg-input)', borderRadius: '12px', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <LinkIcon size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{portalUrl}</span>
                         </div>
                     )}
 
-                    {/* Botones */}
-                    <div className="flex gap-3">
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
                         <button
                             onClick={handleCopyLink}
                             disabled={!portalUrl}
-                            className="flex-1 flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-40"
+                            style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                minHeight: '44px',
+                                padding: '0 1rem',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                color: 'var(--text-main)',
+                                background: 'var(--bg-surface)',
+                                cursor: portalUrl ? 'pointer' : 'not-allowed',
+                                opacity: portalUrl ? 1 : 0.4,
+                                transition: 'all 0.2s'
+                            }}
                         >
                             {copied ? (
-                                <><CheckCircle size={16} className="text-green-500" /> Copiado</>
+                                <><CheckCircle size={16} style={{ color: '#10B981' }} /> Copiado</>
                             ) : (
                                 <><Copy size={16} /> Copiar Enlace</>
                             )}
@@ -217,68 +237,121 @@ export default function ConfiguracionPage() {
                         <button
                             onClick={handleDownloadQR}
                             disabled={!portalUrl}
-                            className="flex-1 flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-medium text-white active:scale-95 transition-all disabled:opacity-40"
-                            style={{ background: 'linear-gradient(135deg, #FF6B4A, #e55a3a)' }}
+                            style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                minHeight: '44px',
+                                padding: '0 1rem',
+                                borderRadius: '12px',
+                                border: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                color: '#fff',
+                                background: 'var(--accent-primary)',
+                                cursor: portalUrl ? 'pointer' : 'not-allowed',
+                                opacity: portalUrl ? 1 : 0.4,
+                                transition: 'all 0.2s'
+                            }}
                         >
                             <Download size={16} /> Descargar QR
                         </button>
                     </div>
                 </div>
 
-                {/* ══════════════ SELECTOR DE TEMAS ══════════════ */}
-                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                                <Palette size={22} className="text-indigo-600" />
-                            </div>
-                            <div>
-                                <h2 className="font-semibold text-gray-900 text-lg">Personalización Visual</h2>
-                                <p className="text-xs text-gray-400">Elige el tema que mejor represente a tu barbería</p>
-                            </div>
+                {/* ══════════════ INFO DE BARBERÍA ══════════════ */}
+                <div style={{ ...cardStyle, gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Store size={22} style={{ color: 'var(--accent-primary)' }} />
                         </div>
-                        {saving && <span className="text-xs text-indigo-500 animate-pulse font-bold">Guardando cambios...</span>}
+                        <div>
+                            <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Tu Barbería</h2>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Información de tu cuenta en Flow</p>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <InfoRow icon={<Store size={16} />} label="Nombre" value={barberia?.nombre || user?.barberia_nombre || '—'} />
+                        <InfoRow icon={<LinkIcon size={16} />} label="Slug (URL)" value={barberia?.slug || slug || '—'} mono />
+                        <InfoRow
+                            icon={<Tag size={16} />}
+                            label="Color acento"
+                            value={
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ width: '16px', height: '16px', borderRadius: '50%', border: '1px solid var(--border-color)', background: barberia?.color_acento || 'var(--accent-primary)' }}></span>
+                                    {barberia?.color_acento || 'var(--accent-primary)'}
+                                </span>
+                            }
+                        />
+                    </div>
+
+                    <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                            Para modificar estos datos, contacta al soporte de Flow ✉️
+                        </p>
+                    </div>
+                </div>
+
+                {/* ══════════════ SELECTOR DE TEMAS ══════════════ */}
+                <div style={{ ...cardStyle, gridColumn: '1 / -1' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Palette size={22} style={{ color: '#6366F1' }} />
+                            </div>
+                            <div>
+                                <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Personalización Visual</h2>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Elige el tema que mejor represente a tu barbería</p>
+                            </div>
+                        </div>
+                        {saving && <span style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 700 }}>Guardando cambios...</span>}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
                         {themes.map(t => (
                             <button
                                 key={t.id}
                                 onClick={() => handleSelectTheme(t)}
                                 disabled={saving}
-                                className={`relative group p-4 rounded-[24px] border-2 transition-all text-left hover:scale-[1.02] ${
-                                    barberia?.tema_id === t.id 
-                                    ? 'border-indigo-500 bg-indigo-50/10 shadow-lg' 
-                                    : 'border-transparent bg-gray-50/50 hover:bg-white hover:border-gray-200'
-                                }`}
+                                style={{
+                                    position: 'relative',
+                                    padding: '1rem',
+                                    borderRadius: '24px',
+                                    border: barberia?.tema_id === t.id ? '2px solid #6366F1' : '2px solid transparent',
+                                    background: barberia?.tema_id === t.id ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-input)',
+                                    boxShadow: barberia?.tema_id === t.id ? '0 4px 20px rgba(99, 102, 241, 0.15)' : 'none',
+                                    textAlign: 'left',
+                                    cursor: saving ? 'wait' : 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
                             >
                                 {barberia?.tema_id === t.id && (
-                                    <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-md animate-in fade-in zoom-in">
+                                    <div style={{ position: 'absolute', top: '-12px', right: '-12px', width: '32px', height: '32px', borderRadius: '50%', background: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}>
                                         <CheckCircle size={18} />
                                     </div>
                                 )}
-                                
-                                <div className="flex items-center justify-between mb-4">
-                                    <h4 className="font-bold text-gray-900">{t.nombre}</h4>
-                                    <Sparkles size={16} className={barberia?.tema_id === t.id ? 'text-indigo-500' : 'text-gray-300'} />
+
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{t.nombre}</h4>
+                                    <Sparkles size={16} style={{ color: barberia?.tema_id === t.id ? '#6366F1' : 'var(--text-muted)' }} />
                                 </div>
 
-                                <div className="space-y-3">
-                                    {/* Preview Palette */}
-                                    <div className="flex gap-1 h-12 rounded-xl overflow-hidden shadow-inner">
-                                        <div className="flex-1" style={{ backgroundColor: t.bg_main }}></div>
-                                        <div className="flex-1" style={{ backgroundColor: t.bg_surface }}></div>
-                                        <div className="flex-1" style={{ backgroundColor: t.accent_primary }}></div>
-                                        <div className="flex-1" style={{ backgroundColor: t.accent_secondary }}></div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <div style={{ display: 'flex', gap: '2px', height: '48px', borderRadius: '12px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' }}>
+                                        <div style={{ flex: 1, backgroundColor: t.bg_main }}></div>
+                                        <div style={{ flex: 1, backgroundColor: t.bg_surface }}></div>
+                                        <div style={{ flex: 1, backgroundColor: t.accent_primary }}></div>
+                                        <div style={{ flex: 1, backgroundColor: t.accent_secondary }}></div>
                                     </div>
-
-                                    {/* Small visual items */}
-                                    <div className="flex justify-between items-center px-1">
-                                        <div className="flex gap-1">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: t.accent_primary }}></div>
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: t.accent_secondary }}></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: t.accent_primary }}></div>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: t.accent_secondary }}></div>
                                         </div>
-                                        <span className="text-[10px] font-black uppercase tracking-tighter" style={{ color: t.text_main }}>Flow ADN</span>
+                                        <span style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', color: t.text_main }}>Flow ADN</span>
                                     </div>
                                 </div>
                             </button>
@@ -286,75 +359,24 @@ export default function ConfiguracionPage() {
                     </div>
                 </div>
 
-                {/* ══════════════ INFO DE BARBERÍA ══════════════ */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                            <Store size={22} style={{ color: '#FF6B4A' }} />
-                        </div>
-                        <div>
-                            <h2 className="font-semibold text-gray-900 text-lg">Tu Barbería</h2>
-                            <p className="text-xs text-gray-400">Información de tu cuenta en Flow</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <InfoRow
-                            icon={<Store size={16} />}
-                            label="Nombre"
-                            value={barberia?.nombre || user?.barberia_nombre || '—'}
-                        />
-                        <InfoRow
-                            icon={<LinkIcon size={16} />}
-                            label="Slug (URL)"
-                            value={barberia?.slug || slug || '—'}
-                            mono
-                        />
-                        <InfoRow
-                            icon={<Tag size={16} />}
-                            label="Color acento"
-                            value={
-                                <span className="flex items-center gap-2">
-                                    <span
-                                        className="w-4 h-4 rounded-full border border-gray-200"
-                                        style={{ background: barberia?.color_acento || '#FF6B4A' }}
-                                    ></span>
-                                    {barberia?.color_acento || '#FF6B4A'}
-                                </span>
-                            }
-                        />
-                    </div>
-
-                    <div className="mt-auto pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-400 text-center">
-                            Para modificar estos datos, contacta al soporte de Flow ✉️
-                        </p>
-                    </div>
-                </div>
-
                 {/* ══════════════ INSTRUCCIONES ══════════════ */}
-                <div className="lg:col-span-2 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                        <QrCode size={18} style={{ color: '#FF6B4A' }} />
+                <div style={{ gridColumn: '1 / -1', background: 'rgba(var(--accent-primary-rgb), 0.06)', borderRadius: '20px', padding: '1.5rem', border: '1px solid rgba(var(--accent-primary-rgb), 0.15)' }}>
+                    <h3 style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <QrCode size={18} style={{ color: 'var(--accent-primary)' }} />
                         ¿Cómo usar el QR?
                     </h3>
-                    <ol className="space-y-2 text-sm text-gray-600">
-                        <li className="flex gap-3">
-                            <span className="font-bold text-orange-400 shrink-0">1.</span>
-                            Descarga el QR o copia el enlace con los botones de arriba.
-                        </li>
-                        <li className="flex gap-3">
-                            <span className="font-bold text-orange-400 shrink-0">2.</span>
-                            Imprímelo y pégalo en la recepción, espejos o mesa de espera.
-                        </li>
-                        <li className="flex gap-3">
-                            <span className="font-bold text-orange-400 shrink-0">3.</span>
-                            Tus clientes lo escanean, ven tu barbería personalizada y se registran.
-                        </li>
-                        <li className="flex gap-3">
-                            <span className="font-bold text-orange-400 shrink-0">4.</span>
-                            Cada cliente que inicie sesión queda anclado a tu barbería automáticamente.
-                        </li>
+                    <ol style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', listStyle: 'none', padding: 0, margin: 0 }}>
+                        {[
+                            'Descarga el QR o copia el enlace con los botones de arriba.',
+                            'Imprímelo y pégalo en la recepción, espejos o mesa de espera.',
+                            'Tus clientes lo escanean, ven tu barbería personalizada y se registran.',
+                            'Cada cliente que inicie sesión queda anclado a tu barbería automáticamente.'
+                        ].map((text, i) => (
+                            <li key={i} style={{ display: 'flex', gap: '0.75rem', fontSize: '0.875rem', color: 'var(--text-main)' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--accent-primary)', flexShrink: 0 }}>{i + 1}.</span>
+                                {text}
+                            </li>
+                        ))}
                     </ol>
                 </div>
             </div>
@@ -364,10 +386,10 @@ export default function ConfiguracionPage() {
 
 function InfoRow({ icon, label, value, mono }) {
     return (
-        <div className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-            <span className="text-gray-400 shrink-0">{icon}</span>
-            <span className="text-xs text-gray-400 w-20 shrink-0">{label}</span>
-            <span className={`text-sm font-medium text-gray-800 ${mono ? 'font-mono' : ''}`}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{icon}</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>{label}</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-main)', fontFamily: mono ? 'monospace' : 'inherit' }}>
                 {value}
             </span>
         </div>
