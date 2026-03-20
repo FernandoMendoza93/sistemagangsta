@@ -1,19 +1,31 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { superAdminService } from '../services/api';
-import { QrCode, Copy, Download, CheckCircle, Store, Calendar, Tag, Link as LinkIcon, Palette, Sparkles } from 'lucide-react';
+import { superAdminService, configuracionService } from '../services/api';
+import { QrCode, Copy, Download, CheckCircle, Store, Calendar, Tag, Link as LinkIcon, Palette, Sparkles, Upload, Save, MapPin } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { toast } from 'sonner';
 
 export default function ConfiguracionPage() {
-    const { user } = useAuth();
+    const { user, updateUserIdentity } = useAuth();
     const { applyTheme } = useTheme();
     const [barberia, setBarberia] = useState(null);
     const [themes, setThemes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [savingProfile, setSavingProfile] = useState(false);
     const [copied, setCopied] = useState(false);
+    
+    const [nombre, setNombre] = useState('');
+    const [direccion, setDireccion] = useState('');
+    const [theme, setTheme] = useState('default');
+    
+    // Archivos
+    const [logoFile, setLogoFile] = useState(null);
+    const [logoPreview, setLogoPreview] = useState(null);
+    const [loyaltyFile, setLoyaltyFile] = useState(null);
+    const [loyaltyPreview, setLoyaltyPreview] = useState(null);
+    
     const qrRef = useRef(null);
 
     const slug = barberia?.slug || user?.barberia_slug || null;
@@ -37,6 +49,11 @@ export default function ConfiguracionPage() {
             if (barberiaRes.ok) {
                 const data = await barberiaRes.json();
                 setBarberia(data);
+                setNombre(data.nombre || '');
+                setDireccion(data.direccion || '');
+                setTheme(data.theme || 'default');
+                setLogoPreview(data.logo_url || null);
+                setLoyaltyPreview(data.loyalty_card_image_url || null);
                 if (data.bg_main) applyTheme(data, data.id);
             }
 
@@ -136,6 +153,65 @@ export default function ConfiguracionPage() {
         img.src = svgUrl;
     }
 
+    async function handleSaveProfile(e) {
+        e.preventDefault();
+        setSavingProfile(true);
+        try {
+            const formData = new FormData();
+            formData.append('nombre', nombre);
+            formData.append('direccion', direccion);
+            formData.append('theme', theme);
+            if (logoFile) {
+                formData.append('logo', logoFile);
+            }
+            if (loyaltyFile) {
+                formData.append('loyalty_card', loyaltyFile);
+            }
+
+            const res = await configuracionService.updateBarberiaSettings(barberia.id, formData);
+            if (res.data) {
+                toast.success('Perfil actualizado correctamente');
+                // Actualizar contexto global para sync visual
+                updateUserIdentity({
+                    barberia_nombre: nombre,
+                    logo_url: res.data.updates.logo_url || barberia.logo_url
+                });
+                setBarberia(prev => ({
+                    ...prev,
+                    nombre,
+                    direccion,
+                    theme,
+                    logo_url: res.data.updates.logo_url || prev.logo_url,
+                    loyalty_card_image_url: res.data.updates.loyalty_card_image_url || prev.loyalty_card_image_url
+                }));
+                // Limpiar archivos
+                setLogoFile(null);
+                setLoyaltyFile(null);
+            }
+        } catch (err) {
+            console.error('Error guardando perfil:', err);
+            toast.error(err.response?.data?.error || 'Error al guardar perfil');
+        } finally {
+            setSavingProfile(false);
+        }
+    }
+
+    function handleLogoChange(e) {
+        const file = e.target.files[0];
+        if (file) {
+            setLogoFile(file);
+            setLogoPreview(URL.createObjectURL(file));
+        }
+    }
+
+    function handleLoyaltyChange(e) {
+        const file = e.target.files[0];
+        if (file) {
+            setLoyaltyFile(file);
+            setLoyaltyPreview(URL.createObjectURL(file));
+        }
+    }
+
     const cardStyle = {
         background: 'var(--bg-surface)',
         borderRadius: '20px',
@@ -156,7 +232,7 @@ export default function ConfiguracionPage() {
     }
 
     return (
-        <div style={{ padding: '1rem 2rem', maxWidth: '900px', margin: '0 auto' }}>
+        <form onSubmit={handleSaveProfile} style={{ padding: '1rem 2rem', maxWidth: '900px', margin: '0 auto' }}>
             {/* Header */}
             <div style={{ marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -261,37 +337,67 @@ export default function ConfiguracionPage() {
                     </div>
                 </div>
 
-                {/* ══════════════ INFO DE BARBERÍA ══════════════ */}
+                {/* ══════════════ INFO DE BARBERÍA (EDITABLE) ══════════════ */}
                 <div style={{ ...cardStyle, gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Store size={22} style={{ color: 'var(--accent-primary)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Store size={22} style={{ color: 'var(--accent-primary)' }} />
+                            </div>
+                            <div>
+                                <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Perfil Comercial</h2>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Identidad gráfica y ubicación</p>
+                            </div>
                         </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '0.5rem' }}>
+                        {/* Logo de la Marca */}
+                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                            <div style={{ width: '64px', height: '64px', borderRadius: '16px', border: '2px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: 'var(--bg-input)' }}>
+                                {logoPreview ? (
+                                    <img src={logoPreview} alt="Logo preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                ) : null}
+                                <div style={{ display: logoPreview ? 'none' : 'block' }}>
+                                    <Store size={24} style={{ color: 'var(--text-muted)' }} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Logo de la Marca</label>
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-main)', transition: 'all 0.2s', whiteSpace: 'nowrap', maxWidth: 'fit-content' }}>
+                                    <Upload size={14} /> Subir Imagen
+                                    <input type="file" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Nombre Comercial */}
                         <div>
-                            <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Tu Barbería</h2>
-                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Información de tu cuenta en Flow</p>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Nombre Comercial</label>
+                            <input
+                                type="text"
+                                value={nombre}
+                                onChange={(e) => setNombre(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                placeholder="Ej. The Gangsta"
+                                required
+                            />
                         </div>
-                    </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <InfoRow icon={<Store size={16} />} label="Nombre" value={barberia?.nombre || user?.barberia_nombre || '—'} />
-                        <InfoRow icon={<LinkIcon size={16} />} label="Slug (URL)" value={barberia?.slug || slug || '—'} mono />
-                        <InfoRow
-                            icon={<Tag size={16} />}
-                            label="Color acento"
-                            value={
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ width: '16px', height: '16px', borderRadius: '50%', border: '1px solid var(--border-color)', background: barberia?.color_acento || 'var(--accent-primary)' }}></span>
-                                    {barberia?.color_acento || 'var(--accent-primary)'}
-                                </span>
-                            }
-                        />
-                    </div>
-
-                    <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                            Para modificar estos datos, contacta al soporte de Flow ✉️
-                        </p>
+                        {/* Dirección */}
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Ubicación Física</label>
+                            <div style={{ position: 'relative' }}>
+                                <MapPin size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="text"
+                                    value={direccion}
+                                    onChange={(e) => setDireccion(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                    placeholder="Ej. Calle Madero #100, Oaxaca"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -314,6 +420,7 @@ export default function ConfiguracionPage() {
                         {themes.map(t => (
                             <button
                                 key={t.id}
+                                type="button"
                                 onClick={() => handleSelectTheme(t)}
                                 disabled={saving}
                                 style={{
@@ -359,6 +466,118 @@ export default function ConfiguracionPage() {
                     </div>
                 </div>
 
+                {/* ══════════════ IDENTIDAD DEL PORTAL (CLIENTES) ══════════════ */}
+                <div style={{ ...cardStyle, gridColumn: '1 / -1' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Store size={22} style={{ color: 'var(--accent-primary)' }} />
+                            </div>
+                            <div>
+                                <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Identidad del Portal (Clientes)</h2>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Configura la vista pública para tus clientes</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 1fr) 2fr', gap: '2rem', alignItems: 'start' }}>
+                        {/* Tema del Cliente */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Selector de Tema del Cliente</label>
+                            <select 
+                                value={theme}
+                                onChange={(e) => setTheme(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none', cursor: 'pointer' }}
+                            >
+                                <option value="default">Estándar Flow</option>
+                                <option value="menta_limpia">Menta Limpia</option>
+                                <option value="oro_industrial">Oro Industrial</option>
+                                <option value="noche_urbana">Noche Urbana</option>
+                                <option value="cuero_natural">Cuero Natural</option>
+                                <option value="classic_barber">Classic Barber</option>
+                            </select>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
+                                Este tema pintará el portal público la próxima vez que el cliente entre.
+                            </p>
+                        </div>
+
+                        {/* Uploaders Divididos */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            {/* Logo del Portal */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Logo del Portal</label>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '16px', border: '2px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: 'var(--bg-input)' }}>
+                                        {logoPreview ? (
+                                            <img src={logoPreview} alt="Logo preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                        ) : null}
+                                        <div style={{ display: logoPreview ? 'none' : 'block' }}>
+                                            <Store size={24} style={{ color: 'var(--text-muted)' }} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-main)', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+                                            <Upload size={14} /> Subir Logo
+                                            <input type="file" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Fondo de Lealtad */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Fondo Tarjeta Lealtad</label>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <div style={{ width: '90px', height: '60px', borderRadius: '12px', border: '2px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: 'var(--bg-input)' }}>
+                                        {loyaltyPreview ? (
+                                            <img src={loyaltyPreview} alt="Loyalty preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                        ) : null}
+                                        <div style={{ display: loyaltyPreview ? 'none' : 'block' }}>
+                                            <Sparkles size={24} style={{ color: 'var(--text-muted)' }} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-main)', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+                                            <Upload size={14} /> Subir Fondo
+                                            <input type="file" accept="image/*" onChange={handleLoyaltyChange} style={{ display: 'none' }} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                            type="submit"
+                            disabled={savingProfile}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                padding: '0.875rem 2rem',
+                                borderRadius: '12px',
+                                border: 'none',
+                                background: 'var(--accent-primary)',
+                                color: '#fff',
+                                fontWeight: 600,
+                                fontSize: '1rem',
+                                cursor: savingProfile ? 'wait' : 'pointer',
+                                opacity: savingProfile ? 0.7 : 1,
+                                transition: 'all 0.2s',
+                                boxShadow: '0 4px 15px rgba(var(--accent-primary-rgb), 0.3)'
+                            }}
+                        >
+                            {savingProfile ? (
+                                <><div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}></div> Guardando Cambios...</>
+                            ) : (
+                                <><Save size={20} /> Guardar Cambios de Perfil e Identidad</>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
                 {/* ══════════════ INSTRUCCIONES ══════════════ */}
                 <div style={{ gridColumn: '1 / -1', background: 'rgba(var(--accent-primary-rgb), 0.06)', borderRadius: '20px', padding: '1.5rem', border: '1px solid rgba(var(--accent-primary-rgb), 0.15)' }}>
                     <h3 style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -380,7 +599,7 @@ export default function ConfiguracionPage() {
                     </ol>
                 </div>
             </div>
-        </div>
+        </form>
     );
 }
 

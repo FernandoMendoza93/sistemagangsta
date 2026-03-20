@@ -1,16 +1,28 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { citasService, clientesService } from '../services/api';
+import { useTheme } from '../context/ThemeContext';
+import { citasService, clientesService, publicService } from '../services/api';
 import { toast } from 'sonner';
-import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy } from 'lucide-react';
+import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import heroImg from '../assets/hero-bg.jpg';
 import './ClientePortalPage.css';
 
+const THEMES = {
+   menta_limpia: { bg_main: '#F0F9F6', bg_surface: '#FFFFFF', accent_primary: '#10B981', accent_secondary: '#34D399', text_main: '#064E3B', text_muted: '#6EE7B7' },
+   oro_industrial: { bg_main: '#1A1A1A', bg_surface: '#2D2D2D', accent_primary: '#D4AF37', accent_secondary: '#F1C40F', text_main: '#FFFFFF', text_muted: '#A0A0A0' },
+   noche_urbana: { bg_main: '#0F172A', bg_surface: '#1E293B', accent_primary: '#6366F1', accent_secondary: '#818CF8', text_main: '#F8FAFC', text_muted: '#94A3B8' },
+   cuero_natural: { bg_main: '#FAFAF9', bg_surface: '#FFFFFF', accent_primary: '#9A3412', accent_secondary: '#C2410C', text_main: '#1C1917', text_muted: '#A8A29E' },
+   classic_barber: { bg_main: '#FAFAF9', bg_surface: '#FFFFFF', accent_primary: '#DC2626', accent_secondary: '#EF4444', text_main: '#1C1917', text_muted: '#78716C' },
+};
+
 export default function ClientePortalPage() {
+    const { slug } = useParams();
     const { user, logout } = useAuth();
+    const { applyTheme, resetTheme } = useTheme();
     const navigate = useNavigate();
+    const [publicConfig, setPublicConfig] = useState(null);
     const [wallet, setWallet] = useState(null);
     const [citas, setCitas] = useState([]);
     const [servicios, setServicios] = useState([]);
@@ -26,6 +38,7 @@ export default function ClientePortalPage() {
     const [pasoModal, setPasoModal] = useState(1); // 1=Barbero 2=Servicio+Notas 3=Fecha/Hora
 
     useEffect(() => {
+        if (slug) loadPublicConfig();
         loadData();
 
         // Setup SSE connection for real-time loyalty updates
@@ -58,6 +71,20 @@ export default function ClientePortalPage() {
             source.close();
         };
     }, []);
+
+    async function loadPublicConfig() {
+        try {
+            const res = await publicService.getConfig(slug);
+            setPublicConfig(res.data);
+            if (res.data.theme && THEMES[res.data.theme]) {
+                applyTheme(THEMES[res.data.theme], res.data.barberia_id);
+            } else {
+                resetTheme();
+            }
+        } catch (error) {
+            console.error('Error cargando configuración pública:', error);
+        }
+    }
 
     async function loadData() {
         try {
@@ -177,7 +204,7 @@ export default function ClientePortalPage() {
 
     function handleLogout() {
         logout();
-        navigate('/mi-perfil');
+        navigate(`/portal/${slug}`);
     }
 
     // --- Loyalty stamps calculations ---
@@ -282,8 +309,18 @@ export default function ClientePortalPage() {
             <div className="portal-header">
                 <div className="portal-header-top">
                     <div className="portal-brand">
-                        <Scissors size={20} color="var(--accent-primary)" />
-                        <span>The Gangsta</span>
+                        {publicConfig?.logo_url ? (
+                            <img 
+                                src={publicConfig.logo_url} 
+                                alt="Logo Barberia" 
+                                style={{ height: '32px', width: '32px', borderRadius: '8px', objectFit: 'cover' }}
+                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline-block'; }}
+                            />
+                        ) : null}
+                        <div style={{ display: publicConfig?.logo_url ? 'none' : 'inline-block' }}>
+                            <Store size={22} color="var(--accent-primary)" />
+                        </div>
+                        <span>{publicConfig?.nombre || 'Mi Barbería'}</span>
                     </div>
                     <button className="portal-logout" onClick={handleLogout}>
                         Salir
@@ -300,8 +337,18 @@ export default function ClientePortalPage() {
                 {/* Card Header */}
                 <div className="wallet-card-header">
                     <div className="wallet-brand">
-                        <Scissors size={18} color="#fff" strokeWidth={1.5} />
-                        <span>The Gangsta</span>
+                        {publicConfig?.logo_url ? (
+                            <img 
+                                src={publicConfig.logo_url} 
+                                alt="Logo Barberia" 
+                                style={{ height: '20px', width: '20px', borderRadius: '4px', objectFit: 'cover' }}
+                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline-block'; }}
+                            />
+                        ) : null}
+                        <div style={{ display: publicConfig?.logo_url ? 'none' : 'inline-block' }}>
+                            <Store size={18} color="#fff" strokeWidth={1.5} />
+                        </div>
+                        <span>{publicConfig?.nombre || 'Mi Barbería'}</span>
                     </div>
                     <div className="wallet-nivel">
                         {getNivelIcon()}
@@ -311,11 +358,15 @@ export default function ClientePortalPage() {
 
                 {/* Hero Image */}
                 <div className="wallet-hero">
-                    <img src={heroImg} alt="The Gangsta Barber Shop" />
+                    <img 
+                        src={publicConfig?.loyalty_card_image_url || heroImg} 
+                        alt="Fondo Lealtad" 
+                        onError={(e) => { e.target.src = heroImg; }}
+                    />
                     <div className="wallet-hero-overlay"></div>
                     <div className="wallet-hero-text">
-                        <h3>Fernando Mendoza</h3>
-                        <p>Oaxaca de Juarez</p>
+                        <h3>{user?.nombre?.split(' ')[0]}</h3>
+                        <p>{wallet?.nivel || 'Socio Flow'}</p>
                     </div>
                 </div>
 

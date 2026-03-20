@@ -59,7 +59,7 @@ router.get('/barberias', (req, res) => {
         const db = req.app.locals.db;
         // Obviamos el barberia_id (Engram 002 mitigado para SuperAdmin)
         const barberias = db.prepare(`
-            SELECT id, nombre, slug, telefono_whatsapp, email_contacto, plan, precio_plan, 
+            SELECT id, nombre, logo_url, slug, telefono_whatsapp, email_contacto, plan, precio_plan, 
                    CASE WHEN activo = 1 THEN 'Activo' ELSE 'Inactivo' END as estado, 
                    fecha_vencimiento
             FROM barberias

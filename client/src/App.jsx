@@ -101,7 +101,17 @@ function AppRoutes() {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         logout();
-        navigate(user.rol === 'Cliente' ? '/mi-perfil' : '/login');
+        if (user.rol === 'Cliente') {
+            const currentPath = window.location.pathname;
+            if (currentPath.startsWith('/portal/')) {
+                const matchedSlug = currentPath.split('/')[2];
+                navigate(`/portal/${matchedSlug}`);
+            } else {
+                navigate('/mi-perfil');
+            }
+        } else {
+            navigate('/login');
+        }
       }, INACTIVITY_LIMIT_MS);
     };
 
@@ -116,8 +126,16 @@ function AppRoutes() {
   }, [user, logout, navigate]);
 
   function ClienteProtectedRoute({ children }) {
+    const location = useLocation();
     if (loading) return <div className="loading"><div className="spinner"></div></div>;
-    if (!user || user.rol !== 'Cliente') return <Navigate to="/mi-perfil" replace />;
+    
+    if (!user || user.rol !== 'Cliente') {
+        if (location.pathname.startsWith('/portal/')) {
+            const matchedSlug = location.pathname.split('/')[2];
+            return <Navigate to={`/portal/${matchedSlug}`} replace />;
+        }
+        return <Navigate to="/mi-perfil" replace />;
+    }
     return children;
   }
 

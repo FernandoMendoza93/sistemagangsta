@@ -1,6 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate, NavLink } from 'react-router-dom';
+import { Settings } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onToggle }) {
     const { user, logout, isAdmin, isEncargado } = useAuth();
@@ -45,10 +46,10 @@ export default function Sidebar({ isOpen, onToggle }) {
                 onClick={() => onToggle?.(false)}
             />
 
-            <aside 
+            <aside
                 className={`sidebar ${isOpen ? 'sidebar-open' : ''} ${theme?.clase_glass || ''}`}
-                style={{ 
-                    backgroundColor: 'var(--bg-surface)', 
+                style={{
+                    backgroundColor: 'var(--bg-surface)',
                     borderColor: 'var(--glass-border)',
                     color: 'var(--text-main)'
                 }}
@@ -145,10 +146,7 @@ export default function Sidebar({ isOpen, onToggle }) {
                                     <span>Comisiones</span>
                                 </NavLink>
 
-                                <NavLink to="/panel/configuracion" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
-                                    <i className="bi bi-qr-code"></i>
-                                    <span>Configuración</span>
-                                </NavLink>
+
                             </>
                         )}
                     </nav>
@@ -166,6 +164,10 @@ export default function Sidebar({ isOpen, onToggle }) {
                                 </div>
                             </div>
                         </div>
+                        <NavLink to="/panel/configuracion" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} style={{ marginBottom: '10px' }} onClick={handleNavClick}>
+                            <Settings size={20} className="me-2" />
+                            <span>Configuración</span>
+                        </NavLink>
                         <button onClick={handleLogout} className="btn-logout">
                             <i className="bi bi-box-arrow-left me-2"></i>
                             Cerrar Sesion

@@ -183,4 +183,16 @@ export const superAdminService = {
     updateEstadoBarberia: (id, estado) => api.put(`/superadmin/barberias/${id}/estado`, { estado })
 };
 
+// Configuración de la Barbería
+export const configuracionService = {
+    getBarberiaSettings: (id) => api.get(`/super/barberias/${id}/config`),
+    updateBarberiaSettings: (id, data) => api.put(`/super/barberias/${id}/config`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+};
+
+export const publicService = {
+    getConfig: (slug) => api.get(`/super/public/config/${slug}`)
+};
+
 export default api;

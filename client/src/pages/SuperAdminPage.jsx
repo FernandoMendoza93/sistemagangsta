@@ -117,6 +117,7 @@ export default function SuperAdminPage() {
                         <thead>
                             <tr>
                                 <th className="bg-gray-50/50 p-4 sm:px-8 sm:py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"># ID</th>
+                                <th className="bg-gray-50/50 p-4 sm:px-4 sm:py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider" style={{ width: '60px' }}>Logo</th>
                                 <th className="bg-gray-50/50 p-4 sm:px-8 sm:py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre / Dominio</th>
                                 <th className="bg-gray-50/50 p-4 sm:px-8 sm:py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
                                 <th className="bg-gray-50/50 p-4 sm:px-8 sm:py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Plan Suscripción</th>
@@ -129,6 +130,24 @@ export default function SuperAdminPage() {
                                 <tr key={barb.id} className={`transition-colors hover:bg-gray-50/80 ${barb.estado === 'Inactivo' ? 'opacity-60 bg-gray-50/40' : ''}`}>
                                     <td className="p-4 sm:px-8 sm:py-5 border-b border-black/5 font-mono font-bold text-gray-400">
                                         #{barb.id.toString().padStart(3, '0')}
+                                    </td>
+                                    <td className="p-4 sm:px-4 sm:py-5 border-b border-black/5 text-center align-middle">
+                                        <div className="flex justify-center">
+                                            {barb.logo_url ? (
+                                                <img 
+                                                    src={barb.logo_url} 
+                                                    alt={`Logo ${barb.nombre}`} 
+                                                    className="w-10 h-10 rounded-full object-cover shadow-sm bg-gray-50"
+                                                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                                                />
+                                            ) : null}
+                                            <div 
+                                                className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200"
+                                                style={{ display: barb.logo_url ? 'none' : 'flex' }}
+                                            >
+                                                <Store className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="p-4 sm:px-8 sm:py-5 border-b border-black/5">
                                         <div className="font-bold text-gray-900 text-base">{barb.nombre}</div>

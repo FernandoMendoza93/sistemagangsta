@@ -64,6 +64,16 @@ if (!tableExists('barberias')) {
     console.log('  barberias table already exists');
 }
 
+// Add dynamic branding columns if they don't exist
+if (!columnExists('barberias', 'theme')) {
+    db.exec(`ALTER TABLE barberias ADD COLUMN theme TEXT DEFAULT 'default'`);
+    console.log('  ADDED theme to barberias');
+}
+if (!columnExists('barberias', 'loyalty_card_image_url')) {
+    db.exec(`ALTER TABLE barberias ADD COLUMN loyalty_card_image_url TEXT`);
+    console.log('  ADDED loyalty_card_image_url to barberias');
+}
+
 // ==========================================
 // STEP 2: Seed The Gangsta as first tenant
 // ==========================================

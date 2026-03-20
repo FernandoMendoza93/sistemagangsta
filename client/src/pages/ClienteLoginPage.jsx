@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api';
+import { useTheme } from '../context/ThemeContext';
+import { publicService } from '../services/api';
 import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle, Store } from 'lucide-react';
 import './ClienteLoginPage.css';
+
+const THEMES = {
+   menta_limpia: { bg_main: '#F0F9F6', bg_surface: '#FFFFFF', accent_primary: '#10B981', accent_secondary: '#34D399', text_main: '#064E3B', text_muted: '#6EE7B7' },
+   oro_industrial: { bg_main: '#1A1A1A', bg_surface: '#2D2D2D', accent_primary: '#D4AF37', accent_secondary: '#F1C40F', text_main: '#FFFFFF', text_muted: '#A0A0A0' },
+   noche_urbana: { bg_main: '#0F172A', bg_surface: '#1E293B', accent_primary: '#6366F1', accent_secondary: '#818CF8', text_main: '#F8FAFC', text_muted: '#94A3B8' },
+   cuero_natural: { bg_main: '#FAFAF9', bg_surface: '#FFFFFF', accent_primary: '#9A3412', accent_secondary: '#C2410C', text_main: '#1C1917', text_muted: '#A8A29E' },
+   classic_barber: { bg_main: '#FAFAF9', bg_surface: '#FFFFFF', accent_primary: '#DC2626', accent_secondary: '#EF4444', text_main: '#1C1917', text_muted: '#78716C' },
+};
 
 export default function ClienteLoginPage() {
     const { slug } = useParams();
@@ -21,6 +30,7 @@ export default function ClienteLoginPage() {
     const [barberiaError, setBarberiaError] = useState(null);
 
     const { loginCliente, user } = useAuth();
+    const { applyTheme, resetTheme } = useTheme();
     const navigate = useNavigate();
 
     // Cargar info de barbería al montar
@@ -31,9 +41,14 @@ export default function ClienteLoginPage() {
             return;
         }
 
-        authService.getBarberiaInfo(slug)
+        publicService.getConfig(slug)
             .then(res => {
                 setBarberia(res.data);
+                if (res.data.theme && THEMES[res.data.theme]) {
+                    applyTheme(THEMES[res.data.theme], res.data.barberia_id);
+                } else {
+                    resetTheme();
+                }
             })
             .catch(err => {
                 if (err.response?.status === 404) {
@@ -137,7 +152,11 @@ export default function ClienteLoginPage() {
                                 src={barberia.logo_url}
                                 alt={barberia.nombre}
                                 style={{ width: 68, height: 68, objectFit: 'cover', borderRadius: '50%' }}
+                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
                             />
+                            <div style={{ display: 'none' }}>
+                                <Store size={40} color={acento} strokeWidth={1} />
+                            </div>
                         </div>
                     ) : (
                         <div className="logo-ring" style={{ borderColor: `${acento}50`, background: `${acento}15` }}>

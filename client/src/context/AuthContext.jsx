@@ -130,6 +130,13 @@ export function AuthProvider({ children }) {
         return res.data;
     };
 
+    const updateUserIdentity = (updates) => {
+        if (!user) return;
+        const updatedUser = { ...user, ...updates };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    };
+
     const loginCliente = async (telefono, nombre, password, slug) => {
         const res = await clienteAuthService.login(telefono, nombre, password, slug);
         localStorage.setItem('token', res.data.token);
@@ -167,6 +174,7 @@ export function AuthProvider({ children }) {
             isEncargado,
             isBarbero,
             isCliente,
+            updateUserIdentity,
             token: localStorage.getItem('token')
         }}>
             {children}

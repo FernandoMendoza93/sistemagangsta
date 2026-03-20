@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
@@ -184,6 +185,9 @@ const loyaltyRoutes = (await import('./routes/loyalty.js')).default;
 const superadminRoutes = (await import('./routes/superadmin.js')).default;
 const themesRoutes = (await import('./routes/themes.js')).default;
 const horariosRoutes = (await import('./routes/horarios.js')).default;
+
+// Servir archivos subidos (como Logos) de forma estática
+app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
