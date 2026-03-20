@@ -100,7 +100,7 @@ export default function CitasPage() {
 
         if (sName.includes('barba')) bgColor = '#60A5FA';
         if (sName.includes('corte') && !sName.includes('barba')) bgColor = '#10B981';
-        if (sName.includes('combo') || (sName.includes('corte') && sName.includes('barba'))) bgColor = '#FF7F50';
+        if (sName.includes('combo') || (sName.includes('corte') && sName.includes('barba'))) bgColor = 'var(--accent-secondary, #FF7F50)';
         if (sName.includes('tinte')) bgColor = '#A78BFA';
 
         const opacity = cita.estado === 'Completada' ? 0.6 : (cita.estado === 'Pendiente' ? 0.8 : 1);
@@ -117,7 +117,7 @@ export default function CitasPage() {
         <div className="calendar-page-container">
             <div className="calendar-header-panel">
                 <div className="header-left">
-                    <Calendar size={28} color="#FF7F50" />
+                    <Calendar size={28} color="var(--accent-primary)" />
                     <h2>Agenda del Día</h2>
                 </div>
                 <div className="header-right">
@@ -195,7 +195,7 @@ export default function CitasPage() {
                 <div className="confirm-modal-overlay" onClick={() => setSelectedCita(null)}>
                     <div className="confirm-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', textAlign: 'left' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1a1a2e' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
                                 {selectedCita.hora} — {selectedCita.nombre_servicio || 'Servicio'}
                             </h3>
                             <button
@@ -206,7 +206,7 @@ export default function CitasPage() {
                             </button>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', fontSize: '14px', color: '#374151' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', fontSize: '14px', color: 'var(--text-main)' }}>
                             <p style={{ margin: 0 }}><strong>Cliente:</strong> {selectedCita.cliente_nombre}</p>
                             <p style={{ margin: 0 }}><strong>Teléfono:</strong> {selectedCita.cliente_telefono || 'No registrado'}</p>
                             <p style={{ margin: 0 }}><strong>Barbero:</strong> {selectedCita.barbero_nombre || 'Cualquiera'}</p>
@@ -223,7 +223,7 @@ export default function CitasPage() {
                             {selectedCita.estado === 'Pendiente' && (
                                 <button
                                     className="confirm-modal-btn"
-                                    style={{ background: '#3b82f6', color: 'white', width: '100%' }}
+                                    style={{ background: 'var(--info, #3b82f6)', color: '#fff', width: '100%' }}
                                     onClick={() => handleConfirmar(selectedCita.id)}
                                 >
                                     ✓ Confirmar Cita
@@ -232,7 +232,7 @@ export default function CitasPage() {
                             {(selectedCita.estado === 'Pendiente' || selectedCita.estado === 'Confirmada') && (
                                 <button
                                     className="confirm-modal-btn"
-                                    style={{ background: '#10b981', color: 'white', width: '100%' }}
+                                    style={{ background: 'var(--success, #10b981)', color: '#fff', width: '100%' }}
                                     onClick={() => handleCompletarClick(selectedCita)}
                                 >
                                     ✓ Marcar como Completada
@@ -241,7 +241,7 @@ export default function CitasPage() {
                             {selectedCita.estado !== 'Cancelada' && (
                                 <button
                                     className="confirm-modal-btn"
-                                    style={{ background: '#ef4444', color: 'white', width: '100%' }}
+                                    style={{ background: 'var(--danger, #ef4444)', color: '#fff', width: '100%' }}
                                     onClick={() => handleCancelar(selectedCita.id)}
                                 >
                                     ✗ Cancelar Cita

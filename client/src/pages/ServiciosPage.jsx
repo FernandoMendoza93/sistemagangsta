@@ -66,7 +66,7 @@ export default function ServiciosPage() {
             <div className="page-header">
                 <div className="header-title-wrapper">
                     <div className="title-icon">
-                        <Icon name="scissors" size={28} color="#2563eb" />
+                        <Icon name="scissors" size={28} color="var(--accent-primary)" />
                     </div>
                     <h1 className="page-title">Servicios</h1>
                 </div>
@@ -76,22 +76,26 @@ export default function ServiciosPage() {
                 </button>
             </div>
 
-            <div className="card">
-                <div className="table-container">
-                    <table className="table">
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' }}>
+                <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                         <thead>
-                            <tr><th>Servicio</th><th>Precio</th><th>Duración</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                {['Servicio','Precio','Duración','Estado','Acciones'].map(h => (
+                                    <th key={h} style={{ background: 'var(--bg-input)', color: 'var(--text-muted)', padding: '0.75rem 1.25rem', textAlign: 'left', borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                                ))}
+                            </tr>
                         </thead>
                         <tbody>
                             {servicios.map(s => (
                                 <tr key={s.id}>
-                                    <td><strong style={{ color: '#1a1a1a' }}>{s.nombre_servicio}</strong></td>
-                                    <td style={{ color: 'var(--primary)', fontWeight: 600 }}>${s.precio.toFixed(2)}</td>
-                                    <td style={{ color: '#1a1a1a' }}>{s.duracion_aprox} min</td>
-                                    <td><span className={`badge ${s.activo ? 'badge-success' : 'badge-danger'}`}>{s.activo ? 'Activo' : 'Inactivo'}</span></td>
-                                    <td style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button className="btn btn-secondary btn-sm" onClick={() => openModal(s)}>Editar</button>
-                                        <button className="btn btn-secondary btn-sm" onClick={() => toggleActivo(s.id, s.activo)}>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontWeight: 700 }}>{s.nombre_servicio}</td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--accent-primary)', fontWeight: 600 }}>${s.precio.toFixed(2)}</td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--text-main)' }}>{s.duracion_aprox} min</td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}><span className={`badge ${s.activo ? 'badge-success' : 'badge-danger'}`}>{s.activo ? 'Activo' : 'Inactivo'}</span></td>
+                                    <td style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', display: 'flex', gap: '0.5rem' }}>
+                                        <button className="btn btn-sm" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.4rem 0.8rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => openModal(s)}>Editar</button>
+                                        <button className="btn btn-sm" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.4rem 0.8rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => toggleActivo(s.id, s.activo)}>
                                             {s.activo ? 'Desactivar' : 'Activar'}
                                         </button>
                                     </td>

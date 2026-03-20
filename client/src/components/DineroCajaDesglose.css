@@ -1,9 +1,9 @@
 .dinero-caja-professional {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px 0 var(--shadow-color);
 }
 
 .section-header {
@@ -12,7 +12,7 @@
     gap: 0.75rem;
     margin-bottom: 1.25rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid #f3f4f6;
+    border-bottom: 2px solid var(--bg-hover);
 }
 
 .header-icon {
@@ -27,7 +27,7 @@
 
 .section-header h3 {
     margin: 0;
-    color: #111827;
+    color: var(--text-main);
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 1.125rem;
@@ -40,8 +40,8 @@
 
 .desglose-table-pro td {
     padding: 0.875rem 0.5rem;
-    border-bottom: 1px solid #f3f4f6;
-    color: #374151;
+    border-bottom: 1px solid var(--bg-hover);
+    color: var(--text-muted);
     font-family: 'Inter', sans-serif;
     font-size: 0.9375rem;
 }
@@ -57,7 +57,7 @@
     text-align: right;
     font-family: 'Inter', sans-serif;
     font-weight: 600;
-    color: #111827;
+    color: var(--text-main);
     font-variant-numeric: tabular-nums;
 }
 
@@ -70,8 +70,8 @@
 }
 
 .total-row {
-    background: #f9fafb;
-    border-top: 2px solid #e5e7eb;
+    background: var(--bg-input);
+    border-top: 2px solid var(--border-color);
     border-bottom: none;
 }
 
@@ -81,6 +81,6 @@
 }
 
 .total-amount {
-    color: #111827;
+    color: var(--text-main);
     font-size: 1.125rem;
 }

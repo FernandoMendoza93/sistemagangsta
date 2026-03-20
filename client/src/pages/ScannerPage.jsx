@@ -67,7 +67,7 @@ export default function ScannerPage() {
                 {!scanData ? (
                     <div className="scanner-box">
                         <div className="scanner-instructions">
-                            <QrCode size={48} color="#FF7F50" style={{ marginBottom: '1rem' }} />
+                            <QrCode size={48} color="var(--accent-primary)" style={{ marginBottom: '1rem' }} />
                             <h3>Escanear Membresía</h3>
                             <p>Apunta la cámara al teléfono del cliente para leer su Wallet The Gangsta.</p>
                         </div>
@@ -132,7 +132,7 @@ export default function ScannerPage() {
 
                             {scanData.cita_hoy && (
                                 <div className="appointment-alert">
-                                    <Clock size={20} color="#FF7F50" />
+                                    <Clock size={20} color="var(--accent-primary)" />
                                     <div>
                                         <strong>Cita programada para hoy:</strong>
                                         <p>{scanData.cita_hoy.hora} hrs - {scanData.cita_hoy.nombre_servicio}</p>
@@ -141,9 +141,9 @@ export default function ScannerPage() {
                             )}
 
                             <div className="summary-actions">
-                                <button className="btn-stamp-done" disabled style={{ opacity: 1, backgroundColor: scanData.action === 'ADDED' ? '#2ea043' : '#30363d' }}>
-                                    <CheckCircle size={22} color={scanData.action === 'ADDED' ? '#fff' : '#8b949e'} />
-                                    <span style={{ color: scanData.action === 'ADDED' ? '#fff' : '#8b949e' }}>
+                                <button className="btn-stamp-done" disabled style={{ opacity: 1, backgroundColor: scanData.action === 'ADDED' ? 'var(--success, #2ea043)' : 'var(--bg-input, #30363d)' }}>
+                                    <CheckCircle size={22} color={scanData.action === 'ADDED' ? '#fff' : 'var(--text-muted, #8b949e)'} />
+                                    <span style={{ color: scanData.action === 'ADDED' ? '#fff' : 'var(--text-muted, #8b949e)' }}>
                                         {scanMessage || 'Sello registrado hoy ✓'}
                                     </span>
                                 </button>

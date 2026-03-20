@@ -12,12 +12,10 @@ export default function InventarioPage() {
     const [filtro, setFiltro] = useState('');
     const [categoriaActiva, setCategoriaActiva] = useState('Todos');
 
-    // Modal de movimiento de stock
     const [showMovModal, setShowMovModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [movimiento, setMovimiento] = useState({ tipo: 'Entrada', cantidad: 1, motivo: '' });
 
-    // Modal de crear/editar producto
     const [showProductModal, setShowProductModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({
@@ -31,7 +29,6 @@ export default function InventarioPage() {
         activo: 1
     });
 
-    // Modal de historial
     const [showHistorialModal, setShowHistorialModal] = useState(false);
     const [historial, setHistorial] = useState([]);
     const [loadingHistorial, setLoadingHistorial] = useState(false);
@@ -53,20 +50,9 @@ export default function InventarioPage() {
         }
     };
 
-    // ==================== CRUD ====================
-
     const openCreateModal = () => {
         setEditMode(false);
-        setFormData({
-            nombre: '',
-            descripcion: '',
-            stock_actual: 0,
-            stock_minimo: 5,
-            precio_costo: 0,
-            precio_venta: 0,
-            id_categoria: 1,
-            activo: 1
-        });
+        setFormData({ nombre: '', descripcion: '', stock_actual: 0, stock_minimo: 5, precio_costo: 0, precio_venta: 0, id_categoria: 1, activo: 1 });
         setShowProductModal(true);
     };
 
@@ -91,7 +77,6 @@ export default function InventarioPage() {
             toast.warning('El nombre es requerido');
             return;
         }
-
         try {
             if (editMode) {
                 await productosService.update(selectedProduct.id, formData);
@@ -114,8 +99,6 @@ export default function InventarioPage() {
         }
     };
 
-    // ==================== MOVIMIENTOS ====================
-
     const openMovModal = (producto) => {
         setSelectedProduct(producto);
         setMovimiento({ tipo: 'Entrada', cantidad: 1, motivo: '' });
@@ -134,8 +117,6 @@ export default function InventarioPage() {
         }
     };
 
-    // ==================== HISTORIAL ====================
-
     const openHistorialModal = async (producto) => {
         setSelectedProduct(producto);
         setLoadingHistorial(true);
@@ -150,8 +131,6 @@ export default function InventarioPage() {
             setLoadingHistorial(false);
         }
     };
-
-    // ==================== FILTROS ====================
 
     const filteredProducts = productos.filter(p => {
         const matchTexto = p.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
@@ -169,48 +148,44 @@ export default function InventarioPage() {
         }
     };
 
-    const getCategoriaColor = (categoria) => {
-        switch (categoria) {
-            case 'Venta': return 'badge-success';
-            case 'Insumo Limpieza': return 'badge-info';
-            case 'Herramientas': return 'badge-warning';
-            default: return 'badge-info';
-        }
-    };
+    const cardStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' };
+    const inputStyle = { width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-main)', outline: 'none', transition: 'all 0.2s' };
+    const modalOverlayStyle = { position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'var(--overlay-bg)', backdropFilter: 'blur(4px)' };
+    const modalStyle = { background: 'var(--bg-surface)', width: '100%', borderRadius: '32px', boxShadow: '0 25px 50px var(--shadow-color)', border: '1px solid var(--border-color)', overflow: 'hidden' };
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--accent-primary)] border-t-transparent"></div>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                <div className="spinner" style={{ borderColor: 'var(--accent-primary)' }}></div>
             </div>
         );
     }
 
     return (
-        <div className="p-4 sm:p-8 lg:p-10 max-w-[1300px] mx-auto font-sans pb-24">
-            {/* Header Bento style */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div style={{ padding: '1rem 2rem', maxWidth: '1300px', margin: '0 auto', paddingBottom: '6rem' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
                 <div>
-                    <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] m-0 flex items-center gap-3 tracking-tight">
-                        <Activity className="w-7 h-7 text-[var(--accent-primary)]" /> Inventario de Stock
+                    <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem', letterSpacing: '-0.5px' }}>
+                        <Activity style={{ width: '28px', height: '28px', color: 'var(--accent-primary)' }} /> Inventario de Stock
                     </h1>
-                    <p className="text-gray-500 text-sm sm:text-base font-medium mt-1">
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500, marginTop: '0.25rem' }}>
                         Gestiona tus insumos y productos para venta
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <div className="relative flex-grow">
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', flexGrow: 1 }}>
                         <input
                             type="text"
-                            className="w-full bg-[var(--bg-surface)] border border-[var(--glass-border)] rounded-2xl py-3 pl-11 pr-4 text-sm font-medium focus:ring-2 focus:ring-[var(--accent-primary)]/20 focus:border-[var(--accent-primary)] outline-none transition-all"
+                            style={{ ...inputStyle, paddingLeft: '2.75rem' }}
                             placeholder="Buscar producto..."
                             value={filtro}
                             onChange={(e) => setFiltro(e.target.value)}
                         />
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
                     </div>
-                    <button 
-                        className="bg-[var(--accent-primary)] text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-[var(--accent-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                    <button
+                        style={{ background: 'var(--accent-primary)', color: '#fff', fontWeight: 700, padding: '0.75rem 1.5rem', borderRadius: '16px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', minHeight: '44px', transition: 'all 0.2s' }}
                         onClick={openCreateModal}
                     >
                         + Nuevo Producto
@@ -218,159 +193,206 @@ export default function InventarioPage() {
                 </div>
             </div>
 
-            {/* Quick Metrics Bento */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white/70 backdrop-blur-xl border border-white/50 p-5 rounded-3xl shadow-sm">
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total</p>
-                    <p className="text-2xl font-black text-gray-900">{productos.length}</p>
+            {/* Quick Metrics */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ ...cardStyle, padding: '1.25rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Total</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>{productos.length}</p>
                 </div>
-                <div className="bg-white/70 backdrop-blur-xl border border-white/50 p-5 rounded-3xl shadow-sm">
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Categorías</p>
-                    <p className="text-2xl font-black text-gray-900">{categorias.length}</p>
+                <div style={{ ...cardStyle, padding: '1.25rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Categorías</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>{categorias.length}</p>
                 </div>
-                <div className="bg-red-50 backdrop-blur-xl border border-red-100 p-5 rounded-3xl shadow-sm">
-                    <p className="text-red-500 text-xs font-bold uppercase tracking-wider mb-1">Stock Bajo</p>
-                    <p className="text-2xl font-black text-red-600">
+                <div style={{ ...cardStyle, padding: '1.25rem', background: 'rgba(239, 68, 68, 0.06)', borderColor: 'rgba(239, 68, 68, 0.15)' }}>
+                    <p style={{ color: '#EF4444', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Stock Bajo</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 900, color: '#DC2626', margin: 0 }}>
                         {productos.filter(p => p.stock_actual <= p.stock_minimo).length}
                     </p>
                 </div>
-                <div className="bg-emerald-50 backdrop-blur-xl border border-emerald-100 p-5 rounded-3xl shadow-sm">
-                    <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider mb-1">Activos</p>
-                    <p className="text-2xl font-black text-emerald-600">
+                <div style={{ ...cardStyle, padding: '1.25rem', background: 'rgba(16, 185, 129, 0.06)', borderColor: 'rgba(16, 185, 129, 0.15)' }}>
+                    <p style={{ color: '#10B981', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Activos</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 900, color: '#059669', margin: 0 }}>
                         {productos.filter(p => p.activo).length}
                     </p>
                 </div>
             </div>
 
-            {/* Tabs de Categoría Responsive */}
-            <div className="flex gap-2 mb-8 overflow-x-auto pb-2 no-scrollbar">
+            {/* Category Tabs */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                 <button
-                    className={`whitespace-nowrap px-5 py-2.5 rounded-2xl text-sm font-bold transition-all ${
-                        categoriaActiva === 'Todos' 
-                        ? 'bg-gray-900 text-white shadow-md' 
-                        : 'bg-white/60 text-gray-500 hover:bg-white border border-black/5'
-                    }`}
+                    style={{
+                        whiteSpace: 'nowrap',
+                        padding: '0.625rem 1.25rem',
+                        borderRadius: '16px',
+                        fontSize: '0.875rem',
+                        fontWeight: 700,
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        background: categoriaActiva === 'Todos' ? 'var(--text-main)' : 'var(--bg-input)',
+                        color: categoriaActiva === 'Todos' ? 'var(--bg-surface)' : 'var(--text-muted)'
+                    }}
                     onClick={() => setCategoriaActiva('Todos')}
                 >
                     Todos
                 </button>
                 {categorias.map(cat => (
-                        <button
-                            key={cat.id}
-                            className={`whitespace-nowrap px-5 py-2.5 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 ${
-                                categoriaActiva === cat.nombre 
-                                ? 'bg-[var(--accent-primary)] text-white shadow-md shadow-[var(--accent-primary)]/20' 
-                                : 'bg-[var(--bg-surface)] text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] border border-[var(--glass-border)]'
-                            }`}
-                            onClick={() => setCategoriaActiva(cat.nombre)}
-                        >
+                    <button
+                        key={cat.id}
+                        style={{
+                            whiteSpace: 'nowrap',
+                            padding: '0.625rem 1.25rem',
+                            borderRadius: '16px',
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: categoriaActiva === cat.nombre ? 'none' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: categoriaActiva === cat.nombre ? 'var(--accent-primary)' : 'var(--bg-surface)',
+                            color: categoriaActiva === cat.nombre ? '#fff' : 'var(--text-muted)'
+                        }}
+                        onClick={() => setCategoriaActiva(cat.nombre)}
+                    >
                         <span>{getCategoriaIcon(cat.nombre)}</span>
                         {cat.nombre}
                     </button>
                 ))}
             </div>
 
-            {/* Content List: Desktop Table / Mobile Cards */}
-            <div className="bg-white/85 backdrop-blur-2xl border border-white/60 rounded-[32px] shadow-xl shadow-black/5 overflow-hidden">
-                {/* Desktop Header Hidden on small screens */}
-                <div className="hidden lg:grid grid-cols-12 gap-4 p-6 border-b border-black/5 bg-gray-50/50 text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    <div className="col-span-4">Producto</div>
-                    <div className="col-span-2">Categoría</div>
-                    <div className="col-span-2">Stock / Min</div>
-                    <div className="col-span-2">Precio Venta</div>
-                    <div className="col-span-2 text-right">Acciones</div>
+            {/* Content List */}
+            <div style={{ ...cardStyle, borderRadius: '32px', padding: 0, overflow: 'hidden' }}>
+                {/* Desktop Header */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1rem', padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-input)', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    <div style={{ gridColumn: 'span 4' }}>Producto</div>
+                    <div style={{ gridColumn: 'span 2' }}>Categoría</div>
+                    <div style={{ gridColumn: 'span 2' }}>Stock / Min</div>
+                    <div style={{ gridColumn: 'span 2' }}>Precio Venta</div>
+                    <div style={{ gridColumn: 'span 2', textAlign: 'right' }}>Acciones</div>
                 </div>
 
-                <div className="divide-y divide-black/5">
+                <div>
                     {filteredProducts.length === 0 ? (
-                        <div className="p-20 text-center text-gray-400 font-medium">
-                            <Store className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                        <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>
+                            <Store style={{ width: '48px', height: '48px', margin: '0 auto 1rem', opacity: 0.1 }} />
                             No se encontraron productos
                         </div>
                     ) : (
                         filteredProducts.map(p => (
-                            <div 
-                                key={p.id} 
-                                className={`group p-6 lg:p-4 lg:grid lg:grid-cols-12 lg:gap-4 lg:items-center transition-all hover:bg-gray-50/50 ${!p.activo ? 'opacity-50 grayscale' : ''}`}
+                            <div
+                                key={p.id}
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(12, 1fr)',
+                                    gap: '1rem',
+                                    padding: '1rem 1.5rem',
+                                    alignItems: 'center',
+                                    borderBottom: '1px solid var(--border-subtle)',
+                                    background: 'var(--bg-surface)',
+                                    transition: 'all 0.2s',
+                                    opacity: p.activo ? 1 : 0.5,
+                                    filter: p.activo ? 'none' : 'grayscale(1)'
+                                }}
                             >
-                                {/* Mobile Header / Desktop Product */}
-                                <div className="col-span-4 mb-4 lg:mb-0">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-gray-100 rounded-xl lg:hidden text-2xl">
-                                            {getCategoriaIcon(p.categoria)}
-                                        </div>
+                                {/* Product */}
+                                <div style={{ gridColumn: 'span 4' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         <div>
-                                            <h3 className="text-base font-bold text-gray-900 m-0">{p.nombre}</h3>
-                                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{p.descripcion || 'Sin descripción'}</p>
+                                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>{p.nombre}</h3>
+                                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descripcion || 'Sin descripción'}</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Category */}
-                                <div className="col-span-2 mb-4 lg:mb-0">
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider ${
-                                        p.categoria === 'Venta' ? 'bg-emerald-100 text-emerald-600' :
-                                        p.categoria === 'Insumo Limpieza' ? 'bg-blue-100 text-blue-600' : 
-                                        'bg-amber-100 text-amber-600'
-                                    }`}>
-                                        <span className="hidden lg:inline">{getCategoriaIcon(p.categoria)}</span> {p.categoria}
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <span style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.375rem',
+                                        padding: '0.375rem 0.75rem',
+                                        borderRadius: '12px',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.03em',
+                                        background: p.categoria === 'Venta' ? 'rgba(16, 185, 129, 0.1)' : p.categoria === 'Insumo Limpieza' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                        color: p.categoria === 'Venta' ? '#059669' : p.categoria === 'Insumo Limpieza' ? '#2563EB' : '#D97706'
+                                    }}>
+                                        {getCategoriaIcon(p.categoria)} {p.categoria}
                                     </span>
                                 </div>
 
                                 {/* Stock */}
-                                <div className="col-span-2 mb-4 lg:mb-0 flex items-center gap-2">
-                                    <div className={`text-sm font-black px-3 py-1 rounded-lg ${
-                                        p.stock_actual <= p.stock_minimo ? 'bg-red-500 text-white' : 'bg-gray-900 text-white'
-                                    }`}>
+                                <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <div style={{
+                                        fontSize: '0.875rem',
+                                        fontWeight: 900,
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '8px',
+                                        background: p.stock_actual <= p.stock_minimo ? '#EF4444' : 'var(--text-main)',
+                                        color: '#fff'
+                                    }}>
                                         {p.stock_actual}
                                     </div>
-                                    <div className="text-[10px] text-gray-400 font-bold uppercase">
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
                                         Min: {p.stock_minimo}
                                     </div>
                                     {p.stock_actual <= p.stock_minimo && (
-                                        <div className="animate-pulse bg-red-100 text-red-500 px-2 py-0.5 rounded text-[10px] font-black uppercase">
+                                        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '0.125rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>
                                             Bajo
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Price */}
-                                <div className="col-span-2 mb-6 lg:mb-0">
-                                    <div className="flex flex-col lg:items-start text-xs font-bold">
-                                        <span className="text-gray-400 uppercase text-[9px] mb-0.5 lg:hidden">Precio Venta</span>
-                                        <span className="text-gray-900 text-sm">
-                                            {p.categoria === 'Venta' ? `$${p.precio_venta?.toFixed(2)}` : '-'}
-                                        </span>
-                                    </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <span style={{ color: 'var(--text-main)', fontSize: '0.875rem', fontWeight: 700 }}>
+                                        {p.categoria === 'Venta' ? `$${p.precio_venta?.toFixed(2)}` : '-'}
+                                    </span>
                                 </div>
 
                                 {/* Actions */}
-                                <div className="col-span-2 flex justify-end gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                     <button
-                                        className="h-11 w-11 lg:h-9 lg:w-9 flex items-center justify-center bg-white border border-black/5 rounded-xl text-gray-600 hover:bg-gray-50 shadow-sm"
+                                        style={{ height: '36px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.9rem' }}
                                         onClick={() => openEditModal(p)}
                                         title="Editar"
                                     >
                                         ✏️
                                     </button>
                                     <button
-                                        className="h-11 w-11 lg:h-9 lg:w-9 flex items-center justify-center bg-white border border-black/5 rounded-xl text-gray-600 hover:bg-gray-50 shadow-sm"
+                                        style={{ height: '36px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.9rem' }}
                                         onClick={() => openMovModal(p)}
                                         title="Ajustar Stock"
                                     >
                                         ±
                                     </button>
                                     <button
-                                        className="h-11 w-11 lg:h-9 lg:w-9 flex items-center justify-center bg-white border border-black/5 rounded-xl text-gray-600 hover:bg-gray-50 shadow-sm"
+                                        style={{ height: '36px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.9rem' }}
                                         onClick={() => openHistorialModal(p)}
                                         title="Historial"
                                     >
                                         📋
                                     </button>
                                     <button
-                                        className={`h-11 w-11 lg:h-9 lg:w-9 flex items-center justify-center border rounded-xl shadow-sm transition-colors ${
-                                            p.activo ? 'border-red-100 bg-red-50 text-red-500 hover:bg-red-100' : 'border-emerald-100 bg-emerald-50 text-emerald-500 hover:bg-emerald-100'
-                                        }`}
+                                        style={{
+                                            height: '36px',
+                                            width: '36px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '1px solid',
+                                            borderRadius: '12px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9rem',
+                                            transition: 'all 0.2s',
+                                            borderColor: p.activo ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                            background: p.activo ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.05)',
+                                            color: p.activo ? '#EF4444' : '#10B981'
+                                        }}
                                         onClick={() => handleToggleActive(p)}
                                         title={p.activo ? 'Desactivar' : 'Activar'}
                                     >
@@ -385,115 +407,99 @@ export default function InventarioPage() {
 
             {/* Modal de Crear/Editar Producto */}
             {showProductModal && createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-sm transition-all" onClick={() => setShowProductModal(false)}>
-                    <div className="bg-white/95 backdrop-blur-xl w-full max-w-[550px] rounded-[32px] shadow-2xl border border-white/60 overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--bg-main)]">
-                            <h3 className="text-xl font-black text-[var(--text-main)] flex items-center gap-2">
-                                {editMode ? <Edit2 className="w-5 h-5 text-[var(--accent-primary)]" /> : <Plus className="w-5 h-5 text-[var(--accent-primary)]" />}
+                <div style={modalOverlayStyle} onClick={() => setShowProductModal(false)}>
+                    <div style={{ ...modalStyle, maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-main)' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {editMode ? <Edit2 style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} /> : <Plus style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} />}
                                 {editMode ? 'Editar Producto' : 'Nuevo Producto'}
                             </h3>
-                            <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors" onClick={() => setShowProductModal(false)}><X className="w-5 h-5" /></button>
+                            <button style={{ height: '40px', width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-main)' }} onClick={() => setShowProductModal(false)}><X style={{ width: '20px', height: '20px' }} /></button>
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre *</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-[var(--bg-surface)] border border-[var(--glass-border)] rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[var(--accent-primary)]/20 focus:border-[var(--accent-primary)] outline-none transition-all"
-                                    placeholder="Nombre del producto"
-                                    value={formData.nombre}
-                                    onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                                />
+                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                                <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Nombre *</label>
+                                <input type="text" style={inputStyle} placeholder="Nombre del producto" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Descripción</label>
-                                <textarea
-                                    className="w-full bg-white border border-black/5 rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-coral/20 focus:border-coral outline-none transition-all min-h-[80px]"
-                                    placeholder="Descripción breve"
-                                    value={formData.descripcion}
-                                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
-                                />
+                            <div>
+                                <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Descripción</label>
+                                <textarea style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }} placeholder="Descripción breve" value={formData.descripcion} onChange={e => setFormData({ ...formData, descripcion: e.target.value })} />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Categoría</label>
-                                <div className="grid grid-cols-3 gap-2">
+                            <div>
+                                <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Categoría</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                                     {categorias.map(cat => (
                                         <button
                                             key={cat.id}
                                             type="button"
-                                            className={`py-2 px-3 rounded-xl text-[11px] font-bold border transition-all flex flex-col items-center gap-1 ${
-                                                formData.id_categoria === cat.id 
-                                                ? 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)] text-[var(--accent-primary)] shadow-sm' 
-                                                : 'bg-[var(--bg-surface)] border-[var(--glass-border)] text-[var(--text-muted)] hover:border-gray-300'
-                                            }`}
+                                            style={{
+                                                padding: '0.5rem 0.75rem',
+                                                borderRadius: '12px',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 700,
+                                                border: `1px solid ${formData.id_categoria === cat.id ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: '0.25rem',
+                                                background: formData.id_categoria === cat.id ? 'rgba(var(--accent-primary-rgb), 0.1)' : 'var(--bg-input)',
+                                                color: formData.id_categoria === cat.id ? 'var(--accent-primary)' : 'var(--text-muted)'
+                                            }}
                                             onClick={() => setFormData({ ...formData, id_categoria: cat.id })}
                                         >
-                                            <span className="text-lg">{getCategoriaIcon(cat.nombre)}</span>
+                                            <span style={{ fontSize: '1.1rem' }}>{getCategoriaIcon(cat.nombre)}</span>
                                             {cat.nombre}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 {!editMode && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Stock Inicial</label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-white border border-black/5 rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-coral/20 focus:border-coral outline-none transition-all"
-                                            value={formData.stock_actual}
-                                            onChange={e => setFormData({ ...formData, stock_actual: parseInt(e.target.value) || 0 })}
-                                        />
+                                    <div>
+                                        <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Stock Inicial</label>
+                                        <input type="number" style={inputStyle} value={formData.stock_actual} onChange={e => setFormData({ ...formData, stock_actual: parseInt(e.target.value) || 0 })} />
                                     </div>
                                 )}
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Stock Mínimo</label>
-                                    <input
-                                        type="number"
-                                        className="w-full bg-white border border-black/5 rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-coral/20 focus:border-coral outline-none transition-all"
-                                        value={formData.stock_minimo}
-                                        onChange={e => setFormData({ ...formData, stock_minimo: parseInt(e.target.value) || 0 })}
-                                    />
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Stock Mínimo</label>
+                                    <input type="number" style={inputStyle} value={formData.stock_minimo} onChange={e => setFormData({ ...formData, stock_minimo: parseInt(e.target.value) || 0 })} />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Precio Costo</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-white border border-black/5 rounded-2xl py-3 pl-8 pr-4 text-sm font-medium focus:ring-2 focus:ring-coral/20 focus:border-coral outline-none transition-all"
-                                            value={formData.precio_costo}
-                                            onChange={e => setFormData({ ...formData, precio_costo: parseFloat(e.target.value) || 0 })}
-                                        />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Precio Costo</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontWeight: 700 }}>$</span>
+                                        <input type="number" style={{ ...inputStyle, paddingLeft: '2rem' }} value={formData.precio_costo} onChange={e => setFormData({ ...formData, precio_costo: parseFloat(e.target.value) || 0 })} />
                                     </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Precio Venta</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Precio Venta</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontWeight: 700 }}>$</span>
                                         <input
                                             type="number"
-                                            className={`w-full bg-white border border-black/5 rounded-2xl py-3 pl-8 pr-4 text-sm font-medium focus:ring-2 focus:ring-coral/20 focus:border-coral outline-none transition-all ${formData.id_categoria !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            style={{ ...inputStyle, paddingLeft: '2rem', opacity: formData.id_categoria !== 1 ? 0.5 : 1, cursor: formData.id_categoria !== 1 ? 'not-allowed' : 'text' }}
                                             disabled={formData.id_categoria !== 1}
                                             value={formData.precio_venta}
                                             onChange={e => setFormData({ ...formData, precio_venta: parseFloat(e.target.value) || 0 })}
                                         />
                                     </div>
-                                    <p className="text-[10px] text-gray-400 font-medium px-1">Solo Venta</p>
+                                    <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, padding: '0 4px', marginTop: '0.25rem' }}>Solo Venta</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="p-6 flex gap-3 bg-[var(--bg-main)]">
-                            <button 
-                                className="flex-1 bg-[var(--bg-surface)] border border-[var(--glass-border)] text-[var(--text-muted)] font-bold py-3 px-6 rounded-2xl hover:bg-[var(--bg-card-hover)] transition-all min-h-[44px]" 
+                        <div style={{ padding: '1.5rem', display: 'flex', gap: '0.75rem', background: 'var(--bg-main)' }}>
+                            <button
+                                style={{ flex: 1, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 700, padding: '0.75rem 1.5rem', borderRadius: '16px', cursor: 'pointer', minHeight: '44px' }}
                                 onClick={() => setShowProductModal(false)}
                             >
                                 Cancelar
                             </button>
-                            <button 
-                                className="flex-[2] bg-[var(--accent-primary)] text-white font-bold py-3 px-6 rounded-2xl shadow-lg hover:shadow-[var(--accent-primary)]/20 transition-all min-h-[44px]" 
+                            <button
+                                style={{ flex: 2, background: 'var(--accent-primary)', border: 'none', color: '#fff', fontWeight: 700, padding: '0.75rem 1.5rem', borderRadius: '16px', cursor: 'pointer', minHeight: '44px' }}
                                 onClick={handleSaveProduct}
                             >
                                 {editMode ? 'Actualizar Producto' : 'Confirmar Registro'}
@@ -506,58 +512,66 @@ export default function InventarioPage() {
 
             {/* Modal de Movimiento de Stock */}
             {showMovModal && createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-sm transition-all" onClick={() => setShowMovModal(false)}>
-                    <div className="bg-white/95 backdrop-blur-xl w-full max-w-[450px] rounded-[32px] shadow-2xl border border-white/60 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--bg-main)]">
-                            <h3 className="text-xl font-black text-[var(--text-main)] flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-[var(--accent-primary)]" /> Ajustar Stock
+                <div style={modalOverlayStyle} onClick={() => setShowMovModal(false)}>
+                    <div style={{ ...modalStyle, maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-main)' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Activity style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} /> Ajustar Stock
                             </h3>
-                            <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors" onClick={() => setShowMovModal(false)}><X className="w-5 h-5" /></button>
+                            <button style={{ height: '40px', width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-main)' }} onClick={() => setShowMovModal(false)}><X style={{ width: '20px', height: '20px' }} /></button>
                         </div>
-                        <div className="p-6 space-y-5">
-                            <div className="bg-[var(--text-main)] rounded-2xl p-4 flex justify-between items-center text-[var(--bg-surface)] shadow-inner">
-                                <span className="text-xs font-bold uppercase tracking-widest opacity-60">Stock Actual</span>
-                                <span className="text-2xl font-black">{selectedProduct?.stock_actual}</span>
-                            </div>
-                            
-                            <div className="space-y-1.5 text-center">
-                                <h4 className="text-base font-bold text-gray-900">{selectedProduct?.nombre}</h4>
-                                <p className="text-xs text-gray-500 uppercase font-black tracking-widest">{selectedProduct?.categoria}</p>
+                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ background: 'var(--text-main)', borderRadius: '16px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--bg-surface)' }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.6 }}>Stock Actual</span>
+                                <span style={{ fontSize: '1.5rem', fontWeight: 900 }}>{selectedProduct?.stock_actual}</span>
                             </div>
 
-                            <div className="space-y-3">
-                                <div className="grid grid-cols-3 gap-2">
+                            <div style={{ textAlign: 'center' }}>
+                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>{selectedProduct?.nombre}</h4>
+                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 900, letterSpacing: '0.08em' }}>{selectedProduct?.categoria}</p>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                                     {['Entrada', 'Salida', 'Ajuste'].map(t => (
                                         <button
                                             key={t}
-                                            className={`py-2 px-1 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                                movimiento.tipo === t 
-                                                ? 'bg-[var(--accent-primary)] text-white border-[var(--accent-primary)] shadow-md shadow-[var(--accent-primary)]/20' 
-                                                : 'bg-[var(--bg-surface)] border-[var(--glass-border)] text-[var(--text-muted)]'
-                                            }`}
-                                            onClick={() => setMovimiento({...movimiento, tipo: t})}
+                                            style={{
+                                                padding: '0.5rem 0.25rem',
+                                                borderRadius: '12px',
+                                                fontSize: '0.65rem',
+                                                fontWeight: 900,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em',
+                                                border: `1px solid ${movimiento.tipo === t ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                background: movimiento.tipo === t ? 'var(--accent-primary)' : 'var(--bg-input)',
+                                                color: movimiento.tipo === t ? '#fff' : 'var(--text-muted)'
+                                            }}
+                                            onClick={() => setMovimiento({ ...movimiento, tipo: t })}
                                         >
                                             {t === 'Entrada' ? '📥 +' : t === 'Salida' ? '📤 -' : '🔄 ='} {t}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="space-y-1.5 pt-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block px-1">
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', padding: '0 4px', marginBottom: '0.375rem' }}>
                                         {movimiento.tipo === 'Ajuste' ? 'Cantidad Final' : 'Cantidad a Procesar'}
                                     </label>
                                     <input
                                         type="number"
-                                        className="w-full bg-white border border-black/5 rounded-2xl py-4 px-6 text-center text-3xl font-black focus:ring-2 focus:ring-coral/20 focus:border-coral outline-none transition-all shadow-sm"
+                                        style={{ ...inputStyle, textAlign: 'center', fontSize: '1.875rem', fontWeight: 900, padding: '1rem 1.5rem' }}
                                         min="0"
                                         value={movimiento.cantidad}
                                         onChange={e => setMovimiento({ ...movimiento, cantidad: parseInt(e.target.value) || 0 })}
                                     />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block px-1">Motivo / Notas</label>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', padding: '0 4px', marginBottom: '0.375rem' }}>Motivo / Notas</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-white border border-black/5 rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-coral/20 focus:border-coral outline-none transition-all"
+                                        style={inputStyle}
                                         placeholder="Ej: Compra, Uso interno..."
                                         value={movimiento.motivo}
                                         onChange={e => setMovimiento({ ...movimiento, motivo: e.target.value })}
@@ -565,9 +579,9 @@ export default function InventarioPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-6 bg-gray-50/50">
-                            <button 
-                                className="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all min-h-[44px]"
+                        <div style={{ padding: '1.5rem', background: 'var(--bg-input)' }}>
+                            <button
+                                style={{ width: '100%', background: 'var(--text-main)', color: 'var(--bg-surface)', fontWeight: 700, padding: '1rem', borderRadius: '16px', border: 'none', cursor: 'pointer', minHeight: '44px', fontSize: '0.95rem' }}
                                 onClick={handleMovimiento}
                             >
                                 Registrar Movimiento
@@ -580,53 +594,60 @@ export default function InventarioPage() {
 
             {/* Modal de Historial */}
             {showHistorialModal && createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-sm transition-all" onClick={() => setShowHistorialModal(false)}>
-                    <div className="bg-white/95 backdrop-blur-xl w-full max-w-[650px] rounded-[32px] shadow-2xl border border-white/60 overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--bg-main)]">
-                            <h3 className="text-xl font-black text-[var(--text-main)] flex items-center gap-2">
-                                <History className="w-5 h-5 text-[var(--accent-primary)]" /> Historial de Movimientos
+                <div style={modalOverlayStyle} onClick={() => setShowHistorialModal(false)}>
+                    <div style={{ ...modalStyle, maxWidth: '650px' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-main)' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <History style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} /> Historial de Movimientos
                             </h3>
-                            <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors" onClick={() => setShowHistorialModal(false)}><X className="w-5 h-5" /></button>
+                            <button style={{ height: '40px', width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-main)' }} onClick={() => setShowHistorialModal(false)}><X style={{ width: '20px', height: '20px' }} /></button>
                         </div>
-                        <div className="p-0 max-h-[500px] overflow-y-auto no-scrollbar">
+                        <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
                             {loadingHistorial ? (
-                                <div className="p-20 flex justify-center"><div className="animate-spin rounded-full h-10 w-10 border-4 border-coral border-t-transparent"></div></div>
+                                <div style={{ padding: '5rem', display: 'flex', justifyContent: 'center' }}><div className="spinner" style={{ borderColor: 'var(--accent-primary)' }}></div></div>
                             ) : historial.length === 0 ? (
-                                <div className="p-20 text-center text-gray-400 font-medium">No hay movimientos registrados para este producto</div>
+                                <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>No hay movimientos registrados para este producto</div>
                             ) : (
-                                <div className="divide-y divide-black/5">
+                                <div>
                                     {historial.map(mov => (
-                                        <div key={mov.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-lg ${
-                                                    mov.tipo === 'Entrada' ? 'bg-emerald-100 text-emerald-600' :
-                                                    mov.tipo === 'Salida' ? 'bg-red-100 text-red-600' : 
-                                                    'bg-amber-100 text-amber-600'
-                                                }`}>
+                                        <div key={mov.id} style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', transition: 'all 0.2s' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <div style={{
+                                                    height: '40px',
+                                                    width: '40px',
+                                                    borderRadius: '12px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '1.1rem',
+                                                    background: mov.tipo === 'Entrada' ? 'rgba(16, 185, 129, 0.1)' : mov.tipo === 'Salida' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                                    color: mov.tipo === 'Entrada' ? '#059669' : mov.tipo === 'Salida' ? '#DC2626' : '#D97706'
+                                                }}>
                                                     {mov.tipo === 'Entrada' ? '📥' : mov.tipo === 'Salida' ? '📤' : '🔄'}
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs font-black text-gray-900 uppercase tracking-widest">{mov.tipo}</p>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{new Date(mov.fecha).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short'})}</p>
+                                                    <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{mov.tipo}</p>
+                                                    <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>{new Date(mov.fecha).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className={`text-lg font-black ${
-                                                    mov.tipo === 'Entrada' ? 'text-emerald-500' :
-                                                    mov.tipo === 'Salida' ? 'text-red-500' : 
-                                                    'text-amber-500'
-                                                }`}>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <p style={{
+                                                    margin: 0,
+                                                    fontSize: '1.1rem',
+                                                    fontWeight: 900,
+                                                    color: mov.tipo === 'Entrada' ? '#10B981' : mov.tipo === 'Salida' ? '#EF4444' : '#F59E0B'
+                                                }}>
                                                     {mov.tipo === 'Salida' ? '-' : mov.tipo === 'Entrada' ? '+' : ''}{mov.cantidad}
                                                 </p>
-                                                <p className="text-[10px] text-gray-400 italic max-w-[150px] truncate">{mov.motivo || 'Sin descripción'}</p>
+                                                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mov.motivo || 'Sin descripción'}</p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
-                        <div className="p-6 bg-[var(--bg-main)] flex justify-end">
-                            <button className="bg-[var(--text-main)] text-[var(--bg-surface)] font-bold py-2.5 px-8 rounded-2xl hover:opacity-90 transition-all min-h-[44px]" onClick={() => setShowHistorialModal(false)}>Cerrar</button>
+                        <div style={{ padding: '1.5rem', background: 'var(--bg-main)', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button style={{ background: 'var(--text-main)', color: 'var(--bg-surface)', fontWeight: 700, padding: '0.625rem 2rem', borderRadius: '16px', border: 'none', cursor: 'pointer', minHeight: '44px' }} onClick={() => setShowHistorialModal(false)}>Cerrar</button>
                         </div>
                     </div>
                 </div>,

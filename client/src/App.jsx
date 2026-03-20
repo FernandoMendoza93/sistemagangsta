@@ -222,8 +222,18 @@ function ThemeApplier({ children }) {
 
     if (isPublic) {
       resetTheme();
-    } else if (user && user.bg_main) {
-      applyTheme(user, user.barberia_id);
+    } else if (user && user.barberia_id) {
+      // Priorizar tema cacheado (se actualiza al cambiar tema en Configuración)
+      const cached = localStorage.getItem(`tema_flow_${user.barberia_id}`);
+      if (cached) {
+        try {
+          applyTheme(JSON.parse(cached), user.barberia_id);
+        } catch (e) {
+          if (user.bg_main) applyTheme(user, user.barberia_id);
+        }
+      } else if (user.bg_main) {
+        applyTheme(user, user.barberia_id);
+      }
     }
   }, [user, pathname, applyTheme, resetTheme]);
 

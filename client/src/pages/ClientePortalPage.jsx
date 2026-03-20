@@ -282,7 +282,7 @@ export default function ClientePortalPage() {
             <div className="portal-header">
                 <div className="portal-header-top">
                     <div className="portal-brand">
-                        <Scissors size={20} color="#FF5F40" />
+                        <Scissors size={20} color="var(--accent-primary)" />
                         <span>The Gangsta</span>
                     </div>
                     <button className="portal-logout" onClick={handleLogout}>
@@ -343,7 +343,7 @@ export default function ClientePortalPage() {
             <div className="loyalty-card">
                 <div className="loyalty-card-header">
                     <div className="header-title">
-                        <Star size={20} color="#FF5F40" /> Mi Lealtad
+                        <Star size={20} color="var(--accent-primary)" /> Mi Lealtad
                     </div>
                     {wallet?.recompensa_disponible && (
                         <span className="loyalty-badge">
@@ -387,7 +387,7 @@ export default function ClientePortalPage() {
 
             {/* Citas / Agenda Section */}
             <h2 className="section-title">
-                <Calendar size={20} color="#111827" /> Citas Agendadas
+                <Calendar size={20} color="var(--text-main)" /> Citas Agendadas
             </h2>
 
             {citas.filter(c => c.estado !== 'Cancelada').length === 0 ? (
@@ -401,7 +401,7 @@ export default function ClientePortalPage() {
                         <div key={cita.id} className="cita-card">
                             <div className="cita-header">
                                 <div className="cita-fecha">
-                                    <Calendar size={18} color="#FF5F40" />
+                                    <Calendar size={18} color="var(--accent-primary)" />
                                     {new Date(cita.fecha + 'T00:00').toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </div>
                                 <span className={`cita-badge ${cita.estado.toLowerCase()}`}>
@@ -543,7 +543,7 @@ export default function ClientePortalPage() {
                                 <div className="form-group">
                                     <label><Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Fechas Disponibles</label>
                                     {diasDisponibles.length === 0 ? (
-                                        <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Este barbero no tiene turnos configurados.</p>
+                                        <p style={{ color: 'var(--text-muted, #9ca3af)', fontSize: '0.85rem' }}>Este barbero no tiene turnos configurados.</p>
                                     ) : (
                                         <div className="dias-carousel">
                                             {diasDisponibles.map(dia => (
@@ -569,7 +569,7 @@ export default function ClientePortalPage() {
                                     {citaExistenteEnFecha ? (
                                         <div className="cita-existente-aviso">
                                             <div className="aviso-info">
-                                                <Calendar size={18} color="#FF5F40" />
+                                                <Calendar size={18} color="var(--accent-primary)" />
                                                 <div>
                                                     <p className="aviso-titulo">Ya tienes una cita este dia</p>
                                                     <p className="aviso-detalle">
@@ -590,7 +590,7 @@ export default function ClientePortalPage() {
                                             </div>
                                         </div>
                                     ) : !citaForm.fecha ? (
-                                        <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Selecciona una fecha primero.</p>
+                                        <p style={{ color: 'var(--text-muted, #9ca3af)', fontSize: '0.85rem' }}>Selecciona una fecha primero.</p>
                                     ) : horasDisponibles.length === 0 ? (
                                         <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
                                     ) : (

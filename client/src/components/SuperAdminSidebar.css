@@ -1,6 +1,5 @@
 /* =============================================
    SUPER ADMIN SIDEBAR — Flow Control
-   White/Cream aesthetic matching the rest of the system
    ============================================= */
 
 .sa-sidebar {
@@ -9,18 +8,18 @@
     left: 0;
     width: 260px;
     height: 100vh;
-    background: #FFFFFF;
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
     z-index: 100;
     transition: transform 0.3s ease;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.02);
+    box-shadow: 4px 0 15px var(--shadow-color);
 }
 
 .sa-sidebar-header {
     padding: 1.5rem 1.25rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .sa-sidebar-brand {
@@ -32,7 +31,7 @@
 .sa-brand-icon {
     width: 40px;
     height: 40px;
-    background: rgba(255, 95, 64, 0.08);
+    background: rgba(var(--accent-primary-rgb), 0.08);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -43,14 +42,14 @@
     font-family: 'Montserrat', sans-serif;
     font-size: 1.2rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text-main);
     margin: 0;
     letter-spacing: -0.5px;
 }
 
 .sa-brand-text p {
     font-size: 0.65rem;
-    color: #9CA3AF;
+    color: var(--text-muted);
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 1.5px;
@@ -68,7 +67,7 @@
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    color: #9CA3AF;
+    color: var(--text-muted);
     font-weight: 700;
     padding: 0.5rem 0.75rem;
     margin-top: 0.75rem;
@@ -84,7 +83,7 @@
     gap: 0.65rem;
     padding: 0.7rem 0.75rem;
     border-radius: 12px;
-    color: #6B7280;
+    color: var(--text-muted);
     text-decoration: none;
     font-size: 0.9rem;
     font-weight: 600;
@@ -93,23 +92,23 @@
 }
 
 .sa-nav-item:hover {
-    background: #F9FAFB;
-    color: #111827;
+    background: var(--bg-hover);
+    color: var(--text-main);
 }
 
 .sa-nav-item.active {
-    background: rgba(255, 95, 64, 0.08);
-    color: #FF5F40;
+    background: rgba(var(--accent-primary-rgb), 0.08);
+    color: var(--accent-primary);
 }
 
 .sa-nav-item.active svg {
-    color: #FF5F40;
+    color: var(--accent-primary);
 }
 
 /* Footer */
 .sa-sidebar-footer {
     padding: 1rem 1.25rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    border-top: 1px solid var(--border-subtle);
 }
 
 .sa-user-info {
@@ -122,7 +121,7 @@
 .sa-user-avatar {
     width: 38px;
     height: 38px;
-    background: rgba(255, 95, 64, 0.08);
+    background: rgba(var(--accent-primary-rgb), 0.08);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -131,13 +130,13 @@
 
 .sa-user-name {
     font-size: 0.88rem;
-    color: #111827;
+    color: var(--text-main);
     font-weight: 700;
 }
 
 .sa-user-role {
     font-size: 0.7rem;
-    color: #FF5F40;
+    color: var(--accent-primary);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -146,9 +145,9 @@
 .sa-btn-logout {
     width: 100%;
     padding: 0.6rem;
-    background: #F3F4F6;
-    border: 1px solid #E5E7EB;
-    color: #4B5563;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 600;
@@ -161,15 +160,15 @@
 }
 
 .sa-btn-logout:hover {
-    background: #E5E7EB;
-    color: #111827;
+    background: var(--border-color);
+    color: var(--text-main);
 }
 
 /* SuperAdmin Layout */
 .sa-layout {
     display: flex;
     min-height: 100vh;
-    background: #FAF9F6;
+    background: var(--bg-main);
 }
 
 .sa-main-content {
@@ -188,15 +187,15 @@
     z-index: 200;
     width: 42px;
     height: 42px;
-    background: #FFFFFF;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
-    color: #111827;
+    color: var(--text-main);
     font-size: 1.2rem;
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .sa-sidebar-backdrop {
@@ -225,7 +224,7 @@
         position: fixed;
         inset: 0;
         z-index: 90;
-        background: rgba(0, 0, 0, 0.3);
+        background: var(--overlay-bg);
         backdrop-filter: blur(4px);
         opacity: 0;
         pointer-events: none;

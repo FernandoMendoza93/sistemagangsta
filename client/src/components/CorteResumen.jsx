@@ -6,7 +6,7 @@ export default function CorteResumen({ totalVentas, totalGanancia, dineroEsperad
         <div className="corte-resumen-professional">
             <div className="metric-card metric-sales">
                 <div className="metric-icon-wrapper icon-blue">
-                    <Icon name="dollar-circle" size={24} color="#2563eb" />
+                    <Icon name="dollar-circle" size={24} color="var(--accent-primary)" />
                 </div>
                 <div className="metric-content">
                     <span className="metric-label">Ventas Totales</span>
@@ -26,7 +26,7 @@ export default function CorteResumen({ totalVentas, totalGanancia, dineroEsperad
 
             <div className="metric-card metric-expected">
                 <div className="metric-icon-wrapper icon-indigo">
-                    <Icon name="cash" size={24} color="#4f46e5" />
+                    <Icon name="cash" size={24} color="var(--accent-primary)" />
                 </div>
                 <div className="metric-content">
                     <span className="metric-label">Efectivo Esperado</span>

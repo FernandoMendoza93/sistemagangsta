@@ -8,7 +8,7 @@ export default function DineroCajaDesglose({ dineroEnCaja }) {
         <div className="dinero-caja-professional">
             <div className="section-header">
                 <div className="header-icon">
-                    <Icon name="cash" size={20} color="#4f46e5" />
+                    <Icon name="cash" size={20} color="var(--accent-primary)" />
                 </div>
                 <h3>Dinero en Caja</h3>
             </div>

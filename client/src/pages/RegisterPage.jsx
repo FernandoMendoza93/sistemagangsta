@@ -100,7 +100,7 @@ export default function RegisterPage() {
                             <p style={{ fontSize: '0.85rem', marginTop: '0.75rem' }}>
                                 Accede con: <strong>{success.credentials.email}</strong>
                             </p>
-                            <p style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '1rem' }}>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #9CA3AF)', marginTop: '1rem' }}>
                                 Tu cuenta sera activada una vez confirmemos tu pago.
                                 Te notificaremos por WhatsApp.
                             </p>

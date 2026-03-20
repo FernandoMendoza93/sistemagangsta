@@ -59,6 +59,10 @@ export default function ReportesPage() {
     const totalIngresos = ventas.reduce((sum, v) => sum + v.ingresos, 0);
     const totalComisiones = comisiones.reduce((sum, c) => sum + c.total_comision, 0);
 
+    const cardStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' };
+    const thStyle = { background: 'var(--bg-input)', color: 'var(--text-muted)', padding: '0.75rem 1.25rem', textAlign: 'left', borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' };
+    const tdStyle = { padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--text-main)' };
+
     if (loading) return <div className="loading"><div className="spinner"></div></div>;
 
     return (
@@ -67,7 +71,7 @@ export default function ReportesPage() {
                 <h1 className="page-title">📈 Reportes</h1>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <input type="date" className="form-input" style={{ width: 'auto' }} value={desde} onChange={e => setDesde(e.target.value)} />
-                    <span>a</span>
+                    <span style={{ color: 'var(--text-muted)' }}>a</span>
                     <input type="date" className="form-input" style={{ width: 'auto' }} value={hasta} onChange={e => setHasta(e.target.value)} />
                     <button className="btn btn-primary" onClick={exportarExcel} disabled={exporting}>
                         {exporting ? '⏳ Exportando...' : '📥 Excel'}
@@ -76,32 +80,37 @@ export default function ReportesPage() {
             </div>
 
             <div className="card-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '1.5rem' }}>
-                <div className="stat-card">
-                    <div className="stat-value">${totalIngresos.toFixed(2)}</div>
-                    <div className="stat-label">Ingresos Totales</div>
+                <div style={{ ...cardStyle, textAlign: 'center', padding: '1.25rem 1.5rem' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${totalIngresos.toFixed(2)}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Ingresos Totales</div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-value">${totalComisiones.toFixed(2)}</div>
-                    <div className="stat-label">Comisiones Generadas</div>
+                <div style={{ ...cardStyle, textAlign: 'center', padding: '1.25rem 1.5rem' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${totalComisiones.toFixed(2)}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Comisiones Generadas</div>
                 </div>
             </div>
 
             <div className="card-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 {/* Comisiones por Barbero */}
-                <div className="card">
-                    <h2 className="card-title" style={{ marginBottom: '1rem' }}>💎 Comisiones por Barbero</h2>
-                    <div className="table-container">
-                        <table className="table">
+                <div style={cardStyle}>
+                    <h2 style={{ margin: 0, marginBottom: '1rem', color: 'var(--text-main)', fontWeight: 700, fontSize: '1.1rem' }}>💎 Comisiones por Barbero</h2>
+                    <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                             <thead>
-                                <tr><th>Barbero</th><th>Servicios</th><th>Total</th><th>Pendiente</th></tr>
+                                <tr>
+                                    <th style={thStyle}>Barbero</th>
+                                    <th style={thStyle}>Servicios</th>
+                                    <th style={thStyle}>Total</th>
+                                    <th style={thStyle}>Pendiente</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {comisiones.map((c, i) => (
                                     <tr key={i}>
-                                        <td><strong style={{ color: '#1a1a1a' }}>{c.barbero}</strong></td>
-                                        <td style={{ color: '#1a1a1a' }}>{c.servicios}</td>
-                                        <td style={{ color: '#1a1a1a' }}>${c.total_comision?.toFixed(2)}</td>
-                                        <td><span className="badge badge-warning">${c.pendiente?.toFixed(2)}</span></td>
+                                        <td style={{ ...tdStyle, fontWeight: 700 }}>{c.barbero}</td>
+                                        <td style={tdStyle}>{c.servicios}</td>
+                                        <td style={tdStyle}>${c.total_comision?.toFixed(2)}</td>
+                                        <td style={tdStyle}><span className="badge badge-warning">${c.pendiente?.toFixed(2)}</span></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -110,19 +119,23 @@ export default function ReportesPage() {
                 </div>
 
                 {/* Servicios Populares */}
-                <div className="card">
-                    <h2 className="card-title" style={{ marginBottom: '1rem' }}>✂️ Servicios Más Vendidos</h2>
-                    <div className="table-container">
-                        <table className="table">
+                <div style={cardStyle}>
+                    <h2 style={{ margin: 0, marginBottom: '1rem', color: 'var(--text-main)', fontWeight: 700, fontSize: '1.1rem' }}>✂️ Servicios Más Vendidos</h2>
+                    <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                             <thead>
-                                <tr><th>Servicio</th><th>Cantidad</th><th>Ingresos</th></tr>
+                                <tr>
+                                    <th style={thStyle}>Servicio</th>
+                                    <th style={thStyle}>Cantidad</th>
+                                    <th style={thStyle}>Ingresos</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {servicios.map((s, i) => (
                                     <tr key={i}>
-                                        <td><strong style={{ color: '#1a1a1a' }}>{s.nombre_servicio}</strong></td>
-                                        <td style={{ color: '#1a1a1a' }}>{s.cantidad}</td>
-                                        <td className="cart-item-price" style={{ color: '#1a1a1a' }}>${s.ingresos?.toFixed(2)}</td>
+                                        <td style={{ ...tdStyle, fontWeight: 700 }}>{s.nombre_servicio}</td>
+                                        <td style={tdStyle}>{s.cantidad}</td>
+                                        <td style={{ ...tdStyle, color: 'var(--accent-primary)', fontWeight: 600 }}>${s.ingresos?.toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>

@@ -7,7 +7,7 @@ export default function VentasPorMetodo({ ventas }) {
             <div className="ventas-metodo-professional">
                 <div className="section-header">
                     <div className="header-icon">
-                        <Icon name="credit-card" size={20} color="#2563eb" />
+                        <Icon name="credit-card" size={20} color="var(--accent-primary)" />
                     </div>
                     <h3>Ventas por Método de Pago</h3>
                 </div>
@@ -22,7 +22,7 @@ export default function VentasPorMetodo({ ventas }) {
         <div className="ventas-metodo-professional">
             <div className="section-header">
                 <div className="header-icon">
-                    <Icon name="credit-card" size={20} color="#2563eb" />
+                    <Icon name="credit-card" size={20} color="var(--accent-primary)" />
                 </div>
                 <h3>Ventas por Método de Pago</h3>
             </div>

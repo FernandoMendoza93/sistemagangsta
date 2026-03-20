@@ -1,9 +1,9 @@
 .movimientos-professional {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px 0 var(--shadow-color);
 }
 
 .movimientos-section-pro {
@@ -20,11 +20,11 @@
     gap: 0.75rem;
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid #f3f4f6;
+    border-bottom: 2px solid var(--bg-hover);
 }
 
 .section-title-mov h3 {
-    color: #111827;
+    color: var(--text-main);
     margin: 0;
     font-size: 1rem;
     font-family: 'Inter', sans-serif;
@@ -37,26 +37,26 @@
 }
 
 .mov-table-pro th {
-    background: #f9fafb;
+    background: var(--bg-input);
     padding: 0.75rem 0.5rem;
     text-align: left;
     font-weight: 600;
-    color: #374151;
-    border-bottom: 2px solid #e5e7eb;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border-color);
     font-size: 0.875rem;
     font-family: 'Inter', sans-serif;
 }
 
 .mov-table-pro td {
     padding: 0.875rem 0.5rem;
-    border-bottom: 1px solid #f3f4f6;
-    color: #374151;
+    border-bottom: 1px solid var(--bg-hover);
+    color: var(--text-muted);
     font-family: 'Inter', sans-serif;
     font-size: 0.9375rem;
 }
 
 .mov-table-pro tbody tr:hover {
-    background: #f9fafb;
+    background: var(--bg-input);
 }
 
 .hora-header,
@@ -65,14 +65,14 @@
 }
 
 .hora-cell {
-    color: #6b7280;
+    color: var(--text-muted);
     font-family: 'Inter', sans-serif;
     font-size: 0.875rem;
     font-weight: 500;
 }
 
 .desc-cell {
-    color: #111827;
+    color: var(--text-main);
     font-weight: 500;
 }
 
@@ -93,7 +93,7 @@
 
 .no-movimientos-pro {
     text-align: center;
-    color: #9ca3af;
+    color: var(--text-muted);
     padding: 2rem 0;
     font-style: italic;
 }

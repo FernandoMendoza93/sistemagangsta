@@ -114,9 +114,9 @@ export default function ClienteLoginPage() {
             <div className="cliente-login-page">
                 <div className="cliente-login-card fade-in-on-load" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
                     <div className="logo-ring" style={{ margin: '0 auto 1.5rem', width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,107,74,0.12)', border: '2px solid rgba(255,107,74,0.3)' }}>
-                        <Store size={36} color="#FF6B4A" strokeWidth={1.5} />
+                        <Store size={36} color="var(--accent-primary, #FF6B4A)" strokeWidth={1.5} />
                     </div>
-                    <h2 style={{ color: '#1a1a1a', marginBottom: '0.75rem', fontSize: '1.25rem' }}>Portal no disponible</h2>
+                    <h2 style={{ color: 'var(--text-main)', marginBottom: '0.75rem', fontSize: '1.25rem' }}>Portal no disponible</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>{barberiaError}</p>
                 </div>
             </div>
@@ -144,7 +144,7 @@ export default function ClienteLoginPage() {
                             <Scissors size={40} color={acento} strokeWidth={1} />
                         </div>
                     )}
-                    <h1 style={{ color: '#1a1a1a' }}>{barberia?.nombre}</h1>
+                    <h1 style={{ color: 'var(--text-main)' }}>{barberia?.nombre}</h1>
                     <p className="tagline">Portal de Clientes</p>
                 </div>
 

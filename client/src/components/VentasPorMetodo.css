@@ -1,14 +1,14 @@
 .ventas-metodo-professional {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px 0 var(--shadow-color);
 }
 
 .no-data-pro {
     text-align: center;
-    color: #9ca3af;
+    color: var(--text-muted);
     padding: 2rem 0;
     font-style: italic;
     font-size: 0.9375rem;
@@ -21,18 +21,18 @@
 
 .metodo-table-pro td {
     padding: 0.875rem 0.5rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--bg-hover);
     font-family: 'Inter', sans-serif;
 }
 
 .metodo-name-cell {
     font-weight: 500;
-    color: #111827;
+    color: var(--text-main);
     font-size: 0.9375rem;
 }
 
 .metodo-count-cell {
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 0.875rem;
 }
 
@@ -45,8 +45,8 @@
 }
 
 .total-row-metodo {
-    background: #f9fafb;
-    border-top: 2px solid #e5e7eb;
+    background: var(--bg-input);
+    border-top: 2px solid var(--border-color);
     border-bottom: none;
 }
 
@@ -57,5 +57,5 @@
 
 .total-label {
     font-weight: 600;
-    color: #111827;
+    color: var(--text-main);
 }

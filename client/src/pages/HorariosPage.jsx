@@ -45,7 +45,7 @@ export default function HorariosPage() {
         try {
             const res = await horariosService.getByBarbero(barbero.id);
             const horasDB = res.data.horarios || [];
-            
+
             const horasFormateadas = DIAS_SEMANA.map(dia => {
                 const existe = horasDB.find(h => h.dia_semana === dia.num);
                 if (existe) {
@@ -91,7 +91,7 @@ export default function HorariosPage() {
                 hora_fin: h.hora_fin,
                 activo: h.activo
             })));
-            
+
             toast.success(`¡Jornada semanal de ${selectedBarbero.nombre} actualizada con éxito!`, { duration: 4000 });
             setHorarios(prev => prev.map(h => ({ ...h, modificado: false })));
         } catch (error) {
@@ -104,16 +104,24 @@ export default function HorariosPage() {
 
     const hayCambiosSinGuardar = horarios.some(h => h.modificado);
 
+    const panelStyle = {
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '20px',
+        padding: '1.5rem',
+        boxShadow: '0 4px 20px var(--shadow-color)'
+    };
+
     if (loading && !selectedBarbero) {
         return (
-            <div className="p-4 sm:p-8">
-                <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 rounded-2xl bg-coral/10 flex items-center justify-center">
-                        <Clock className="w-6 h-6 text-coral" />
+            <div style={{ padding: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock style={{ width: '24px', height: '24px', color: 'var(--accent-primary)' }} />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-extrabold text-gray-900 m-0">Horarios del Personal</h1>
-                        <p className="text-gray-500 m-0">Cargando configuraciones...</p>
+                        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>Horarios del Personal</h1>
+                        <p style={{ margin: 0, color: 'var(--text-muted)' }}>Cargando configuraciones...</p>
                     </div>
                 </div>
             </div>
@@ -121,113 +129,209 @@ export default function HorariosPage() {
     }
 
     return (
-        <div className="p-4 sm:p-8 font-sans max-w-7xl mx-auto">
-            <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-coral/10 flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-coral" />
+        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Clock style={{ width: '24px', height: '24px', color: 'var(--accent-primary)' }} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-extrabold text-gray-900 m-0">Horarios del Personal</h1>
-                    <p className="text-gray-500 text-sm sm:text-base m-0">Configura los días y horas laborales de cada barbero</p>
+                    <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>Horarios del Personal</h1>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Configura los días y horas laborales de cada barbero</p>
                 </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 mb-8 flex items-start gap-3 p-4 rounded-xl">
-                <AlertCircle className="w-5 h-5 mt-0.5 text-blue-600 flex-shrink-0" />
-                <div className="text-sm">
+            <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', color: 'var(--text-main)', marginBottom: '2rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '1rem', borderRadius: '16px' }}>
+                <AlertCircle style={{ width: '20px', height: '20px', marginTop: '2px', color: 'var(--info, #3B82F6)', flexShrink: 0 }} />
+                <div style={{ fontSize: '0.875rem' }}>
                     <strong>Importante:</strong> Los horarios definidos aquí controlan qué días y a qué horas los clientes pueden agendar con este barbero en el Portal de Reservas. Si un día está apagado, no aparecerá en el calendario de turnos.
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
-                
+            <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+
                 {/* Panel Izquierdo: Lista de Barberos */}
-                <div className="bg-white/85 border border-black/5 rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl">
-                    <h3 className="m-0 mb-5 text-lg text-gray-900 font-extrabold flex items-center gap-2">
-                        <User className="w-5 h-5" /> Selecciona un Barbero
+                <div style={panelStyle}>
+                    <h3 style={{ margin: 0, marginBottom: '1.25rem', fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <User style={{ width: '20px', height: '20px' }} /> Selecciona un Barbero
                     </h3>
-                    <div className="flex flex-col gap-3">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {barberos.map(b => {
                             const isActive = selectedBarbero?.id === b.id;
                             return (
                                 <button
                                     key={b.id}
-                                    className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-200 w-full text-left relative min-h-[44px] ${isActive ? 'bg-[#FFF5F2] border-2 border-coral shadow-[0_4px_15px_rgba(255,107,74,0.15)]' : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'}`}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '1rem',
+                                        padding: '1rem',
+                                        borderRadius: '16px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        position: 'relative',
+                                        minHeight: '44px',
+                                        background: isActive ? 'rgba(var(--accent-primary-rgb), 0.08)' : 'var(--bg-input)',
+                                        border: isActive ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                                        boxShadow: isActive ? '0 4px 15px rgba(var(--accent-primary-rgb), 0.15)' : 'none'
+                                    }}
                                     onClick={() => handleSelectBarbero(b)}
                                 >
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-lg text-white shadow-sm ${isActive ? 'bg-gradient-to-br from-coral to-[#FF5A2A]' : 'bg-gradient-to-br from-gray-800 to-gray-600'}`}>
+                                    <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 800,
+                                        fontSize: '1.1rem',
+                                        color: '#fff',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                        background: isActive ? 'var(--accent-primary)' : 'var(--text-muted)'
+                                    }}>
                                         {b.nombre.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`font-bold text-sm sm:text-base ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>{b.nombre}</span>
-                                        {isActive && <span className="text-[0.7rem] text-coral font-bold mt-0.5 uppercase tracking-wider">Seleccionado</span>}
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>{b.nombre}</span>
+                                        {isActive && <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 700, marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Seleccionado</span>}
                                     </div>
-                                    {isActive && <UserCheck className="w-5 h-5 absolute right-4 text-coral" />}
+                                    {isActive && <UserCheck style={{ width: '20px', height: '20px', position: 'absolute', right: '16px', color: 'var(--accent-primary)' }} />}
                                 </button>
                             );
                         })}
                         {barberos.length === 0 && (
-                            <p className="text-gray-500 text-sm text-center py-4">No hay barberos activos registrados.</p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '1rem 0' }}>No hay barberos activos registrados.</p>
                         )}
                     </div>
                 </div>
 
                 {/* Panel Derecho: Configuración de la semana */}
-                <div className="bg-white/85 border border-black/5 rounded-[20px] p-4 sm:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                        <h3 className="m-0 text-lg sm:text-xl text-gray-900 font-extrabold flex items-center">
-                            Jornada Semanal — <span className="text-coral ml-2">{selectedBarbero?.nombre}</span>
+                <div style={panelStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 800, display: 'flex', alignItems: 'center' }}>
+                            Jornada Semanal — <span style={{ color: 'var(--accent-primary)', marginLeft: '0.5rem' }}>{selectedBarbero?.nombre}</span>
                         </h3>
-                        {/* 44px Interaction Target */}
-                        <button 
-                            className={`flex items-center justify-center min-h-[44px] px-6 gap-2 rounded-xl border-none font-bold transition-all duration-300 w-full sm:w-auto shadow-sm ${hayCambiosSinGuardar ? 'bg-coral text-white hover:bg-[#e55a3b] hover:-translate-y-0.5 hover:shadow-lg' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                        <button
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: '44px',
+                                padding: '0 1.5rem',
+                                gap: '0.5rem',
+                                borderRadius: '12px',
+                                border: 'none',
+                                fontWeight: 700,
+                                transition: 'all 0.3s',
+                                boxShadow: hayCambiosSinGuardar ? '0 2px 8px rgba(var(--accent-primary-rgb), 0.2)' : 'none',
+                                background: hayCambiosSinGuardar ? 'var(--accent-primary)' : 'var(--bg-input)',
+                                color: hayCambiosSinGuardar ? '#fff' : 'var(--text-muted)',
+                                cursor: hayCambiosSinGuardar ? 'pointer' : 'not-allowed'
+                            }}
                             onClick={handleSaveBatch}
                             disabled={!hayCambiosSinGuardar || saving}
                         >
-                            <Save className={`${saving ? 'animate-pulse' : ''} w-5 h-5`} />
+                            <Save style={{ width: '20px', height: '20px' }} />
                             {saving ? 'Guardando...' : 'Guardar Todos los Cambios'}
                         </button>
                     </div>
-                    
-                    <div className="flex flex-col gap-3">
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {horarios.map(dia => {
                             const isActivo = dia.activo === 1;
                             return (
-                                <div key={dia.dia_semana} className={`grid grid-cols-1 sm:grid-cols-[140px_1fr_10px] items-center gap-4 sm:gap-6 p-4 rounded-2xl transition-all duration-200 ${isActivo ? 'bg-white border hover:border-emerald-300 border-l-4 border-l-emerald-500 shadow-sm' : 'bg-gray-50 border border-gray-200 opacity-70'}`}>
-                                    
-                                    <div className="flex items-center gap-3">
-                                        {/* Toggle Touch Target 44px */}
-                                        <label className="relative inline-flex items-center cursor-pointer min-h-[44px]">
-                                            <input 
-                                                type="checkbox" 
-                                                className="sr-only peer" 
+                                <div key={dia.dia_semana} style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '140px 1fr',
+                                    alignItems: 'center',
+                                    gap: '1.5rem',
+                                    padding: '1rem',
+                                    borderRadius: '16px',
+                                    transition: 'all 0.2s',
+                                    background: isActivo ? 'var(--bg-surface)' : 'var(--bg-input)',
+                                    border: isActivo ? '1px solid var(--border-color)' : '1px solid var(--border-subtle)',
+                                    borderLeft: isActivo ? '4px solid #10B981' : '4px solid transparent',
+                                    opacity: isActivo ? 1 : 0.7,
+                                    boxShadow: isActivo ? '0 2px 8px var(--shadow-color)' : 'none'
+                                }}>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer', minHeight: '44px' }}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
                                                 checked={isActivo}
                                                 onChange={(e) => handleHorarioChange(dia.dia_semana, 'activo', e.target.checked ? 1 : 0)}
                                             />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[12px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                            <div style={{
+                                                width: '44px',
+                                                height: '24px',
+                                                borderRadius: '12px',
+                                                background: isActivo ? '#10B981' : 'var(--bg-hover)',
+                                                border: `1px solid ${isActivo ? '#10B981' : 'var(--border-color)'}`,
+                                                position: 'relative',
+                                                transition: 'all 0.3s',
+                                                cursor: 'pointer'
+                                            }}>
+                                                <div style={{
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    borderRadius: '50%',
+                                                    background: '#fff',
+                                                    position: 'absolute',
+                                                    top: '1px',
+                                                    left: isActivo ? '22px' : '1px',
+                                                    transition: 'left 0.3s',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                                }} />
+                                            </div>
                                         </label>
-                                        <span className={`font-bold text-[0.95rem] ${isActivo ? 'text-gray-900' : 'text-gray-500'}`}>{DIAS_SEMANA[dia.dia_semana].nombre}</span>
+                                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: isActivo ? 'var(--text-main)' : 'var(--text-muted)' }}>{DIAS_SEMANA[dia.dia_semana].nombre}</span>
                                     </div>
 
-                                    <div className="flex items-center gap-2 sm:gap-3">
-                                        {/* Mobile-friendly time inputs */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         <input
                                             type="time"
-                                            className={`w-full sm:w-[130px] text-center font-bold px-3 py-2 border rounded-xl min-h-[44px] transition-colors focus:outline-none focus:ring-2 focus:ring-coral/50 ${isActivo ? 'bg-white border-gray-300 text-gray-900' : 'bg-transparent border-transparent text-gray-400'}`}
+                                            style={{
+                                                width: '130px',
+                                                textAlign: 'center',
+                                                fontWeight: 700,
+                                                padding: '0.5rem 0.75rem',
+                                                border: isActivo ? '1px solid var(--border-color)' : '1px solid transparent',
+                                                borderRadius: '12px',
+                                                minHeight: '44px',
+                                                transition: 'all 0.2s',
+                                                background: isActivo ? 'var(--bg-surface)' : 'transparent',
+                                                color: isActivo ? 'var(--text-main)' : 'var(--text-muted)',
+                                                outline: 'none'
+                                            }}
                                             value={dia.hora_inicio}
                                             onChange={(e) => handleHorarioChange(dia.dia_semana, 'hora_inicio', e.target.value)}
                                             disabled={!isActivo}
                                         />
-                                        <span className="text-gray-400 text-sm font-semibold">a</span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>a</span>
                                         <input
                                             type="time"
-                                            className={`w-full sm:w-[130px] text-center font-bold px-3 py-2 border rounded-xl min-h-[44px] transition-colors focus:outline-none focus:ring-2 focus:ring-coral/50 ${isActivo ? 'bg-white border-gray-300 text-gray-900' : 'bg-transparent border-transparent text-gray-400'}`}
+                                            style={{
+                                                width: '130px',
+                                                textAlign: 'center',
+                                                fontWeight: 700,
+                                                padding: '0.5rem 0.75rem',
+                                                border: isActivo ? '1px solid var(--border-color)' : '1px solid transparent',
+                                                borderRadius: '12px',
+                                                minHeight: '44px',
+                                                transition: 'all 0.2s',
+                                                background: isActivo ? 'var(--bg-surface)' : 'transparent',
+                                                color: isActivo ? 'var(--text-main)' : 'var(--text-muted)',
+                                                outline: 'none'
+                                            }}
                                             value={dia.hora_fin}
                                             onChange={(e) => handleHorarioChange(dia.dia_semana, 'hora_fin', e.target.value)}
                                             disabled={!isActivo}
                                         />
                                     </div>
-                                    <div className="hidden sm:block"></div>
                                 </div>
                             );
                         })}
