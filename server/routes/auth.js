@@ -36,10 +36,8 @@ router.get('/mi-barberia', verifyToken, async (req, res) => {
         }
 
         const barberia = await dbQuery.get(
-            `SELECT b.id, b.nombre, b.logo_url, b.color_acento, b.slug, b.plan, b.fecha_vencimiento, b.activo,
-                    t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
+            `SELECT b.id, b.nombre, b.logo_url, b.color_acento, b.slug, b.plan, b.fecha_vencimiento, b.activo
              FROM barberias b
-             LEFT JOIN temas t ON b.tema_id = t.id
              WHERE b.id = ?`,
             [barberia_id]
         );
@@ -74,7 +72,6 @@ router.post('/login', async (req, res) => {
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberias b ON u.barberia_id = b.id
-            LEFT JOIN temas t ON b.tema_id = t.id
             WHERE u.email = ?
         `, [email]);
 
@@ -209,12 +206,10 @@ router.get('/me', async (req, res) => {
 
         const user = await dbQuery.get(`
             SELECT u.id, u.nombre, u.email, u.barberia_id, r.nombre_rol as rol,
-                   b.nombre as barberia_nombre, b.logo_url, b.slug as barberia_slug,
-                   t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
+                   b.nombre as barberia_nombre, b.logo_url, b.slug as barberia_slug
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberias b ON u.barberia_id = b.id
-            LEFT JOIN temas t ON b.tema_id = t.id
             WHERE u.id = ?
         `, [decoded.id]);
 
@@ -348,10 +343,8 @@ router.get('/barberia-info/:slug', async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
 
         const barberia = await dbQuery.get(
-            `SELECT b.nombre, b.logo_url, b.color_acento, b.activo,
-                    t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
+            `SELECT b.nombre, b.logo_url, b.color_acento, b.activo
              FROM barberias b
-             LEFT JOIN temas t ON b.tema_id = t.id
              WHERE b.slug = ?`,
             [slug]
         );
