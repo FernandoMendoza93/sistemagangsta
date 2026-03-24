@@ -102,7 +102,7 @@ export default function DashboardPage() {
                         <Icon name="dollar-sign" size={28} />
                     </div>
                     <div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${resumen?.ingresos_totales?.toFixed(2) || '0.00'}</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${parseFloat(resumen?.ingresos_totales || 0).toFixed(2)}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Ingresos del Día</div>
                     </div>
                 </motion.div>
@@ -122,7 +122,7 @@ export default function DashboardPage() {
                         <Icon name="credit-card" size={28} />
                     </div>
                     <div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${resumen?.tarjeta?.toFixed(2) || '0.00'}</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${parseFloat(resumen?.tarjeta || 0).toFixed(2)}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tarjeta / Transf.</div>
                     </div>
                 </motion.div>

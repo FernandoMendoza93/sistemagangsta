@@ -12,9 +12,9 @@ dayjs.tz.setDefault("America/Mexico_City");
 const router = express.Router();
 
 // GET /api/clientes - Listar clientes del tenant (con búsqueda opcional ?q=)
-router.get('/', verifyToken, requireTenant, (req, res) => {
+router.get('/', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { q } = req.query;
 
         let query = `
@@ -31,7 +31,7 @@ router.get('/', verifyToken, requireTenant, (req, res) => {
 
         query += ` ORDER BY nombre`;
 
-        const clientes = db.prepare(query).all(...params);
+        const clientes = await dbQuery.all(query, params);
         res.json(clientes);
     } catch (error) {
         console.error('Error listando clientes:', error);
@@ -40,21 +40,21 @@ router.get('/', verifyToken, requireTenant, (req, res) => {
 });
 
 // GET /api/clientes/inactivos - Clientes sin visita en +30 días
-router.get('/inactivos', verifyToken, requireTenant, (req, res) => {
+router.get('/inactivos', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
 
-        const clientes = db.prepare(`
+        const clientes = await dbQuery.all(`
             SELECT id, nombre, telefono, puntos_lealtad, ultima_visita, fecha_registro, notas,
-                   CAST(julianday(?) - julianday(ultima_visita) AS INTEGER) as dias_sin_visita
+                   DATEDIFF(?, ultima_visita) as dias_sin_visita
             FROM clientes
             WHERE activo = 1
               AND ultima_visita IS NOT NULL
-              AND julianday(?) - julianday(ultima_visita) > 30
+              AND DATEDIFF(?, ultima_visita) > 30
               AND barberia_id = ?
             ORDER BY ultima_visita ASC
-        `).all(mxDateTime, mxDateTime, req.barberia_id);
+        `, [mxDateTime, mxDateTime, req.barberia_id]);
 
         res.json(clientes);
     } catch (error) {
@@ -64,16 +64,16 @@ router.get('/inactivos', verifyToken, requireTenant, (req, res) => {
 });
 
 // GET /api/clientes/:id - Detalle de un cliente (verificado por tenant)
-router.get('/:id', verifyToken, requireTenant, (req, res) => {
+router.get('/:id', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
 
-        const cliente = db.prepare(`
+        const cliente = await dbQuery.get(`
             SELECT id, nombre, telefono, puntos_lealtad, ultima_visita, fecha_registro, notas, activo
             FROM clientes
             WHERE id = ? AND barberia_id = ?
-        `).get(id, req.barberia_id);
+        `, [id, req.barberia_id]);
 
         if (!cliente) {
             return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -87,19 +87,19 @@ router.get('/:id', verifyToken, requireTenant, (req, res) => {
 });
 
 // POST /api/clientes - Crear cliente (con barberia_id)
-router.post('/', verifyToken, requireTenant, (req, res) => {
+router.post('/', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { nombre, telefono, notas } = req.body;
 
         if (!nombre) {
             return res.status(400).json({ error: 'El nombre es requerido' });
         }
 
-        const result = db.prepare(`
+        const result = await dbQuery.run(`
             INSERT INTO clientes (nombre, telefono, notas, barberia_id)
             VALUES (?, ?, ?, ?)
-        `).run(nombre, telefono || null, notas || null, req.barberia_id);
+        `, [nombre, telefono || null, notas || null, req.barberia_id]);
 
         res.status(201).json({
             message: 'Cliente registrado',
@@ -112,21 +112,21 @@ router.post('/', verifyToken, requireTenant, (req, res) => {
 });
 
 // PUT /api/clientes/:id - Actualizar cliente
-router.put('/:id', verifyToken, requireTenant, (req, res) => {
+router.put('/:id', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { nombre, telefono, notas, puntos_lealtad, activo } = req.body;
 
-        db.prepare(`
-            UPDATE clientes 
+        await dbQuery.run(`
+            UPDATE clientes
             SET nombre = COALESCE(?, nombre),
                 telefono = COALESCE(?, telefono),
                 notas = COALESCE(?, notas),
                 puntos_lealtad = COALESCE(?, puntos_lealtad),
                 activo = COALESCE(?, activo)
             WHERE id = ? AND barberia_id = ?
-        `).run(nombre, telefono, notas, puntos_lealtad, activo, id, req.barberia_id);
+        `, [nombre, telefono, notas, puntos_lealtad, activo, id, req.barberia_id]);
 
         res.json({ message: 'Cliente actualizado' });
     } catch (error) {
@@ -136,12 +136,12 @@ router.put('/:id', verifyToken, requireTenant, (req, res) => {
 });
 
 // DELETE /api/clientes/:id - Desactivar cliente (soft delete)
-router.delete('/:id', verifyToken, requireTenant, (req, res) => {
+router.delete('/:id', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
 
-        db.prepare('UPDATE clientes SET activo = 0 WHERE id = ? AND barberia_id = ?').run(id, req.barberia_id);
+        await dbQuery.run('UPDATE clientes SET activo = 0 WHERE id = ? AND barberia_id = ?', [id, req.barberia_id]);
 
         res.json({ message: 'Cliente desactivado' });
     } catch (error) {
@@ -153,24 +153,25 @@ router.delete('/:id', verifyToken, requireTenant, (req, res) => {
 // V2.0 LOYALTY ENDPOINTS
 
 // GET /api/clientes/wallet-status - Progreso de lealtad del cliente logueado
-router.get('/wallet/status', verifyToken, (req, res) => {
+router.get('/wallet/status', verifyToken, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
         if (req.user.rol !== 'Cliente') {
             return res.status(403).json({ error: 'Solo los clientes pueden ver su wallet' });
         }
 
-        const cliente = db.prepare('SELECT id, nombre, telefono FROM clientes WHERE id = ? AND barberia_id = ?').get(req.user.id, req.barberia_id);
+        const cliente = await dbQuery.get('SELECT id, nombre, telefono FROM clientes WHERE id = ? AND barberia_id = ?', [req.user.id, req.barberia_id]);
         if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
 
-        const sellosQuery = db.prepare(`
-            SELECT COUNT(*) as totales 
-            FROM visitas_lealtad 
-            WHERE id_cliente = ? 
-              AND date(fecha) >= date('now', '-120 days')
+        const now = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+        const sellosQuery = await dbQuery.get(`
+            SELECT COUNT(*) as totales
+            FROM visitas_lealtad
+            WHERE id_cliente = ?
+              AND DATE(fecha) >= DATE_SUB(?, INTERVAL 120 DAY)
               AND barberia_id = ?
-        `).get(cliente.id, req.barberia_id);
+        `, [cliente.id, now, req.barberia_id]);
 
         const totales = sellosQuery.totales;
         const sellos_actuales = totales % 10;
@@ -198,9 +199,9 @@ router.get('/wallet/status', verifyToken, (req, res) => {
 });
 
 // GET /api/clientes/scan/:token - El staff escanea un token
-router.get('/scan/:token', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
+router.get('/scan/:token', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { token } = req.params;
 
         let decrypted = '';
@@ -225,35 +226,36 @@ router.get('/scan/:token', verifyToken, requireTenant, requireRole(ROLES.ADMIN, 
             return res.status(400).json({ error: 'Formato QR no reconocido' });
         }
 
-        const cliente = db.prepare('SELECT id, nombre, telefono, ultima_visita FROM clientes WHERE id = ? AND barberia_id = ?').get(clientId, req.barberia_id);
+        const cliente = await dbQuery.get('SELECT id, nombre, telefono, ultima_visita FROM clientes WHERE id = ? AND barberia_id = ?', [clientId, req.barberia_id]);
         if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado en la base de datos' });
 
-        const sellosQuery = db.prepare(`
-            SELECT COUNT(*) as totales 
-            FROM visitas_lealtad 
-            WHERE id_cliente = ? 
-              AND date(fecha) >= date('now', '-120 days')
+        const now = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+        const sellosQuery = await dbQuery.get(`
+            SELECT COUNT(*) as totales
+            FROM visitas_lealtad
+            WHERE id_cliente = ?
+              AND DATE(fecha) >= DATE_SUB(?, INTERVAL 120 DAY)
               AND barberia_id = ?
-        `).get(cliente.id, req.barberia_id);
+        `, [cliente.id, now, req.barberia_id]);
 
         const totales = sellosQuery.totales;
         const sellos_actuales = totales % 10;
         const recompensa_disponible = totales > 0 && sellos_actuales === 0;
 
         const hoy = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
-        const citaHoy = db.prepare(`
-            SELECT c.id, c.hora, s.nombre_servicio 
-            FROM citas c 
-            JOIN servicios s ON c.id_servicio = s.id 
+        const citaHoy = await dbQuery.get(`
+            SELECT c.id, c.hora, s.nombre_servicio
+            FROM citas c
+            JOIN servicios s ON c.id_servicio = s.id
             WHERE c.id_cliente = ? AND c.fecha = ? AND c.estado IN ('Pendiente', 'Confirmada') AND c.barberia_id = ?
             ORDER BY c.hora ASC LIMIT 1
-        `).get(cliente.id, hoy, req.barberia_id);
+        `, [cliente.id, hoy, req.barberia_id]);
 
         // Check if stamp was already given today
-        const selloHoy = db.prepare(`
+        const selloHoy = await dbQuery.get(`
             SELECT id FROM visitas_lealtad
-            WHERE id_cliente = ? AND barberia_id = ? AND date(fecha) = ?
-        `).get(cliente.id, req.barberia_id, hoy);
+            WHERE id_cliente = ? AND barberia_id = ? AND DATE(fecha) = ?
+        `, [cliente.id, req.barberia_id, hoy]);
 
         res.json({
             cliente: {

@@ -5,9 +5,9 @@ import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/au
 const router = express.Router();
 
 // GET /api/reportes/ventas — filtrado por tenant
-router.get('/ventas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.get('/ventas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { desde, hasta } = req.query;
 
         let query = `
@@ -22,7 +22,7 @@ router.get('/ventas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES
         if (hasta) { query += ' AND date(v.fecha) <= ?'; params.push(hasta); }
         query += ' GROUP BY date(v.fecha) ORDER BY fecha DESC';
 
-        const ventas = db.prepare(query).all(...params);
+        const ventas = await dbQuery.all(query, params);
         res.json(ventas);
     } catch (error) {
         res.status(500).json({ error: 'Error en el servidor' });
@@ -30,9 +30,9 @@ router.get('/ventas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES
 });
 
 // GET /api/reportes/comisiones — filtrado por tenant
-router.get('/comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.get('/comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { desde, hasta } = req.query;
 
         let query = `
@@ -48,7 +48,7 @@ router.get('/comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN, R
         if (hasta) { query += ' AND date(cp.fecha) <= ?'; params.push(hasta); }
         query += ' GROUP BY b.id ORDER BY total_comision DESC';
 
-        const comisiones = db.prepare(query).all(...params);
+        const comisiones = await dbQuery.all(query, params);
         res.json(comisiones);
     } catch (error) {
         res.status(500).json({ error: 'Error en el servidor' });
@@ -56,9 +56,9 @@ router.get('/comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN, R
 });
 
 // GET /api/reportes/servicios — filtrado por tenant
-router.get('/servicios', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.get('/servicios', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { desde, hasta } = req.query;
 
         let query = `
@@ -66,7 +66,7 @@ router.get('/servicios', verifyToken, requireTenant, requireRole(ROLES.ADMIN, RO
                    SUM(vd.subtotal) as ingresos
             FROM ventas_detalle vd
             JOIN servicios s ON vd.id_servicio = s.id
-            JOIN ventas_cabecera v ON vd.id_venta_cabecera = v.id 
+            JOIN ventas_cabecera v ON vd.id_venta_cabecera = v.id
             WHERE v.estado = 'completada' AND vd.id_servicio IS NOT NULL AND v.barberia_id = ?
         `;
         const params = [req.barberia_id];
@@ -74,7 +74,7 @@ router.get('/servicios', verifyToken, requireTenant, requireRole(ROLES.ADMIN, RO
         if (hasta) { query += ' AND date(v.fecha) <= ?'; params.push(hasta); }
         query += ' GROUP BY s.id ORDER BY cantidad DESC';
 
-        const servicios = db.prepare(query).all(...params);
+        const servicios = await dbQuery.all(query, params);
         res.json(servicios);
     } catch (error) {
         res.status(500).json({ error: 'Error en el servidor' });
@@ -82,9 +82,9 @@ router.get('/servicios', verifyToken, requireTenant, requireRole(ROLES.ADMIN, RO
 });
 
 // GET /api/reportes/excel — filtrado por tenant
-router.get('/excel', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.get('/excel', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { desde, hasta } = req.query;
 
         let ventasQuery = `SELECT v.id, v.fecha, u.nombre as barbero, v.total_venta, v.metodo_pago
@@ -93,20 +93,20 @@ router.get('/excel', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.
         const params = [req.barberia_id];
         if (desde) { ventasQuery += ' AND date(v.fecha) >= ?'; params.push(desde); }
         if (hasta) { ventasQuery += ' AND date(v.fecha) <= ?'; params.push(hasta); }
-        const ventas = db.prepare(ventasQuery).all(...params);
+        const ventas = await dbQuery.all(ventasQuery, params);
 
-        const comisiones = db.prepare(`
+        const comisiones = await dbQuery.all(`
             SELECT u.nombre as barbero, SUM(cp.monto) as total,
                    SUM(CASE WHEN cp.pagado = 0 THEN cp.monto ELSE 0 END) as pendiente
             FROM comisiones_pendientes cp
             JOIN barberos b ON cp.id_barbero = b.id
             JOIN usuarios u ON b.id_usuario = u.id WHERE cp.barberia_id = ? GROUP BY b.id
-        `).all(req.barberia_id);
+        `, [req.barberia_id]);
 
-        const inventario = db.prepare(`
+        const inventario = await dbQuery.all(`
             SELECT p.nombre, p.stock_actual, p.stock_minimo, p.precio_costo, p.precio_venta, c.nombre as categoria
             FROM productos p LEFT JOIN categorias c ON p.id_categoria = c.id WHERE p.activo = 1 AND p.barberia_id = ?
-        `).all(req.barberia_id);
+        `, [req.barberia_id]);
 
         const wb = XLSX.utils.book_new();
 

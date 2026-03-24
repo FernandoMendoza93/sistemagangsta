@@ -10,6 +10,15 @@ import heroImg from '../assets/hero-bg.jpg';
 import './ClientePortalPage.css';
 
 const THEMES = {
+   obsidian_night: { bg_main: '#0a0a0f', bg_surface: '#12121a', accent_primary: '#6366F1', accent_secondary: '#818CF8', text_main: '#f1f1f4', text_muted: '#71717a' },
+   midnight_blue: { bg_main: '#0b0f1a', bg_surface: '#111827', accent_primary: '#3B82F6', accent_secondary: '#60A5FA', text_main: '#f0f4ff', text_muted: '#6b7280' },
+   emerald_dark: { bg_main: '#0a0f0d', bg_surface: '#0f1a16', accent_primary: '#10B981', accent_secondary: '#34D399', text_main: '#ecfdf5', text_muted: '#6b7280' },
+   rose_gold: { bg_main: '#1a0a10', bg_surface: '#1f1018', accent_primary: '#F43F5E', accent_secondary: '#FB7185', text_main: '#fff1f2', text_muted: '#71717a' },
+   amber_flame: { bg_main: '#1a1008', bg_surface: '#1f1610', accent_primary: '#F59E0B', accent_secondary: '#FBBF24', text_main: '#fffbeb', text_muted: '#71717a' },
+   purple_reign: { bg_main: '#10081a', bg_surface: '#170f22', accent_primary: '#A855F7', accent_secondary: '#C084FC', text_main: '#faf5ff', text_muted: '#71717a' },
+   cyan_steel: { bg_main: '#081014', bg_surface: '#0e171f', accent_primary: '#06B6D4', accent_secondary: '#22D3EE', text_main: '#ecfeff', text_muted: '#6b7280' },
+   classic_light: { bg_main: '#f8f9fa', bg_surface: '#ffffff', accent_primary: '#6366F1', accent_secondary: '#818CF8', text_main: '#111827', text_muted: '#6b7280' },
+   warm_light: { bg_main: '#faf8f5', bg_surface: '#ffffff', accent_primary: '#EA580C', accent_secondary: '#F97316', text_main: '#1c1917', text_muted: '#78716c' },
    menta_limpia: { bg_main: '#F0F9F6', bg_surface: '#FFFFFF', accent_primary: '#10B981', accent_secondary: '#34D399', text_main: '#064E3B', text_muted: '#6EE7B7' },
    oro_industrial: { bg_main: '#1A1A1A', bg_surface: '#2D2D2D', accent_primary: '#D4AF37', accent_secondary: '#F1C40F', text_main: '#FFFFFF', text_muted: '#A0A0A0' },
    noche_urbana: { bg_main: '#0F172A', bg_surface: '#1E293B', accent_primary: '#6366F1', accent_secondary: '#818CF8', text_main: '#F8FAFC', text_muted: '#94A3B8' },

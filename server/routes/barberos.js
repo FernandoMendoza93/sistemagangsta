@@ -4,18 +4,18 @@ import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/au
 const router = express.Router();
 
 // GET /api/barberos - Listar todos los barberos del tenant
-router.get('/', verifyToken, requireTenant, (req, res) => {
+router.get('/', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
-        const barberos = db.prepare(`
+        const barberos = await dbQuery.all(`
             SELECT b.id, b.porcentaje_comision, b.estado, b.turno,
                    u.id as id_usuario, u.nombre, u.email
             FROM barberos b
             JOIN usuarios u ON b.id_usuario = u.id
             WHERE u.activo = 1 AND b.barberia_id = ?
             ORDER BY u.nombre
-        `).all(req.barberia_id);
+        `, [req.barberia_id]);
 
         res.json(barberos);
     } catch (error) {
@@ -25,18 +25,18 @@ router.get('/', verifyToken, requireTenant, (req, res) => {
 });
 
 // GET /api/barberos/activos - Solo barberos activos (para POS)
-router.get('/activos', verifyToken, requireTenant, (req, res) => {
+router.get('/activos', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
-        const barberos = db.prepare(`
+        const barberos = await dbQuery.all(`
             SELECT b.id, b.porcentaje_comision, b.turno,
                    u.nombre
             FROM barberos b
             JOIN usuarios u ON b.id_usuario = u.id
             WHERE b.estado = 'Activo' AND u.activo = 1 AND b.barberia_id = ?
             ORDER BY u.nombre
-        `).all(req.barberia_id);
+        `, [req.barberia_id]);
 
         res.json(barberos);
     } catch (error) {
@@ -46,18 +46,18 @@ router.get('/activos', verifyToken, requireTenant, (req, res) => {
 });
 
 // GET /api/barberos/:id - Obtener barbero por ID (verificado por tenant)
-router.get('/:id', verifyToken, requireTenant, (req, res) => {
+router.get('/:id', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
 
-        const barbero = db.prepare(`
+        const barbero = await dbQuery.get(`
             SELECT b.id, b.porcentaje_comision, b.estado, b.turno,
                    u.id as id_usuario, u.nombre, u.email
             FROM barberos b
             JOIN usuarios u ON b.id_usuario = u.id
             WHERE b.id = ? AND b.barberia_id = ?
-        `).get(id, req.barberia_id);
+        `, [id, req.barberia_id]);
 
         if (!barbero) {
             return res.status(404).json({ error: 'Barbero no encontrado' });
@@ -71,19 +71,19 @@ router.get('/:id', verifyToken, requireTenant, (req, res) => {
 });
 
 // PUT /api/barberos/:id - Actualizar barbero (Admin/Encargado)
-router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { porcentaje_comision, estado, turno } = req.body;
 
-        db.prepare(`
-            UPDATE barberos 
+        await dbQuery.run(`
+            UPDATE barberos
             SET porcentaje_comision = COALESCE(?, porcentaje_comision),
                 estado = COALESCE(?, estado),
                 turno = COALESCE(?, turno)
             WHERE id = ? AND barberia_id = ?
-        `).run(porcentaje_comision, estado, turno, id, req.barberia_id);
+        `, [porcentaje_comision, estado, turno, id, req.barberia_id]);
 
         res.json({ message: 'Barbero actualizado' });
     } catch (error) {
@@ -93,21 +93,21 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
 });
 
 // GET /api/barberos/:id/comisiones - Obtener comisiones de un barbero
-router.get('/:id/comisiones', verifyToken, requireTenant, (req, res) => {
+router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { desde, hasta } = req.query;
 
         // Verificar que el barbero pertenece al tenant
-        const barberoCheck = db.prepare('SELECT id FROM barberos WHERE id = ? AND barberia_id = ?').get(id, req.barberia_id);
+        const barberoCheck = await dbQuery.get('SELECT id FROM barberos WHERE id = ? AND barberia_id = ?', [id, req.barberia_id]);
         if (!barberoCheck) {
             return res.status(404).json({ error: 'Barbero no encontrado' });
         }
 
         // Verificar que el barbero puede ver solo sus propias comisiones
         if (req.user.rol === ROLES.BARBERO) {
-            const barbero = db.prepare('SELECT id FROM barberos WHERE id_usuario = ?').get(req.user.id);
+            const barbero = await dbQuery.get('SELECT id FROM barberos WHERE id_usuario = ?', [req.user.id]);
             if (!barbero || barbero.id !== parseInt(id)) {
                 return res.status(403).json({ error: 'No puedes ver comisiones de otros barberos' });
             }
@@ -131,15 +131,15 @@ router.get('/:id/comisiones', verifyToken, requireTenant, (req, res) => {
 
         query += ' ORDER BY cp.fecha DESC';
 
-        const comisiones = db.prepare(query).all(...params);
+        const comisiones = await dbQuery.all(query, params);
 
-        const totales = db.prepare(`
-            SELECT 
+        const totales = await dbQuery.get(`
+            SELECT
                 SUM(CASE WHEN pagado = 0 THEN monto ELSE 0 END) as pendiente,
                 SUM(CASE WHEN pagado = 1 THEN monto ELSE 0 END) as pagado
             FROM comisiones_pendientes
             WHERE id_barbero = ? AND barberia_id = ?
-        `).get(id, req.barberia_id);
+        `, [id, req.barberia_id]);
 
         res.json({
             comisiones,
@@ -155,32 +155,32 @@ router.get('/:id/comisiones', verifyToken, requireTenant, (req, res) => {
 });
 
 // POST /api/barberos/:id/pagar-comisiones - Pagar comisiones pendientes
-router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN), (req, res) => {
+router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { notas } = req.body;
 
-        const pendiente = db.prepare(`
+        const pendiente = await dbQuery.get(`
             SELECT SUM(monto) as total
             FROM comisiones_pendientes
             WHERE id_barbero = ? AND pagado = 0 AND barberia_id = ?
-        `).get(id, req.barberia_id);
+        `, [id, req.barberia_id]);
 
         if (!pendiente.total || pendiente.total === 0) {
             return res.status(400).json({ error: 'No hay comisiones pendientes' });
         }
 
-        db.prepare(`
+        await dbQuery.run(`
             INSERT INTO comisiones_pagadas (id_barbero, monto, id_usuario_admin, notas, barberia_id)
             VALUES (?, ?, ?, ?, ?)
-        `).run(id, pendiente.total, req.user.id, notas || '', req.barberia_id);
+        `, [id, pendiente.total, req.user.id, notas || '', req.barberia_id]);
 
-        db.prepare(`
+        await dbQuery.run(`
             UPDATE comisiones_pendientes
             SET pagado = 1
             WHERE id_barbero = ? AND pagado = 0 AND barberia_id = ?
-        `).run(id, req.barberia_id);
+        `, [id, req.barberia_id]);
 
         res.json({
             message: 'Comisiones pagadas',
@@ -193,26 +193,26 @@ router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROL
 });
 
 // GET /api/barberos/:id/historial-pagos - Historial de pagos de comisiones
-router.get('/:id/historial-pagos', verifyToken, requireTenant, (req, res) => {
+router.get('/:id/historial-pagos', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
 
         if (req.user.rol === ROLES.BARBERO) {
-            const barbero = db.prepare('SELECT id FROM barberos WHERE id_usuario = ?').get(req.user.id);
+            const barbero = await dbQuery.get('SELECT id FROM barberos WHERE id_usuario = ?', [req.user.id]);
             if (!barbero || barbero.id !== parseInt(id)) {
                 return res.status(403).json({ error: 'No puedes ver el historial de otros barberos' });
             }
         }
 
-        const pagos = db.prepare(`
+        const pagos = await dbQuery.all(`
             SELECT cp.id, cp.monto, cp.fecha_pago, cp.notas,
                    u.nombre as pagado_por
             FROM comisiones_pagadas cp
             LEFT JOIN usuarios u ON cp.id_usuario_admin = u.id
             WHERE cp.id_barbero = ? AND cp.barberia_id = ?
             ORDER BY cp.fecha_pago DESC
-        `).all(id, req.barberia_id);
+        `, [id, req.barberia_id]);
 
         res.json(pagos);
     } catch (error) {

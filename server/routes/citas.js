@@ -18,13 +18,13 @@ function addMinutes(timeStr, minsToAdd) {
 }
 
 // Utilidad: Obtener horario del barbero desde DB (reemplaza el hardcode getHorarioDia)
-function getHorarioFromDB(db, id_barbero, dayOfWeek, barberia_id) {
-    const horario = db.prepare(`
+async function getHorarioFromDB(dbQuery, id_barbero, dayOfWeek, barberia_id) {
+    const horario = await dbQuery.get(`
         SELECT hora_inicio as apertura, hora_fin as cierre
         FROM horarios_barberos
         WHERE id_barbero = ? AND dia_semana = ? AND barberia_id = ? AND activo = 1
-    `).get(id_barbero, dayOfWeek, barberia_id);
-    
+    `, [id_barbero, dayOfWeek, barberia_id]);
+
     if (horario) {
         horario.intervalo = 45; // Slot duration en minutos
     }
@@ -32,15 +32,15 @@ function getHorarioFromDB(db, id_barbero, dayOfWeek, barberia_id) {
 }
 
 // GET /api/citas/mis-citas - Citas del cliente logueado
-router.get('/mis-citas', verifyToken, (req, res) => {
+router.get('/mis-citas', verifyToken, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
         if (req.user.rol !== 'Cliente') {
             return res.status(403).json({ error: 'Solo los clientes pueden ver sus citas' });
         }
 
-        const citas = db.prepare(`
+        const citas = await dbQuery.all(`
             SELECT c.id, c.fecha, c.hora, c.estado, c.notas, c.fecha_creacion,
                    s.nombre_servicio, s.precio, s.duracion_aprox,
                    u.nombre as barbero_nombre
@@ -50,7 +50,7 @@ router.get('/mis-citas', verifyToken, (req, res) => {
             LEFT JOIN usuarios u ON b.id_usuario = u.id
             WHERE c.id_cliente = ? AND c.barberia_id = ?
             ORDER BY c.fecha DESC, c.hora DESC
-        `).all(req.user.id, req.barberia_id);
+        `, [req.user.id, req.barberia_id]);
 
         res.json(citas);
     } catch (error) {
@@ -60,9 +60,9 @@ router.get('/mis-citas', verifyToken, (req, res) => {
 });
 
 // POST /api/citas - Crear cita (solo clientes)
-router.post('/', verifyToken, (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
         if (req.user.rol !== 'Cliente') {
             return res.status(403).json({ error: 'Solo los clientes pueden agendar citas' });
@@ -76,17 +76,17 @@ router.post('/', verifyToken, (req, res) => {
 
         // Elegir primer barbero activo del tenant si no se especificó
         if (!id_barbero) {
-            const primero = db.prepare('SELECT id FROM barberos WHERE barberia_id = ? AND estado = \'Activo\' LIMIT 1').get(req.barberia_id);
+            const primero = await dbQuery.get('SELECT id FROM barberos WHERE barberia_id = ? AND estado = \'Activo\' LIMIT 1', [req.barberia_id]);
             if (!primero) return res.status(400).json({ error: 'No hay barberos disponibles en este negocio' });
             id_barbero = primero.id;
         }
 
         // Verificar que el barbero pertenece a este tenant
-        const barberoValido = db.prepare('SELECT id FROM barberos WHERE id = ? AND barberia_id = ? AND estado = \'Activo\'').get(id_barbero, req.barberia_id);
+        const barberoValido = await dbQuery.get('SELECT id FROM barberos WHERE id = ? AND barberia_id = ? AND estado = \'Activo\'', [id_barbero, req.barberia_id]);
         if (!barberoValido) return res.status(400).json({ error: 'Barbero no disponible en este negocio' });
 
         // Verificar que el servicio pertenece al tenant
-        const servicio = db.prepare('SELECT duracion_aprox FROM servicios WHERE id = ? AND barberia_id = ?').get(id_servicio, req.barberia_id);
+        const servicio = await dbQuery.get('SELECT duracion_aprox FROM servicios WHERE id = ? AND barberia_id = ?', [id_servicio, req.barberia_id]);
         if (!servicio) {
             return res.status(404).json({ error: 'Servicio no encontrado' });
         }
@@ -96,7 +96,7 @@ router.post('/', verifyToken, (req, res) => {
 
         const dateObj = dayjs.tz(fecha, "America/Mexico_City");
         const dayOfWeek = dateObj.day();
-        const horarioLaboral = getHorarioFromDB(db, id_barbero, dayOfWeek, req.barberia_id);
+        const horarioLaboral = await getHorarioFromDB(dbQuery, id_barbero, dayOfWeek, req.barberia_id);
 
         if (!horarioLaboral) {
             return res.status(400).json({ error: `El barbero seleccionado no trabaja ese día de la semana` });
@@ -114,12 +114,12 @@ router.post('/', verifyToken, (req, res) => {
         }
 
         // Validación Tetris — filtrada por tenant
-        const citasExistentes = db.prepare(`
+        const citasExistentes = await dbQuery.all(`
             SELECT c.hora as hora_inicio, s.duracion_aprox
             FROM citas c
             JOIN servicios s ON c.id_servicio = s.id
             WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
-        `).all(id_barbero, fecha, req.barberia_id);
+        `, [id_barbero, fecha, req.barberia_id]);
 
         for (const cita of citasExistentes) {
             const exInicio = cita.hora_inicio;
@@ -133,10 +133,10 @@ router.post('/', verifyToken, (req, res) => {
             }
         }
 
-        const result = db.prepare(`
+        const result = await dbQuery.run(`
             INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas, barberia_id)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(req.user.id, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id);
+        `, [req.user.id, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id]);
 
         res.status(201).json({
             message: 'Cita agendada exitosamente',
@@ -149,20 +149,20 @@ router.post('/', verifyToken, (req, res) => {
 });
 
 // GET /api/citas/diasDisponibles?id_barbero=X — días de la semana en que trabaja el barbero
-router.get('/diasDisponibles', verifyToken, requireTenant, (req, res) => {
+router.get('/diasDisponibles', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id_barbero } = req.query;
 
         if (!id_barbero) {
             return res.status(400).json({ error: 'id_barbero requerido' });
         }
 
-        const horarios = db.prepare(`
+        const horarios = await dbQuery.all(`
             SELECT dia_semana FROM horarios_barberos
             WHERE id_barbero = ? AND barberia_id = ? AND activo = 1
             ORDER BY dia_semana ASC
-        `).all(id_barbero, req.barberia_id);
+        `, [id_barbero, req.barberia_id]);
 
         res.json({ dias: horarios.map(h => h.dia_semana) });
     } catch (error) {
@@ -172,9 +172,9 @@ router.get('/diasDisponibles', verifyToken, requireTenant, (req, res) => {
 });
 
 // GET /api/citas/disponibilidad - Horas ocupadas por fecha y barbero
-router.get('/disponibilidad', verifyToken, (req, res) => {
+router.get('/disponibilidad', verifyToken, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { fecha, id_barbero } = req.query;
 
         if (!fecha) {
@@ -186,19 +186,19 @@ router.get('/disponibilidad', verifyToken, (req, res) => {
 
         const dateObj = dayjs.tz(fecha, "America/Mexico_City");
         const dayOfWeek = dateObj.day();
-        const horarioLaboral = getHorarioFromDB(db, id_barbero, dayOfWeek, req.barberia_id);
+        const horarioLaboral = await getHorarioFromDB(dbQuery, id_barbero, dayOfWeek, req.barberia_id);
 
         if (!horarioLaboral) {
             // Barbero no trabaja ese día
             return res.json({ horario: null, ocupadas: [] });
         }
 
-        const citasOcupadas = db.prepare(`
+        const citasOcupadas = await dbQuery.all(`
             SELECT c.hora as inicio, s.duracion_aprox
             FROM citas c
             JOIN servicios s ON c.id_servicio = s.id
             WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
-        `).all(id_barbero, fecha, req.barberia_id);
+        `, [id_barbero, fecha, req.barberia_id]);
 
         const intervalosOcupados = citasOcupadas.map(c => ({
             inicio: c.inicio,
@@ -216,9 +216,9 @@ router.get('/disponibilidad', verifyToken, (req, res) => {
 });
 
 // GET /api/citas - Todas las citas (Admin/Encargado/Barbero) — filtrado por tenant
-router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
+router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { fecha, estado } = req.query;
 
         let query = `
@@ -238,7 +238,7 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
 
         // Filtro restrictivo para Barberos
         if (req.user.rol === 'Barbero') {
-            const barbero = db.prepare('SELECT id FROM barberos WHERE id_usuario = ? AND barberia_id = ?').get(req.user.id, req.barberia_id);
+            const barbero = await dbQuery.get('SELECT id FROM barberos WHERE id_usuario = ? AND barberia_id = ?', [req.user.id, req.barberia_id]);
             if (!barbero) {
                 return res.json([]);
             }
@@ -259,7 +259,7 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
         query += ' WHERE ' + conditions.join(' AND ');
         query += ' ORDER BY c.fecha ASC, c.hora ASC';
 
-        const citas = db.prepare(query).all(...params);
+        const citas = await dbQuery.all(query, params);
         res.json(citas);
     } catch (error) {
         console.error('Error listando citas:', error);
@@ -268,9 +268,9 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
 });
 
 // PUT /api/citas/:id - Modificar cita (solo el cliente dueño)
-router.put('/:id', verifyToken, requireTenant, (req, res) => {
+router.put('/:id', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
         if (req.user.rol !== 'Cliente') {
             return res.status(403).json({ error: 'Solo los clientes pueden modificar sus citas' });
@@ -284,9 +284,10 @@ router.put('/:id', verifyToken, requireTenant, (req, res) => {
         }
 
         // Verificar que la cita pertenece al cliente
-        const citaExistente = db.prepare(
-            'SELECT id FROM citas WHERE id = ? AND id_cliente = ? AND barberia_id = ? AND estado != ?'
-        ).get(id, req.user.id, req.barberia_id, 'Cancelada');
+        const citaExistente = await dbQuery.get(
+            'SELECT id FROM citas WHERE id = ? AND id_cliente = ? AND barberia_id = ? AND estado != ?',
+            [id, req.user.id, req.barberia_id, 'Cancelada']
+        );
 
         if (!citaExistente) {
             return res.status(404).json({ error: 'Cita no encontrada o ya cancelada' });
@@ -295,7 +296,7 @@ router.put('/:id', verifyToken, requireTenant, (req, res) => {
         if (!id_barbero) id_barbero = 1;
 
         // Verificar servicio
-        const servicio = db.prepare('SELECT duracion_aprox FROM servicios WHERE id = ? AND barberia_id = ?').get(id_servicio, req.barberia_id);
+        const servicio = await dbQuery.get('SELECT duracion_aprox FROM servicios WHERE id = ? AND barberia_id = ?', [id_servicio, req.barberia_id]);
         if (!servicio) {
             return res.status(404).json({ error: 'Servicio no encontrado' });
         }
@@ -305,7 +306,7 @@ router.put('/:id', verifyToken, requireTenant, (req, res) => {
 
         const dateObj = dayjs.tz(fecha, "America/Mexico_City");
         const dayOfWeek = dateObj.day();
-        const horarioLaboral = getHorarioFromDB(db, id_barbero, dayOfWeek, req.barberia_id);
+        const horarioLaboral = await getHorarioFromDB(dbQuery, id_barbero, dayOfWeek, req.barberia_id);
 
         if (!horarioLaboral) {
             return res.status(400).json({ error: 'El barbero no trabaja este día' });
@@ -323,12 +324,12 @@ router.put('/:id', verifyToken, requireTenant, (req, res) => {
         }
 
         // Validación Tetris — excluir la cita que se está editando
-        const citasExistentes = db.prepare(`
+        const citasExistentes = await dbQuery.all(`
             SELECT c.hora as hora_inicio, s.duracion_aprox
             FROM citas c
             JOIN servicios s ON c.id_servicio = s.id
             WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ? AND c.id != ?
-        `).all(id_barbero, fecha, req.barberia_id, id);
+        `, [id_barbero, fecha, req.barberia_id, id]);
 
         for (const cita of citasExistentes) {
             const exInicio = cita.hora_inicio;
@@ -342,10 +343,10 @@ router.put('/:id', verifyToken, requireTenant, (req, res) => {
             }
         }
 
-        db.prepare(`
+        await dbQuery.run(`
             UPDATE citas SET id_servicio = ?, id_barbero = ?, fecha = ?, hora = ?, notas = ?
             WHERE id = ? AND id_cliente = ? AND barberia_id = ?
-        `).run(id_servicio, id_barbero, fecha, hora, notas || null, id, req.user.id, req.barberia_id);
+        `, [id_servicio, id_barbero, fecha, hora, notas || null, id, req.user.id, req.barberia_id]);
 
         res.json({ message: 'Cita modificada exitosamente' });
     } catch (error) {
@@ -355,9 +356,9 @@ router.put('/:id', verifyToken, requireTenant, (req, res) => {
 });
 
 // PUT /api/citas/:id/estado - Cambiar estado (Admin/Encargado/Barbero)
-router.put('/:id/estado', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
+router.put('/:id/estado', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { estado } = req.body;
 
@@ -366,7 +367,7 @@ router.put('/:id/estado', verifyToken, requireTenant, requireRole(ROLES.ADMIN, R
             return res.status(400).json({ error: 'Estado no válido' });
         }
 
-        db.prepare('UPDATE citas SET estado = ? WHERE id = ? AND barberia_id = ?').run(estado, id, req.barberia_id);
+        await dbQuery.run('UPDATE citas SET estado = ? WHERE id = ? AND barberia_id = ?', [estado, id, req.barberia_id]);
         res.json({ message: 'Estado actualizado' });
     } catch (error) {
         console.error('Error actualizando cita:', error);
@@ -375,19 +376,19 @@ router.put('/:id/estado', verifyToken, requireTenant, requireRole(ROLES.ADMIN, R
 });
 
 // GET /api/citas/perfil - Perfil del cliente logueado
-router.get('/perfil', verifyToken, (req, res) => {
+router.get('/perfil', verifyToken, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
         if (req.user.rol !== 'Cliente') {
             return res.status(403).json({ error: 'Acceso solo para clientes' });
         }
 
-        const cliente = db.prepare(`
+        const cliente = await dbQuery.get(`
             SELECT id, nombre, telefono, puntos_lealtad, ultima_visita, fecha_registro
             FROM clientes
             WHERE id = ? AND barberia_id = ?
-        `).get(req.user.id, req.barberia_id);
+        `, [req.user.id, req.barberia_id]);
 
         if (!cliente) {
             return res.status(404).json({ error: 'Cliente no encontrado' });
