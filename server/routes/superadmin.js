@@ -17,6 +17,48 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+// GET /api/superadmin/database/backup
+// Descarga el volcado completo de la DB en formato JSON UTF-8
+router.get('/database/backup', async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        const dbType = req.app.locals.dbType;
+        
+        let backupData = {};
+
+        if (dbType === 'sqlite') {
+            // Extraer dinámicamente todas las tablas saltando las internas
+            const tables = await dbQuery.all("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+            
+            for (const tableObj of tables) {
+                const tableName = tableObj.name;
+                const rows = await dbQuery.all(`SELECT * FROM ${tableName}`);
+                backupData[tableName] = rows;
+            }
+        } else {
+            // Lógica para volcado MySQL si es necesario
+            const tables = await dbQuery.all("SHOW TABLES");
+            for (const tableObj of tables) {
+                const tableName = Object.values(tableObj)[0];
+                const rows = await dbQuery.all(`SELECT * FROM ${tableName}`);
+                backupData[tableName] = rows;
+            }
+        }
+
+        const jsonString = JSON.stringify(backupData, null, 2);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `flow_database_dump_${timestamp}.json`;
+
+        res.setHeader('Content-disposition', `attachment; filename=${filename}`);
+        res.setHeader('Content-type', 'application/json; charset=utf-8');
+        res.send(jsonString);
+
+    } catch (error) {
+        console.error('Error generando backup JSON UTF-8 SuperAdmin:', error);
+        res.status(500).json({ error: 'Error en el servidor al generar volcado DB' });
+    }
+});
+
 // GET /api/superadmin/metrics
 router.get('/metrics', (req, res) => {
     try {
