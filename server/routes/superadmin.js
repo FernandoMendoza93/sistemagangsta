@@ -17,6 +17,32 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+// GET /api/superadmin/database/backup
+// Descarga el binario persistente de la DB SQLite.
+router.get('/database/backup', (req, res) => {
+    try {
+        const dbPath = process.env.DATABASE_URL || path.resolve('data', 'database.sqlite');
+        if (!fs.existsSync(dbPath)) {
+            return res.status(404).json({ error: 'El archivo de base de datos no fue encontrado en el volumen' });
+        }
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `flow_backup_${timestamp}.sqlite`;
+        
+        res.download(dbPath, filename, (err) => {
+            if (err) {
+                console.error('Error al transferir el backup de SQLite:', err);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Error al enviar el archivo' });
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error procesando backup superadmin:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // GET /api/superadmin/metrics
 router.get('/metrics', (req, res) => {
     try {

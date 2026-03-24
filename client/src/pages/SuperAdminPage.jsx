@@ -59,6 +59,17 @@ export default function SuperAdminPage() {
                     </h1>
                     <p className="text-gray-500 text-sm sm:text-base font-medium mt-1">Monitoreo de Infraestructura y Negocios SaaS</p>
                 </div>
+                
+                {/* Botón de Extracción de DB para la Migración MySQL */}
+                <button
+                    onClick={() => {
+                        window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/superadmin/database/backup?token=${token}`;
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold shadow-lg transition-transform hover:-translate-y-0.5"
+                >
+                    <HardDrive className="w-5 h-5 text-coral" />
+                    Extraer Backup SQLite
+                </button>
             </div>
 
             {/* KPIs Bento */}
