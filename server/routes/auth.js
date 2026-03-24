@@ -5,6 +5,7 @@ import multer from 'multer';
 import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import dayjs from 'dayjs';
 import { JWT_SECRET, verifyToken } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -420,14 +421,14 @@ router.post('/register-barberia', upload.single('logo'), async (req, res) => {
         const selectedPlan = plan === 'anual' ? 'anual' : 'mensual';
         const precio = selectedPlan === 'anual' ? 2999 : 299;
         const vencimiento = selectedPlan === 'anual'
-            ? "datetime('now', '+1 year', 'localtime')"
-            : "datetime('now', '+1 month', 'localtime')";
+            ? dayjs().add(1, 'year').format('YYYY-MM-DD HH:mm:ss')
+            : dayjs().add(1, 'month').format('YYYY-MM-DD HH:mm:ss');
 
         // Create barberia (INACTIVE until SuperAdmin confirms payment)
         const barbResult = await dbQuery.run(`
             INSERT INTO barberias (nombre, slug, telefono_whatsapp, email_contacto, direccion, logo_url, plan, precio_plan, fecha_vencimiento, activo)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ${vencimiento}, 0)
-        `, [nombre, slug, telefono_whatsapp || '', email, direccion || '', logo_url, selectedPlan, precio]);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+        `, [nombre, slug, telefono_whatsapp || '', email, direccion || '', logo_url, selectedPlan, precio, vencimiento]);
 
         const barberia_id = barbResult.lastInsertRowid;
 

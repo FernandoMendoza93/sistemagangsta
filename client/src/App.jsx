@@ -267,7 +267,7 @@ export default function App() {
             <AppRoutes />
           </ThemeApplier>
           <Toaster
-            position="top-center"
+            position="top-right"
             theme="light"
             richColors
             toastOptions={{

@@ -57,9 +57,9 @@ router.get('/stream', verifyToken, (req, res) => {
 });
 
 // POST /api/loyalty/scan — Instant scan and stamp (Staff only)
-router.post('/scan', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), (req, res) => {
+router.post('/scan', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { token } = req.body;
 
         if (!token) return res.status(400).json({ error: 'Token requerido' });
@@ -89,17 +89,17 @@ router.post('/scan', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.
         const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
 
         // Verify client exists and belongs to this barbershop
-        const cliente = db.prepare('SELECT id, nombre, telefono, puntos_lealtad FROM clientes WHERE id = ? AND barberia_id = ? AND activo = 1').get(clienteId, req.barberia_id);
+        const cliente = await dbQuery.get('SELECT id, nombre, telefono, puntos_lealtad FROM clientes WHERE id = ? AND barberia_id = ? AND activo = 1', [clienteId, req.barberia_id]);
 
         if (!cliente) {
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
 
         // Anti-spam info: Check if client was already scanned today in visitas_lealtad
-        const yaSelladoHoy = db.prepare(`
+        const yaSelladoHoy = await dbQuery.get(`
             SELECT id FROM visitas_lealtad
-            WHERE id_cliente = ? AND barberia_id = ? AND date(fecha) = ?
-        `).get(clienteId, req.barberia_id, mxDate);
+            WHERE id_cliente = ? AND barberia_id = ? AND DATE(fecha) = ?
+        `, [clienteId, req.barberia_id, mxDate]);
 
         let actionMessage = '';
         let pointsAdded = false;
@@ -108,15 +108,15 @@ router.post('/scan', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.
             actionMessage = 'Sello ya agregado hoy';
         } else {
             // 1. Audit Log in visitas_lealtad (This is the ONLY source of truth now)
-            db.prepare(`
+            await dbQuery.run(`
                 INSERT INTO visitas_lealtad (id_cliente, barberia_id, id_barbero, fecha)
                 VALUES (?, ?, ?, ?)
-            `).run(clienteId, req.barberia_id, req.user.id, mxDateTime);
+            `, [clienteId, req.barberia_id, req.user.id, mxDateTime]);
 
             // 2. Update client last visit (but NOT puntos_lealtad, as it's dynamic now)
-            db.prepare(`
+            await dbQuery.run(`
                 UPDATE clientes SET ultima_visita = ? WHERE id = ? AND barberia_id = ?
-            `).run(mxDateTime, clienteId, req.barberia_id);
+            `, [mxDateTime, clienteId, req.barberia_id]);
 
             actionMessage = '¡Sello agregado hoy ✓!';
             pointsAdded = true;
@@ -126,12 +126,13 @@ router.post('/scan', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.
         }
 
         // Get final points status dynamically (last 120 days)
-        const sellosQuery = db.prepare(`
-            SELECT COUNT(*) as totales 
-            FROM visitas_lealtad 
-            WHERE id_cliente = ? AND barberia_id = ? 
-              AND date(fecha) >= date('now', '-120 days')
-        `).get(clienteId, req.barberia_id);
+        const mxNow = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+        const sellosQuery = await dbQuery.get(`
+            SELECT COUNT(*) as totales
+            FROM visitas_lealtad
+            WHERE id_cliente = ? AND barberia_id = ?
+              AND DATE(fecha) >= DATE_SUB(?, INTERVAL 120 DAY)
+        `, [clienteId, req.barberia_id, mxNow]);
 
         const sellos_actuales = sellosQuery.totales % 10;
         const recompensa_disponible = sellosQuery.totales > 0 && sellos_actuales === 0;

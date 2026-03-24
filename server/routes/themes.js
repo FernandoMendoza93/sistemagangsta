@@ -70,7 +70,7 @@ router.get('/barberias/:id/config', verifyToken, async (req, res) => {
         }
 
         const barberia = await dbQuery.get(
-            `SELECT b.id, b.nombre, b.logo_url, b.color_acento, b.slug,
+            `SELECT b.id, b.nombre, b.logo_url, b.color_acento, b.slug, b.theme, b.tema_id, b.direccion, b.loyalty_card_image_url,
                     t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
              FROM barberias b
              LEFT JOIN temas t ON b.tema_id = t.id

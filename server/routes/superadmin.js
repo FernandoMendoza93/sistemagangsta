@@ -18,9 +18,9 @@ function formatBytes(bytes) {
 }
 
 // GET /api/superadmin/metrics
-router.get('/metrics', (req, res) => {
+router.get('/metrics', async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
         // 1. Memoria RAM de Node
         const memoryUsage = process.memoryUsage();
@@ -39,7 +39,7 @@ router.get('/metrics', (req, res) => {
         }
 
         // 3. Barberías Activas para MRR
-        const activas = db.prepare(`SELECT SUM(precio_plan) as mrr, COUNT(*) as activas FROM barberias WHERE activo = 1`).get();
+        const activas = await dbQuery.get(`SELECT SUM(precio_plan) as mrr, COUNT(*) as activas FROM barberias WHERE activo = 1`, []);
 
         res.json({
             ramUsed,
@@ -54,26 +54,27 @@ router.get('/metrics', (req, res) => {
 });
 
 // GET /api/superadmin/barberias
-router.get('/barberias', (req, res) => {
+router.get('/barberias', async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         // Obviamos el barberia_id (Engram 002 mitigado para SuperAdmin)
-        const barberias = db.prepare(`
-            SELECT id, nombre, logo_url, slug, telefono_whatsapp, email_contacto, plan, precio_plan, 
-                   CASE WHEN activo = 1 THEN 'Activo' ELSE 'Inactivo' END as estado, 
+        const barberias = await dbQuery.all(`
+            SELECT id, nombre, logo_url, slug, telefono_whatsapp, email_contacto, plan, precio_plan,
+                   CASE WHEN activo = 1 THEN 'Activo' ELSE 'Inactivo' END as estado,
                    fecha_vencimiento
             FROM barberias
             ORDER BY created_at DESC
-        `).all();
-        
+        `, []);
+
         // Adjuntar un conteo de personal (Barberos + Empleados) general por tenant
-        const barberiasConStats = barberias.map(b => {
-             const statUser = db.prepare(`SELECT count(*) as t FROM usuarios WHERE barberia_id = ?`).get(b.id);
-             return {
+        const barberiasConStats = [];
+        for (const b of barberias) {
+             const statUser = await dbQuery.get(`SELECT count(*) as t FROM usuarios WHERE barberia_id = ?`, [b.id]);
+             barberiasConStats.push({
                  ...b,
                  totalUsuarios: statUser.t
-             }
-        });
+             });
+        }
 
         res.json(barberiasConStats);
     } catch (error) {
@@ -83,9 +84,9 @@ router.get('/barberias', (req, res) => {
 });
 
 // PUT /api/superadmin/barberias/:id/estado
-router.put('/barberias/:id/estado', (req, res) => {
+router.put('/barberias/:id/estado', async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { estado } = req.body; // 'Activo' o 'Inactivo'
 
@@ -95,9 +96,9 @@ router.put('/barberias/:id/estado', (req, res) => {
 
         const valorActivo = estado === 'Activo' ? 1 : 0;
 
-        const result = db.prepare(`
+        const result = await dbQuery.run(`
             UPDATE barberias SET activo = ? WHERE id = ?
-        `).run(valorActivo, id);
+        `, [valorActivo, id]);
 
         if (result.changes === 0) {
             return res.status(404).json({ error: 'Barbería no encontrada' });

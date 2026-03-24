@@ -481,24 +481,82 @@ export default function ConfiguracionPage() {
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 1fr) 2fr', gap: '2rem', alignItems: 'start' }}>
-                        {/* Tema del Cliente */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Selector de Tema del Cliente</label>
-                            <select 
-                                value={theme}
-                                onChange={(e) => setTheme(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none', cursor: 'pointer' }}
-                            >
-                                <option value="default">Estándar Flow</option>
-                                <option value="menta_limpia">Menta Limpia</option>
-                                <option value="oro_industrial">Oro Industrial</option>
-                                <option value="noche_urbana">Noche Urbana</option>
-                                <option value="cuero_natural">Cuero Natural</option>
-                                <option value="classic_barber">Classic Barber</option>
-                            </select>
-                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
-                                Este tema pintará el portal público la próxima vez que el cliente entre.
-                            </p>
+                        {/* Selector Visual de Tema del Portal */}
+                        <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Tema del Portal de Clientes</label>
+                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+                                    Este tema pintará el portal público la próxima vez que el cliente entre.
+                                </p>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
+                                {/* Opción Default */}
+                                <button
+                                    type="button"
+                                    onClick={() => setTheme('default')}
+                                    style={{
+                                        position: 'relative',
+                                        padding: '0.75rem',
+                                        borderRadius: '16px',
+                                        border: theme === 'default' ? '2px solid #6366F1' : '2px solid transparent',
+                                        background: theme === 'default' ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-input)',
+                                        boxShadow: theme === 'default' ? '0 4px 20px rgba(99, 102, 241, 0.15)' : 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {theme === 'default' && (
+                                        <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}>
+                                            <CheckCircle size={14} />
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', gap: '2px', height: '32px', borderRadius: '8px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', marginBottom: '0.5rem' }}>
+                                        <div style={{ flex: 1, backgroundColor: '#0a0a0f' }}></div>
+                                        <div style={{ flex: 1, backgroundColor: '#12121a' }}></div>
+                                        <div style={{ flex: 1, backgroundColor: '#6366F1' }}></div>
+                                        <div style={{ flex: 1, backgroundColor: '#818CF8' }}></div>
+                                    </div>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Flow Estándar</span>
+                                </button>
+
+                                {/* Temas dinámicos */}
+                                {themes.map(t => {
+                                    const slug = t.nombre.toLowerCase().replace(/\s+/g, '_');
+                                    const isSelected = theme === slug;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => setTheme(slug)}
+                                            style={{
+                                                position: 'relative',
+                                                padding: '0.75rem',
+                                                borderRadius: '16px',
+                                                border: isSelected ? '2px solid #6366F1' : '2px solid transparent',
+                                                background: isSelected ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-input)',
+                                                boxShadow: isSelected ? '0 4px 20px rgba(99, 102, 241, 0.15)' : 'none',
+                                                textAlign: 'left',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {isSelected && (
+                                                <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}>
+                                                    <CheckCircle size={14} />
+                                                </div>
+                                            )}
+                                            <div style={{ display: 'flex', gap: '2px', height: '32px', borderRadius: '8px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', marginBottom: '0.5rem' }}>
+                                                <div style={{ flex: 1, backgroundColor: t.bg_main }}></div>
+                                                <div style={{ flex: 1, backgroundColor: t.bg_surface }}></div>
+                                                <div style={{ flex: 1, backgroundColor: t.accent_primary }}></div>
+                                                <div style={{ flex: 1, backgroundColor: t.accent_secondary }}></div>
+                                            </div>
+                                            <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.nombre}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* Uploaders Divididos */}

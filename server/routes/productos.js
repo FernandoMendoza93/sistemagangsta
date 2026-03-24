@@ -4,9 +4,9 @@ import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/au
 const router = express.Router();
 
 // GET /api/productos - Listar todos los productos del tenant
-router.get('/', verifyToken, requireTenant, (req, res) => {
+router.get('/', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { categoria } = req.query;
 
         let query = `
@@ -26,7 +26,7 @@ router.get('/', verifyToken, requireTenant, (req, res) => {
 
         query += ' ORDER BY c.nombre, p.nombre';
 
-        const productos = db.prepare(query).all(...params);
+        const productos = await dbQuery.all(query, params);
         res.json(productos);
     } catch (error) {
         console.error('Error listando productos:', error);
@@ -35,17 +35,17 @@ router.get('/', verifyToken, requireTenant, (req, res) => {
 });
 
 // GET /api/productos/venta - Solo productos de venta activos (para POS)
-router.get('/venta', verifyToken, requireTenant, (req, res) => {
+router.get('/venta', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
-        const productos = db.prepare(`
+        const productos = await dbQuery.all(`
             SELECT p.id, p.nombre, p.precio_venta, p.stock_actual
             FROM productos p
             JOIN categorias c ON p.id_categoria = c.id
             WHERE c.nombre = 'Venta' AND p.activo = 1 AND p.stock_actual > 0 AND p.barberia_id = ?
             ORDER BY p.nombre
-        `).all(req.barberia_id);
+        `, [req.barberia_id]);
 
         res.json(productos);
     } catch (error) {
@@ -55,18 +55,18 @@ router.get('/venta', verifyToken, requireTenant, (req, res) => {
 });
 
 // GET /api/productos/alertas - Productos con stock bajo
-router.get('/alertas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.get('/alertas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
 
-        const productos = db.prepare(`
+        const productos = await dbQuery.all(`
             SELECT p.id, p.nombre, p.stock_actual, p.stock_minimo,
                    c.nombre as categoria
             FROM productos p
             LEFT JOIN categorias c ON p.id_categoria = c.id
             WHERE p.stock_actual <= p.stock_minimo AND p.activo = 1 AND p.barberia_id = ?
             ORDER BY (p.stock_actual * 1.0 / p.stock_minimo)
-        `).all(req.barberia_id);
+        `, [req.barberia_id]);
 
         res.json(productos);
     } catch (error) {
@@ -76,10 +76,10 @@ router.get('/alertas', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
 });
 
 // GET /api/productos/categorias - Listar categorías del tenant
-router.get('/categorias', verifyToken, requireTenant, (req, res) => {
+router.get('/categorias', verifyToken, requireTenant, async (req, res) => {
     try {
-        const db = req.app.locals.db;
-        const categorias = db.prepare('SELECT * FROM categorias WHERE barberia_id = ? ORDER BY nombre').all(req.barberia_id);
+        const dbQuery = req.app.locals.dbQuery;
+        const categorias = await dbQuery.all('SELECT * FROM categorias WHERE barberia_id = ? ORDER BY nombre', [req.barberia_id]);
         res.json(categorias);
     } catch (error) {
         console.error('Error listando categorías:', error);
@@ -88,24 +88,24 @@ router.get('/categorias', verifyToken, requireTenant, (req, res) => {
 });
 
 // POST /api/productos - Crear producto (Admin/Encargado)
-router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria } = req.body;
 
         if (!nombre || nombre.trim() === '') {
             return res.status(400).json({ error: 'El nombre del producto es requerido' });
         }
 
-        const categoria = db.prepare('SELECT id FROM categorias WHERE id = ? AND barberia_id = ?').get(id_categoria || 1, req.barberia_id);
+        const categoria = await dbQuery.get('SELECT id FROM categorias WHERE id = ? AND barberia_id = ?', [id_categoria || 1, req.barberia_id]);
         if (!categoria) {
             return res.status(400).json({ error: 'Categoría no válida' });
         }
 
-        const result = db.prepare(`
+        const result = await dbQuery.run(`
             INSERT INTO productos (nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo, barberia_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
-        `).run(
+        `, [
             nombre.trim(),
             descripcion || '',
             parseInt(stock_actual) || 0,
@@ -114,14 +114,14 @@ router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCA
             parseFloat(precio_venta) || 0,
             parseInt(id_categoria) || 1,
             req.barberia_id
-        );
+        ]);
 
         const stockInicial = parseInt(stock_actual) || 0;
         if (stockInicial > 0) {
-            db.prepare(`
+            await dbQuery.run(`
                 INSERT INTO movimientos_inventario (id_producto, tipo, cantidad, motivo, id_usuario, barberia_id)
                 VALUES (?, 'Entrada', ?, 'Stock inicial', ?, ?)
-            `).run(result.lastInsertRowid, stockInicial, req.user.id, req.barberia_id);
+            `, [result.lastInsertRowid, stockInicial, req.user.id, req.barberia_id]);
         }
 
         res.status(201).json({
@@ -135,14 +135,14 @@ router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCA
 });
 
 // PUT /api/productos/:id - Actualizar producto
-router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { nombre, descripcion, stock_minimo, precio_costo, precio_venta, id_categoria, activo } = req.body;
 
-        db.prepare(`
-            UPDATE productos 
+        await dbQuery.run(`
+            UPDATE productos
             SET nombre = COALESCE(?, nombre),
                 descripcion = COALESCE(?, descripcion),
                 stock_minimo = COALESCE(?, stock_minimo),
@@ -151,7 +151,7 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
                 id_categoria = COALESCE(?, id_categoria),
                 activo = COALESCE(?, activo)
             WHERE id = ? AND barberia_id = ?
-        `).run(nombre, descripcion, stock_minimo, precio_costo, precio_venta, id_categoria, activo, id, req.barberia_id);
+        `, [nombre, descripcion, stock_minimo, precio_costo, precio_venta, id_categoria, activo, id, req.barberia_id]);
 
         res.json({ message: 'Producto actualizado' });
     } catch (error) {
@@ -161,9 +161,9 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
 });
 
 // POST /api/productos/:id/movimiento - Registrar movimiento de inventario
-router.post('/:id/movimiento', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.post('/:id/movimiento', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
         const { tipo, cantidad, motivo } = req.body;
 
@@ -171,7 +171,7 @@ router.post('/:id/movimiento', verifyToken, requireTenant, requireRole(ROLES.ADM
             return res.status(400).json({ error: 'Tipo y cantidad son requeridos' });
         }
 
-        const producto = db.prepare('SELECT stock_actual FROM productos WHERE id = ? AND barberia_id = ?').get(id, req.barberia_id);
+        const producto = await dbQuery.get('SELECT stock_actual FROM productos WHERE id = ? AND barberia_id = ?', [id, req.barberia_id]);
         if (!producto) {
             return res.status(404).json({ error: 'Producto no encontrado' });
         }
@@ -188,12 +188,12 @@ router.post('/:id/movimiento', verifyToken, requireTenant, requireRole(ROLES.ADM
             nuevoStock = cantidad;
         }
 
-        db.prepare('UPDATE productos SET stock_actual = ? WHERE id = ? AND barberia_id = ?').run(nuevoStock, id, req.barberia_id);
+        await dbQuery.run('UPDATE productos SET stock_actual = ? WHERE id = ? AND barberia_id = ?', [nuevoStock, id, req.barberia_id]);
 
-        db.prepare(`
+        await dbQuery.run(`
             INSERT INTO movimientos_inventario (id_producto, tipo, cantidad, motivo, id_usuario, barberia_id)
             VALUES (?, ?, ?, ?, ?, ?)
-        `).run(id, tipo, cantidad, motivo || '', req.user.id, req.barberia_id);
+        `, [id, tipo, cantidad, motivo || '', req.user.id, req.barberia_id]);
 
         res.json({
             message: 'Movimiento registrado',
@@ -206,12 +206,12 @@ router.post('/:id/movimiento', verifyToken, requireTenant, requireRole(ROLES.ADM
 });
 
 // GET /api/productos/:id/movimientos - Historial de movimientos
-router.get('/:id/movimientos', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), (req, res) => {
+router.get('/:id/movimientos', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
-        const db = req.app.locals.db;
+        const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
 
-        const movimientos = db.prepare(`
+        const movimientos = await dbQuery.all(`
             SELECT m.id, m.tipo, m.cantidad, m.motivo, m.fecha,
                    u.nombre as usuario
             FROM movimientos_inventario m
@@ -219,7 +219,7 @@ router.get('/:id/movimientos', verifyToken, requireTenant, requireRole(ROLES.ADM
             WHERE m.id_producto = ? AND m.barberia_id = ?
             ORDER BY m.fecha DESC
             LIMIT 50
-        `).all(id, req.barberia_id);
+        `, [id, req.barberia_id]);
 
         res.json(movimientos);
     } catch (error) {

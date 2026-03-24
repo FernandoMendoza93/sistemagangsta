@@ -38,7 +38,8 @@ async function initializeDatabase() {
                 port: process.env.DB_PORT || 3306,
                 waitForConnections: true,
                 connectionLimit: 10,
-                queueLimit: 0
+                queueLimit: 0,
+                decimalNumbers: true
             };
 
             const pool = mysql.default.createPool(dbConfig);
@@ -129,11 +130,14 @@ async function initializeDatabase() {
     }
 }
 
+// Sanitizar params: MySQL no acepta undefined, convertir a null
+const sanitize = (params) => params.map(p => p === undefined ? null : p);
+
 // Wrapper para queries que funciona con ambas DBs
 const dbQuery = {
     async all(sql, params = []) {
         if (dbType === 'mysql') {
-            const [rows] = await db.execute(sql, params);
+            const [rows] = await db.execute(sql, sanitize(params));
             return rows;
         } else {
             return db.prepare(sql).all(...params);
@@ -142,7 +146,7 @@ const dbQuery = {
 
     async get(sql, params = []) {
         if (dbType === 'mysql') {
-            const [rows] = await db.execute(sql, params);
+            const [rows] = await db.execute(sql, sanitize(params));
             return rows[0];
         } else {
             return db.prepare(sql).get(...params);
@@ -151,13 +155,45 @@ const dbQuery = {
 
     async run(sql, params = []) {
         if (dbType === 'mysql') {
-            const [result] = await db.execute(sql, params);
+            const [result] = await db.execute(sql, sanitize(params));
             return {
                 lastInsertRowid: result.insertId,
                 changes: result.affectedRows
             };
         } else {
             return db.prepare(sql).run(...params);
+        }
+    },
+
+    async transaction(callback) {
+        if (dbType === 'mysql') {
+            const conn = await db.getConnection();
+            try {
+                await conn.beginTransaction();
+                const txQuery = {
+                    async all(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows; },
+                    async get(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows[0]; },
+                    async run(sql, params = []) { const [result] = await conn.execute(sql, sanitize(params)); return { lastInsertRowid: result.insertId, changes: result.affectedRows }; }
+                };
+                const result = await callback(txQuery);
+                await conn.commit();
+                return result;
+            } catch (e) {
+                await conn.rollback();
+                throw e;
+            } finally {
+                conn.release();
+            }
+        } else {
+            try {
+                db.exec('BEGIN');
+                const result = await callback(dbQuery);
+                db.exec('COMMIT');
+                return result;
+            } catch (e) {
+                db.exec('ROLLBACK');
+                throw e;
+            }
         }
     }
 };
