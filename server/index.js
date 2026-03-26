@@ -24,24 +24,29 @@ async function initializeDatabase() {
     console.log('🔍 Conectando a MySQL...');
     const mysql = await import('mysql2/promise');
 
-    const pool = mysql.default.createPool({
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'barberia',
-        port: process.env.DB_PORT || 3306,
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
-        decimalNumbers: true
-    });
+    try {
+        const pool = mysql.default.createPool({
+            host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
+            user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
+            password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
+            database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'barberia',
+            port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            decimalNumbers: true
+        });
 
-    // Probar conexión — si falla, el servidor muere
-    const connection = await pool.getConnection();
-    console.log('✅ Conectado a MySQL exitosamente');
-    connection.release();
+        // Probar conexión — si falla, el servidor muere
+        const connection = await pool.getConnection();
+        console.log('✅ Conectado a MySQL exitosamente');
+        connection.release();
 
-    db = pool;
+        db = pool;
+    } catch (err) {
+        console.error('❌ ERROR FATAL MYSQL: No se pudo conectar a la base de datos.', err.message);
+        process.exit(1);
+    }
 }
 
 // Sanitizar params: MySQL no acepta undefined, convertir a null
