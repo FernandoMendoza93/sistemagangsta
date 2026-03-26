@@ -71,6 +71,27 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (
             WHERE id = ? AND barberia_id = ?
         `, [nombre, email, id_rol, activo, id, req.barberia_id]);
 
+        if (id_rol) {
+            const roleInfo = await dbQuery.get('SELECT nombre_rol FROM roles WHERE id = ?', [id_rol]);
+            const checkBarber = await dbQuery.get('SELECT id, estado FROM barberos WHERE id_usuario = ? AND barberia_id = ?', [id, req.barberia_id]);
+
+            if (roleInfo && roleInfo.nombre_rol === 'Barbero') {
+                if (!checkBarber) {
+                    await dbQuery.run(`
+                        INSERT INTO barberos (id_usuario, porcentaje_comision, estado, turno, barberia_id)
+                        VALUES (?, 0.50, 'Activo', 'Completo', ?)
+                    `, [id, req.barberia_id]);
+                } else if (checkBarber.estado === 'Inactivo') {
+                    await dbQuery.run("UPDATE barberos SET estado = 'Activo' WHERE id = ?", [checkBarber.id]);
+                }
+            } else {
+                // Soft-Delete: Inactivar perfil público si el nuevo rol ya no es Barbero
+                if (checkBarber && checkBarber.estado !== 'Inactivo') {
+                    await dbQuery.run("UPDATE barberos SET estado = 'Inactivo' WHERE id = ?", [checkBarber.id]);
+                }
+            }
+        }
+
         res.json({ message: 'Usuario actualizado' });
     } catch (error) {
         console.error('Error actualizando usuario:', error);

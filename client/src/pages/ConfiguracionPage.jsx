@@ -59,6 +59,11 @@ export default function ConfiguracionPage() {
 
             if (themesRes.ok) {
                 const themesData = await themesRes.json();
+                const flowIdx = themesData.findIndex(t => t.nombre === 'Flow Estándar');
+                if (flowIdx > 0) {
+                    const [flow] = themesData.splice(flowIdx, 1);
+                    themesData.unshift(flow);
+                }
                 setThemes(themesData);
             }
         } catch (err) {
@@ -405,15 +410,15 @@ export default function ConfiguracionPage() {
                 <div style={{ ...cardStyle, gridColumn: '1 / -1' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Palette size={22} style={{ color: '#6366F1' }} />
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Palette size={22} style={{ color: 'var(--accent-primary)' }} />
                             </div>
                             <div>
                                 <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Personalización Visual</h2>
                                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Elige el tema que mejor represente a tu barbería</p>
                             </div>
                         </div>
-                        {saving && <span style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 700 }}>Guardando cambios...</span>}
+                        {saving && <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700 }}>Guardando cambios...</span>}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
@@ -427,23 +432,23 @@ export default function ConfiguracionPage() {
                                     position: 'relative',
                                     padding: '1rem',
                                     borderRadius: '24px',
-                                    border: barberia?.tema_id === t.id ? '2px solid #6366F1' : '2px solid transparent',
-                                    background: barberia?.tema_id === t.id ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-input)',
-                                    boxShadow: barberia?.tema_id === t.id ? '0 4px 20px rgba(99, 102, 241, 0.15)' : 'none',
+                                    border: barberia?.tema_id === t.id ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                                    background: barberia?.tema_id === t.id ? 'rgba(var(--accent-primary-rgb), 0.05)' : 'var(--bg-input)',
+                                    boxShadow: barberia?.tema_id === t.id ? '0 4px 20px rgba(var(--accent-primary-rgb), 0.15)' : 'none',
                                     textAlign: 'left',
                                     cursor: saving ? 'wait' : 'pointer',
                                     transition: 'all 0.2s'
                                 }}
                             >
                                 {barberia?.tema_id === t.id && (
-                                    <div style={{ position: 'absolute', top: '-12px', right: '-12px', width: '32px', height: '32px', borderRadius: '50%', background: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}>
+                                    <div style={{ position: 'absolute', top: '-12px', right: '-12px', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(var(--accent-primary-rgb), 0.3)' }}>
                                         <CheckCircle size={18} />
                                     </div>
                                 )}
 
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{t.nombre}</h4>
-                                    <Sparkles size={16} style={{ color: barberia?.tema_id === t.id ? '#6366F1' : 'var(--text-muted)' }} />
+                                    <Sparkles size={16} style={{ color: barberia?.tema_id === t.id ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -490,40 +495,9 @@ export default function ConfiguracionPage() {
                                 </p>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
-                                {/* Opción Default */}
-                                <button
-                                    type="button"
-                                    onClick={() => setTheme('default')}
-                                    style={{
-                                        position: 'relative',
-                                        padding: '0.75rem',
-                                        borderRadius: '16px',
-                                        border: theme === 'default' ? '2px solid #6366F1' : '2px solid transparent',
-                                        background: theme === 'default' ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-input)',
-                                        boxShadow: theme === 'default' ? '0 4px 20px rgba(99, 102, 241, 0.15)' : 'none',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {theme === 'default' && (
-                                        <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}>
-                                            <CheckCircle size={14} />
-                                        </div>
-                                    )}
-                                    <div style={{ display: 'flex', gap: '2px', height: '32px', borderRadius: '8px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', marginBottom: '0.5rem' }}>
-                                        <div style={{ flex: 1, backgroundColor: '#0a0a0f' }}></div>
-                                        <div style={{ flex: 1, backgroundColor: '#12121a' }}></div>
-                                        <div style={{ flex: 1, backgroundColor: '#6366F1' }}></div>
-                                        <div style={{ flex: 1, backgroundColor: '#818CF8' }}></div>
-                                    </div>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Flow Estándar</span>
-                                </button>
-
-                                {/* Temas dinámicos */}
                                 {themes.map(t => {
                                     const slug = t.nombre.toLowerCase().replace(/\s+/g, '_');
-                                    const isSelected = theme === slug;
+                                    const isSelected = theme === slug || (theme === 'default' && slug === 'flow_estándar');
                                     return (
                                         <button
                                             key={t.id}
@@ -533,16 +507,16 @@ export default function ConfiguracionPage() {
                                                 position: 'relative',
                                                 padding: '0.75rem',
                                                 borderRadius: '16px',
-                                                border: isSelected ? '2px solid #6366F1' : '2px solid transparent',
-                                                background: isSelected ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-input)',
-                                                boxShadow: isSelected ? '0 4px 20px rgba(99, 102, 241, 0.15)' : 'none',
+                                                border: isSelected ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                                                background: isSelected ? 'rgba(var(--accent-primary-rgb), 0.05)' : 'var(--bg-input)',
+                                                boxShadow: isSelected ? '0 4px 20px rgba(var(--accent-primary-rgb), 0.15)' : 'none',
                                                 textAlign: 'left',
                                                 cursor: 'pointer',
                                                 transition: 'all 0.2s'
                                             }}
                                         >
                                             {isSelected && (
-                                                <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}>
+                                                <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: 'var(--accent-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(var(--accent-primary-rgb), 0.3)' }}>
                                                     <CheckCircle size={14} />
                                                 </div>
                                             )}

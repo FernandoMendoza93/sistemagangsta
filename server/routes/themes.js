@@ -30,8 +30,11 @@ router.get('/public/config/:slug', async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
         
         const config = await dbQuery.get(
-            `SELECT id as barberia_id, nombre, theme, logo_url, loyalty_card_image_url, color_acento 
-             FROM barberias WHERE slug = ? AND activo = 1`, 
+            `SELECT b.id as barberia_id, b.nombre, b.theme, b.logo_url, b.loyalty_card_image_url, b.color_acento,
+                    t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
+             FROM barberias b
+             LEFT JOIN temas t ON LOWER(REPLACE(t.nombre, ' ', '_')) = LOWER(b.theme)
+             WHERE b.slug = ? AND b.activo = 1`,
             [slug]
         );
 

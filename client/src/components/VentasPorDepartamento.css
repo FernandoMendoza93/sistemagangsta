@@ -80,8 +80,8 @@
 }
 
 .dept-badge-pro {
-    background: #eff6ff;
-    color: #2563eb;
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    color: var(--accent-primary);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.75rem;

@@ -6,13 +6,6 @@ import { publicService } from '../services/api';
 import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle, Store } from 'lucide-react';
 import './ClienteLoginPage.css';
 
-const THEMES = {
-   menta_limpia: { bg_main: '#F0F9F6', bg_surface: '#FFFFFF', accent_primary: '#10B981', accent_secondary: '#34D399', text_main: '#064E3B', text_muted: '#6EE7B7' },
-   oro_industrial: { bg_main: '#1A1A1A', bg_surface: '#2D2D2D', accent_primary: '#D4AF37', accent_secondary: '#F1C40F', text_main: '#FFFFFF', text_muted: '#A0A0A0' },
-   noche_urbana: { bg_main: '#0F172A', bg_surface: '#1E293B', accent_primary: '#6366F1', accent_secondary: '#818CF8', text_main: '#F8FAFC', text_muted: '#94A3B8' },
-   cuero_natural: { bg_main: '#FAFAF9', bg_surface: '#FFFFFF', accent_primary: '#9A3412', accent_secondary: '#C2410C', text_main: '#1C1917', text_muted: '#A8A29E' },
-   classic_barber: { bg_main: '#FAFAF9', bg_surface: '#FFFFFF', accent_primary: '#DC2626', accent_secondary: '#EF4444', text_main: '#1C1917', text_muted: '#78716C' },
-};
 
 export default function ClienteLoginPage() {
     const { slug } = useParams();
@@ -44,8 +37,8 @@ export default function ClienteLoginPage() {
         publicService.getConfig(slug)
             .then(res => {
                 setBarberia(res.data);
-                if (res.data.theme && THEMES[res.data.theme]) {
-                    applyTheme(THEMES[res.data.theme], res.data.barberia_id);
+                if (res.data.bg_main) {
+                    applyTheme(res.data, res.data.barberia_id);
                 } else {
                     resetTheme();
                 }
@@ -138,8 +131,8 @@ export default function ClienteLoginPage() {
         );
     }
 
-    // Color dinámico de la barbería
-    const acento = barberia?.color_acento || '#FF6B4A';
+    // Color dinámico: prefiere accent del tema, fallback a color_acento
+    const acento = barberia?.accent_primary || barberia?.color_acento || '#FF6B4A';
 
     return (
         <div className="cliente-login-page">

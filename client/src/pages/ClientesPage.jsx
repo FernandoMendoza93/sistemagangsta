@@ -1,45 +1,40 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { useAuth } from '../context/AuthContext';
 import { clientesService } from '../services/api';
 import Icon from '../components/Icon';
 import ConfirmModal from '../components/ConfirmModal';
 import './ClientesPage.css';
 
 export default function ClientesPage() {
+    const { user } = useAuth();
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterMode, setFilterMode] = useState('todos'); // 'todos' | 'inactivos'
+    const [filterActivity, setFilterActivity] = useState('todos');
+    const [sortBy, setSortBy] = useState('nombre');
     const [showModal, setShowModal] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
     const [formData, setFormData] = useState({ nombre: '', telefono: '', notas: '' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPage = 15;
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
         loadClientes();
-    }, [filterMode]);
+    }, []);
 
-    // Debounce para búsqueda
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (filterMode === 'todos') {
-                loadClientes();
-            }
-        }, 300);
+        const timer = setTimeout(() => loadClientes(), 300);
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
     async function loadClientes() {
         try {
             setLoading(true);
-            let res;
-            if (filterMode === 'inactivos') {
-                res = await clientesService.getInactivos();
-            } else {
-                res = await clientesService.getAll(searchQuery || undefined);
-            }
+            const res = await clientesService.getAll(searchQuery || undefined);
             setClientes(res.data);
         } catch (error) {
             console.error('Error cargando clientes:', error);
@@ -47,6 +42,30 @@ export default function ClientesPage() {
             setLoading(false);
         }
     }
+
+    useEffect(() => { setCurrentPage(1); }, [filterActivity, sortBy, searchQuery]);
+
+    // Client-side filtering & sorting
+    const filteredClientes = clientes
+        .filter(c => {
+            const days = getDaysSinceVisit(c.ultima_visita);
+            if (filterActivity === 'nuevos') return days === null;
+            if (filterActivity === 'recientes') return days !== null && days <= 7;
+            if (filterActivity === 'regulares') return days !== null && days > 7 && days <= 30;
+            if (filterActivity === 'inactivos') return days !== null && days > 30;
+            return true;
+        })
+        .sort((a, b) => {
+            if (sortBy === 'nombre') return a.nombre.localeCompare(b.nombre);
+            if (sortBy === 'visita') {
+                if (!a.ultima_visita) return 1;
+                if (!b.ultima_visita) return -1;
+                return new Date(b.ultima_visita) - new Date(a.ultima_visita);
+            }
+            if (sortBy === 'puntos') return (b.puntos_lealtad || 0) - (a.puntos_lealtad || 0);
+            if (sortBy === 'registro') return new Date(b.fecha_registro) - new Date(a.fecha_registro);
+            return 0;
+        });
 
     function openCreateModal() {
         setEditingClient(null);
@@ -102,8 +121,9 @@ export default function ClientesPage() {
     function sendWhatsApp(cliente) {
         const phone = (cliente.telefono || '').replace(/\D/g, '');
         const phoneNumber = phone.startsWith('52') ? phone : `52${phone}`;
+        const barberiaName = user?.barberia_nombre || 'la barbería';
         const message = encodeURIComponent(
-            `¡Qué onda ${cliente.nombre}! 💈 Hace un rato que no te vemos por The Gangsta Barber Shop. ¿Te agendamos para esta semana?`
+            `¡Qué onda ${cliente.nombre}! 💈 Hace un rato que no te vemos por ${barberiaName}. ¿Te agendamos para esta semana?`
         );
         window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
     }
@@ -117,10 +137,10 @@ export default function ClientesPage() {
 
     function getVisitBadge(ultimaVisita) {
         const days = getDaysSinceVisit(ultimaVisita);
-        if (days === null) return <span className="badge-visit badge-new">Nuevo</span>;
-        if (days <= 7) return <span className="badge-visit badge-recent">Hace {days}d</span>;
-        if (days <= 30) return <span className="badge-visit badge-normal">Hace {days}d</span>;
-        return <span className="badge-visit badge-inactive">⚠️ {days}d sin venir</span>;
+        if (days === null) return <span className="cl-badge cl-badge-new">Nuevo</span>;
+        if (days <= 7) return <span className="cl-badge cl-badge-recent">Hace {days}d</span>;
+        if (days <= 30) return <span className="cl-badge cl-badge-normal">Hace {days}d</span>;
+        return <span className="cl-badge cl-badge-inactive">{days}d sin venir</span>;
     }
 
     function getLoyaltyDisplay(puntos) {
@@ -128,29 +148,37 @@ export default function ClientesPage() {
         const filled = Math.min(puntos % maxPoints, maxPoints);
         const completedCards = Math.floor(puntos / maxPoints);
         return (
-            <div className="loyalty-display">
-                <div className="loyalty-stamps">
-                    {[...Array(maxPoints)].map((_, i) => (
-                        <span key={i} className={`stamp ${i < filled ? 'filled' : ''}`}>★</span>
-                    ))}
+            <div className="cl-loyalty">
+                <div className="cl-loyalty-bar">
+                    <div className="cl-loyalty-fill" style={{ width: `${(filled / maxPoints) * 100}%` }}></div>
                 </div>
-                <span className="loyalty-count">{filled}/{maxPoints}</span>
+                <span className="cl-loyalty-text">{filled}/{maxPoints}</span>
                 {completedCards > 0 && (
-                    <span className="loyalty-cards">🎉 {completedCards} tarjeta{completedCards > 1 ? 's' : ''}</span>
+                    <span className="cl-loyalty-cards">{completedCards} tarjeta{completedCards > 1 ? 's' : ''}</span>
                 )}
             </div>
         );
     }
 
+    // Stats (from full dataset)
+    const totalClientes = clientes.length;
+    const statNuevos = clientes.filter(c => getDaysSinceVisit(c.ultima_visita) === null).length;
+    const statRecientes = clientes.filter(c => { const d = getDaysSinceVisit(c.ultima_visita); return d !== null && d <= 7; }).length;
+    const statRegulares = clientes.filter(c => { const d = getDaysSinceVisit(c.ultima_visita); return d !== null && d > 7 && d <= 30; }).length;
+    const statInactivos = clientes.filter(c => { const d = getDaysSinceVisit(c.ultima_visita); return d !== null && d > 30; }).length;
+    const hasActiveFilters = filterActivity !== 'todos';
+    const totalPages = Math.ceil(filteredClientes.length / perPage);
+    const visibleClientes = filteredClientes.slice((currentPage - 1) * perPage, currentPage * perPage);
+
     return (
         <div className="clientes-page">
             {/* Header */}
-            <div className="page-header-pro">
-                <div className="header-left">
-                    <h1><Icon name="people-fill" /> Directorio de Clientes</h1>
-                    <p className="header-subtitle">
-                        {clientes.length} cliente{clientes.length !== 1 ? 's' : ''}
-                        {filterMode === 'inactivos' ? ' inactivos (+30 días)' : ''}
+            <div className="cl-header">
+                <div>
+                    <h1 className="cl-title">Directorio de Clientes</h1>
+                    <p className="cl-subtitle">
+                        {filteredClientes.length} de {totalClientes} cliente{totalClientes !== 1 ? 's' : ''}
+                        {hasActiveFilters ? ' (filtrado)' : ''}
                     </p>
                 </div>
                 <button className="btn-primary-pro" onClick={openCreateModal}>
@@ -158,116 +186,188 @@ export default function ClientesPage() {
                 </button>
             </div>
 
+            {/* Stats Cards */}
+            <div className="cl-stats">
+                <button className={`cl-stat-card ${filterActivity === 'todos' ? 'cl-stat-active-card' : ''}`} onClick={() => setFilterActivity('todos')}>
+                    <div className="cl-stat-icon cl-stat-total"><Icon name="users" /></div>
+                    <div>
+                        <span className="cl-stat-number">{totalClientes}</span>
+                        <span className="cl-stat-label">Total</span>
+                    </div>
+                </button>
+                <button className={`cl-stat-card ${filterActivity === 'nuevos' ? 'cl-stat-active-card' : ''}`} onClick={() => setFilterActivity(filterActivity === 'nuevos' ? 'todos' : 'nuevos')}>
+                    <div className="cl-stat-icon cl-stat-new"><Icon name="plus" /></div>
+                    <div>
+                        <span className="cl-stat-number">{statNuevos}</span>
+                        <span className="cl-stat-label">Nuevos</span>
+                    </div>
+                </button>
+                <button className={`cl-stat-card ${filterActivity === 'recientes' ? 'cl-stat-active-card' : ''}`} onClick={() => setFilterActivity(filterActivity === 'recientes' ? 'todos' : 'recientes')}>
+                    <div className="cl-stat-icon cl-stat-active"><Icon name="check-circle" /></div>
+                    <div>
+                        <span className="cl-stat-number">{statRecientes}</span>
+                        <span className="cl-stat-label">Recientes</span>
+                    </div>
+                </button>
+                <button className={`cl-stat-card ${filterActivity === 'regulares' ? 'cl-stat-active-card' : ''}`} onClick={() => setFilterActivity(filterActivity === 'regulares' ? 'todos' : 'regulares')}>
+                    <div className="cl-stat-icon cl-stat-regular"><Icon name="clock" /></div>
+                    <div>
+                        <span className="cl-stat-number">{statRegulares}</span>
+                        <span className="cl-stat-label">Regulares</span>
+                    </div>
+                </button>
+                <button className={`cl-stat-card ${filterActivity === 'inactivos' ? 'cl-stat-active-card' : ''}`} onClick={() => setFilterActivity(filterActivity === 'inactivos' ? 'todos' : 'inactivos')}>
+                    <div className="cl-stat-icon cl-stat-warn"><Icon name="alert-circle" /></div>
+                    <div>
+                        <span className="cl-stat-number">{statInactivos}</span>
+                        <span className="cl-stat-label">Inactivos</span>
+                    </div>
+                </button>
+            </div>
+
             {/* Search & Filters */}
-            <div className="clientes-controls">
-                <div className="search-box">
+            <div className="cl-controls">
+                <div className="cl-search">
                     <Icon name="search" />
                     <input
                         type="text"
                         placeholder="Buscar por nombre o teléfono..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="search-input"
                     />
                     {searchQuery && (
-                        <button className="search-clear" onClick={() => setSearchQuery('')}>
+                        <button className="cl-search-clear" onClick={() => setSearchQuery('')}>
                             <Icon name="x-lg" />
                         </button>
                     )}
                 </div>
-                <div className="filter-tabs">
-                    <button
-                        className={`filter-tab ${filterMode === 'todos' ? 'active' : ''}`}
-                        onClick={() => setFilterMode('todos')}
-                    >
-                        <Icon name="people" /> Todos
-                    </button>
-                    <button
-                        className={`filter-tab ${filterMode === 'inactivos' ? 'active' : ''}`}
-                        onClick={() => setFilterMode('inactivos')}
-                    >
-                        <Icon name="exclamation-triangle" /> Inactivos
-                    </button>
-                </div>
+                <select
+                    className="cl-sort"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                >
+                    <option value="nombre">Nombre A-Z</option>
+                    <option value="puntos">Más puntos</option>
+                    <option value="registro">Registrado reciente</option>
+                </select>
             </div>
 
-            {/* Table */}
+            {/* Active filters indicator */}
+            {hasActiveFilters && (
+                <div className="cl-active-filters">
+                    <span>Filtros:</span>
+                    {filterActivity !== 'todos' && (
+                        <button className="cl-filter-tag" onClick={() => setFilterActivity('todos')}>
+                            {filterActivity === 'nuevos' ? 'Nuevos' : filterActivity === 'recientes' ? 'Recientes ≤7d' : filterActivity === 'regulares' ? 'Regulares ≤30d' : 'Inactivos 30d+'}
+                            <Icon name="x-lg" size={10} />
+                        </button>
+                    )}
+                    <button className="cl-clear-filters" onClick={() => setFilterActivity('todos')}>
+                        Limpiar todo
+                    </button>
+                </div>
+            )}
+
+            {/* Content */}
             {loading ? (
                 <div className="loading"><div className="spinner"></div></div>
-            ) : clientes.length === 0 ? (
-                <div className="empty-state">
-                    <Icon name={filterMode === 'inactivos' ? 'check-circle' : 'people'} />
-                    <h3>{filterMode === 'inactivos' ? '¡Todos tus clientes están activos!' : 'No hay clientes registrados'}</h3>
-                    <p>{filterMode === 'inactivos' ? 'Ningún cliente lleva más de 30 días sin visitar.' : 'Registra tu primer cliente con el botón "Nuevo Cliente".'}</p>
+            ) : filteredClientes.length === 0 ? (
+                <div className="cl-empty">
+                    <div className="cl-empty-icon">
+                        <Icon name={hasActiveFilters ? 'search' : 'users'} />
+                    </div>
+                    <h3>{hasActiveFilters ? 'Sin resultados para estos filtros' : 'No hay clientes registrados'}</h3>
+                    <p>{hasActiveFilters ? 'Prueba ajustando los filtros o la búsqueda.' : 'Registra tu primer cliente con el botón de arriba.'}</p>
                 </div>
             ) : (
-                <div className="table-container-pro">
-                    <table className="table-pro">
-                        <thead>
-                            <tr>
-                                <th>Cliente</th>
-                                <th>Teléfono</th>
-                                <th>Lealtad</th>
-                                <th>Última Visita</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {clientes.map(cliente => (
-                                <tr key={cliente.id} className={getDaysSinceVisit(cliente.ultima_visita) > 30 ? 'row-inactive' : ''}>
-                                    <td>
-                                        <div className="client-name-cell">
-                                            <div className="client-avatar">
-                                                {cliente.nombre.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <strong>{cliente.nombre}</strong>
-                                                {cliente.notas && <small className="client-notes">{cliente.notas}</small>}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {cliente.telefono ? (
-                                            <span className="phone-display">
+                <div className="cl-list">
+                    {visibleClientes.map(cliente => {
+                        const inactive = getDaysSinceVisit(cliente.ultima_visita) > 30;
+                        return (
+                            <div key={cliente.id} className={`cl-card ${inactive ? 'cl-card-inactive' : ''}`}>
+                                <div className="cl-card-main">
+                                    <div className="cl-avatar">
+                                        {cliente.nombre.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="cl-info">
+                                        <div className="cl-name">{cliente.nombre}</div>
+                                        {cliente.telefono && (
+                                            <div className="cl-phone">
                                                 <Icon name="phone" /> {cliente.telefono}
-                                            </span>
-                                        ) : (
-                                            <span className="no-phone">Sin teléfono</span>
+                                            </div>
                                         )}
-                                    </td>
-                                    <td>{getLoyaltyDisplay(cliente.puntos_lealtad)}</td>
-                                    <td>{getVisitBadge(cliente.ultima_visita)}</td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button
-                                                className="btn-icon btn-edit"
-                                                onClick={() => openEditModal(cliente)}
-                                                title="Editar"
-                                            >
-                                                <Icon name="pencil" />
-                                            </button>
-                                            {cliente.telefono && (
-                                                <button
-                                                    className="btn-icon btn-whatsapp"
-                                                    onClick={() => sendWhatsApp(cliente)}
-                                                    title="Enviar WhatsApp"
-                                                >
-                                                    <Icon name="whatsapp" />
-                                                </button>
-                                            )}
-                                            <button
-                                                className="btn-icon btn-delete"
-                                                onClick={() => handleDelete(cliente.id, cliente.nombre)}
-                                                title="Desactivar"
-                                            >
-                                                <Icon name="trash" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        {cliente.notas && <div className="cl-notes">{cliente.notas}</div>}
+                                    </div>
+                                </div>
+                                <div className="cl-card-meta">
+                                    <div className="cl-meta-item">
+                                        <span className="cl-meta-label">Lealtad</span>
+                                        {getLoyaltyDisplay(cliente.puntos_lealtad)}
+                                    </div>
+                                    <div className="cl-meta-item">
+                                        <span className="cl-meta-label">Última visita</span>
+                                        {getVisitBadge(cliente.ultima_visita)}
+                                    </div>
+                                </div>
+                                <div className="cl-card-actions">
+                                    <button
+                                        className="cl-action cl-action-edit"
+                                        onClick={() => openEditModal(cliente)}
+                                        title="Editar"
+                                    >
+                                        <Icon name="edit" size={16} />
+                                    </button>
+                                    {cliente.telefono && (
+                                        <button
+                                            className="cl-action cl-action-wa"
+                                            onClick={() => sendWhatsApp(cliente)}
+                                            title="Enviar WhatsApp"
+                                        >
+                                            <Icon name="whatsapp" size={16} />
+                                        </button>
+                                    )}
+                                    <button
+                                        className="cl-action cl-action-delete"
+                                        onClick={() => handleDelete(cliente.id, cliente.nombre)}
+                                        title="Desactivar"
+                                    >
+                                        <Icon name="x-circle" size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+                <div className="cl-pagination">
+                    <button
+                        className="cl-page-btn"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(p => p - 1)}
+                    >
+                        Anterior
+                    </button>
+                    <div className="cl-page-numbers">
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                className={`cl-page-num ${currentPage === i + 1 ? 'active' : ''}`}
+                                onClick={() => setCurrentPage(i + 1)}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        className="cl-page-btn"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(p => p + 1)}
+                    >
+                        Siguiente
+                    </button>
                 </div>
             )}
 
