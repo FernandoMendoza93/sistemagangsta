@@ -115,10 +115,9 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Demo Credentials */}
+                    {/* Footer */}
                     <div className="login-demo">
-                        <p className="demo-title">Credenciales de prueba</p>
-                        <p className="demo-text">admin@barberia.com / admin123</p>
+                        <p className="demo-text" style={{ color: 'var(--text-muted)', fontFamily: "'Montserrat', sans-serif", letterSpacing: '1.5px', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 600 }}>Flow Barber System © 2026 | v1.0.0</p>
                     </div>
                 </div>
             </div>

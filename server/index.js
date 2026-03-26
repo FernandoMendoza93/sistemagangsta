@@ -3,7 +3,6 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,182 +17,73 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
-// Variables globales para DB
+// Conexión a MySQL
 let db = null;
-let dbType = null;
 
-// Función para inicializar base de datos con detección automática
 async function initializeDatabase() {
-    // Intentar MySQL SOLO si hay DB_HOST configurado explícitamente
-    if (process.env.DB_HOST) {
-        try {
-            console.log('🔍 Intentando conectar a MySQL...');
-            const mysql = await import('mysql2/promise');
+    console.log('🔍 Conectando a MySQL...');
+    const mysql = await import('mysql2/promise');
 
-            const dbConfig = {
-                host: process.env.DB_HOST || 'localhost',
-                user: process.env.DB_USER || 'root',
-                password: process.env.DB_PASSWORD || '',
-                database: process.env.DB_NAME || 'barberia',
-                port: process.env.DB_PORT || 3306,
-                waitForConnections: true,
-                connectionLimit: 10,
-                queueLimit: 0,
-                decimalNumbers: true
-            };
+    const pool = mysql.default.createPool({
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'barberia',
+        port: process.env.DB_PORT || 3306,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        decimalNumbers: true
+    });
 
-            const pool = mysql.default.createPool(dbConfig);
+    // Probar conexión — si falla, el servidor muere
+    const connection = await pool.getConnection();
+    console.log('✅ Conectado a MySQL exitosamente');
+    connection.release();
 
-            // Probar conexión
-            const connection = await pool.getConnection();
-            console.log('✅ Conectado a MySQL exitosamente');
-            connection.release();
-
-            db = pool;
-            dbType = 'mysql';
-
-            return;
-        } catch (error) {
-            console.log('⚠️  MySQL no disponible:', error.message);
-            console.log('🔄 Cambiando a SQLite...');
-        }
-    }
-
-    // Fallback a SQLite (para desarrollo local y Railway)
-    try {
-        console.log('🔍 Inicializando SQLite...');
-        const Database = (await import('better-sqlite3')).default;
-        const { readFileSync, existsSync, copyFileSync, rmSync } = await import('fs');
-
-        const dbPath = process.env.DATABASE_URL || join(__dirname, 'data', 'database.sqlite');
-
-        const sqliteDb = new Database(dbPath);
-        sqliteDb.pragma('journal_mode = WAL');
-
-        // Verificar si necesita inicialización
-        const tableCheck = sqliteDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='roles'").get();
-        if (!tableCheck) {
-            console.log('📦 Inicializando base de datos SQLite...');
-            const schemaPath = join(__dirname, 'schema.sql');
-            if (existsSync(schemaPath)) {
-                const schema = readFileSync(schemaPath, 'utf-8');
-                sqliteDb.exec(schema);
-                console.log('✅ Schema SQLite ejecutado');
-            }
-        }
-
-        db = sqliteDb;
-        dbType = 'sqlite';
-
-        // Migración: agregar columna 'estado' a ventas_cabecera si no existe
-        try {
-            const colCheck = sqliteDb.prepare("PRAGMA table_info(ventas_cabecera)").all();
-            const hasEstado = colCheck.some(c => c.name === 'estado');
-            if (!hasEstado) {
-                sqliteDb.exec("ALTER TABLE ventas_cabecera ADD COLUMN estado TEXT DEFAULT 'completada'");
-                console.log('🔄 Migración: columna estado agregada a ventas_cabecera');
-            }
-        } catch (e) {
-            // La tabla podría no existir aún, se creará con el schema
-        }
-
-        console.log('🚀 Ejecutando scripts de migración multi-tenant después de levantar base...');
-        await import('./scripts/migrate-multitenant.js');
-        try {
-            const { default: applyManualStamps } = await import('./scripts/manual-stamp-update.js');
-            applyManualStamps();
-        } catch (e) {
-            console.log('⚠️  Script de sellos manuales omitido o no encontrado (Seguro anti-crash).');
-        }
-
-        // Autoencendido: Poblar datos iniciales si 'clientes' está vacía
-        try {
-            const count = sqliteDb.prepare("SELECT COUNT(*) AS count FROM clientes").get().count;
-            if (count === 0) {
-                const initDataPath = join(__dirname, 'data_seed', 'init_data.sql');
-                if (existsSync(initDataPath)) {
-                    console.log('🌱 Poblando base de datos desde init_data.sql...');
-                    const initSql = readFileSync(initDataPath, 'utf-8');
-                    sqliteDb.exec(initSql);
-                    console.log('✅ Sincronización de datos mediante SQL Dump completada');
-                }
-            }
-        } catch (e) {
-            console.error('⚠️ Error al poblar base de datos inicial:', e.message);
-        }
-
-        console.log('✅ SQLite inicializado correctamente');
-
-    } catch (error) {
-        console.error('❌ Error fatal inicializando base de datos:', error);
-        process.exit(1);
-    }
+    db = pool;
 }
 
 // Sanitizar params: MySQL no acepta undefined, convertir a null
 const sanitize = (params) => params.map(p => p === undefined ? null : p);
 
-// Wrapper para queries que funciona con ambas DBs
+// Query wrapper — MySQL puro
 const dbQuery = {
     async all(sql, params = []) {
-        if (dbType === 'mysql') {
-            const [rows] = await db.execute(sql, sanitize(params));
-            return rows;
-        } else {
-            return db.prepare(sql).all(...params);
-        }
+        const [rows] = await db.execute(sql, sanitize(params));
+        return rows;
     },
 
     async get(sql, params = []) {
-        if (dbType === 'mysql') {
-            const [rows] = await db.execute(sql, sanitize(params));
-            return rows[0];
-        } else {
-            return db.prepare(sql).get(...params);
-        }
+        const [rows] = await db.execute(sql, sanitize(params));
+        return rows[0];
     },
 
     async run(sql, params = []) {
-        if (dbType === 'mysql') {
-            const [result] = await db.execute(sql, sanitize(params));
-            return {
-                lastInsertRowid: result.insertId,
-                changes: result.affectedRows
-            };
-        } else {
-            return db.prepare(sql).run(...params);
-        }
+        const [result] = await db.execute(sql, sanitize(params));
+        return {
+            lastInsertRowid: result.insertId,
+            changes: result.affectedRows
+        };
     },
 
     async transaction(callback) {
-        if (dbType === 'mysql') {
-            const conn = await db.getConnection();
-            try {
-                await conn.beginTransaction();
-                const txQuery = {
-                    async all(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows; },
-                    async get(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows[0]; },
-                    async run(sql, params = []) { const [result] = await conn.execute(sql, sanitize(params)); return { lastInsertRowid: result.insertId, changes: result.affectedRows }; }
-                };
-                const result = await callback(txQuery);
-                await conn.commit();
-                return result;
-            } catch (e) {
-                await conn.rollback();
-                throw e;
-            } finally {
-                conn.release();
-            }
-        } else {
-            try {
-                db.exec('BEGIN');
-                const result = await callback(dbQuery);
-                db.exec('COMMIT');
-                return result;
-            } catch (e) {
-                db.exec('ROLLBACK');
-                throw e;
-            }
+        const conn = await db.getConnection();
+        try {
+            await conn.beginTransaction();
+            const txQuery = {
+                async all(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows; },
+                async get(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows[0]; },
+                async run(sql, params = []) { const [result] = await conn.execute(sql, sanitize(params)); return { lastInsertRowid: result.insertId, changes: result.affectedRows }; }
+            };
+            const result = await callback(txQuery);
+            await conn.commit();
+            return result;
+        } catch (e) {
+            await conn.rollback();
+            throw e;
+        } finally {
+            conn.release();
         }
     }
 };
@@ -203,7 +93,6 @@ await initializeDatabase();
 
 // Hacer db y query wrapper disponibles
 app.locals.db = db;
-app.locals.dbType = dbType;
 app.locals.dbQuery = dbQuery;
 
 // Importar rutas después de inicializar DB
@@ -246,7 +135,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         message: 'Flow Barber Management System',
-        database: dbType,
+        database: 'mysql',
         environment: process.env.NODE_ENV || 'development'
     });
 });
@@ -275,10 +164,10 @@ app.listen(PORT, '0.0.0.0', () => {
   ╔════════════════════════════════════════════╗
   ║   FLOW — Barber Management System          ║
   ║   Servidor corriendo en puerto ${PORT}         ║
-  ║   Base de datos: ${dbType.toUpperCase().padEnd(26)}║
+  ║   Base de datos: MYSQL                     ║
   ║   Entorno: ${(process.env.NODE_ENV || 'development').padEnd(30)}║
   ╚════════════════════════════════════════════╝
   `);
 });
 
-export { db, dbType, dbQuery };
+export { db, dbQuery };

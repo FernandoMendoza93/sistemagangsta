@@ -1,7 +1,5 @@
 import express from 'express';
 import { verifyToken, requireSuperAdmin } from '../middleware/auth.js';
-import fs from 'fs';
-import path from 'path';
 
 const router = express.Router();
 
@@ -26,14 +24,15 @@ router.get('/metrics', async (req, res) => {
         const memoryUsage = process.memoryUsage();
         const ramUsed = formatBytes(memoryUsage.rss); // Resident Set Size
 
-        // 2. Tamaño del archivo SQLite
-        const dbPath = path.resolve('data', 'database.sqlite');
+        // 2. Tamaño de la base de datos MySQL
         let dbSize = 'Desconocido';
         try {
-            if (fs.existsSync(dbPath)) {
-                const stats = fs.statSync(dbPath);
-                dbSize = formatBytes(stats.size);
-            }
+            const sizeResult = await dbQuery.get(`
+                SELECT SUM(data_length + index_length) AS total_bytes
+                FROM information_schema.TABLES
+                WHERE table_schema = DATABASE()
+            `, []);
+            dbSize = sizeResult && sizeResult.total_bytes ? formatBytes(Number(sizeResult.total_bytes)) : '0 Bytes';
         } catch (e) {
             console.error('Error leyendo tamaño de DB:', e);
         }
