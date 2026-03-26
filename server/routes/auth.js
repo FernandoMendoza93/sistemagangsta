@@ -69,7 +69,8 @@ router.post('/login', async (req, res) => {
             SELECT u.id, u.nombre, u.email, u.password_hash, u.activo, u.barberia_id,
                    r.nombre_rol as rol,
                    b.nombre as barberia_nombre, b.color_acento, b.logo_url, b.activo as barberia_activa,
-                   b.slug as barberia_slug
+                   b.slug as barberia_slug,
+                   t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberias b ON u.barberia_id = b.id
