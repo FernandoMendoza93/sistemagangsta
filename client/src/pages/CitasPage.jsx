@@ -238,7 +238,7 @@ export default function CitasPage() {
                                     ✓ Marcar como Completada
                                 </button>
                             )}
-                            {selectedCita.estado !== 'Cancelada' && (
+                            {selectedCita.estado !== 'Cancelada' && selectedCita.estado !== 'Completada' && (
                                 <button
                                     className="confirm-modal-btn"
                                     style={{ background: 'var(--danger, #ef4444)', color: '#fff', width: '100%' }}
