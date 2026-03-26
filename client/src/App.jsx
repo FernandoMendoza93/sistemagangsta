@@ -90,6 +90,17 @@ function AppRoutes() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Dynamic Page Title
+  useEffect(() => {
+    if (user?.barberia_nombre) {
+      document.title = `${user.barberia_nombre} | Flow System`;
+    } else if (user?.rol === 'SuperAdmin') {
+      document.title = `Flow Admin | Flow System`;
+    } else {
+      document.title = `Flow Barber System`;
+    }
+  }, [user]);
+
   // Auto-Logout por Inactividad (15 minutos)
   useEffect(() => {
     if (!user) return;

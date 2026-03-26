@@ -37,6 +37,9 @@ export default function ClienteLoginPage() {
         publicService.getConfig(slug)
             .then(res => {
                 setBarberia(res.data);
+                if (res.data.nombre) {
+                    document.title = `${res.data.nombre} | Flow System`;
+                }
                 if (res.data.bg_main) {
                     applyTheme(res.data, res.data.barberia_id);
                 } else {

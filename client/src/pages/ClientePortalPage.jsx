@@ -69,6 +69,9 @@ export default function ClientePortalPage() {
         try {
             const res = await publicService.getConfig(slug);
             setPublicConfig(res.data);
+            if (res.data.nombre) {
+                document.title = `${res.data.nombre} | Flow System`;
+            }
             if (res.data.bg_main) {
                 applyTheme(res.data, res.data.barberia_id);
             } else {
