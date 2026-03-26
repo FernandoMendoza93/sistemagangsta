@@ -37,7 +37,7 @@
 .title-icon {
     width: 56px;
     height: 56px;
-    background: #eff6ff;
+    background: rgba(var(--accent-primary-rgb), 0.1);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -98,14 +98,14 @@
 }
 
 .btn-primary-pro {
-    background: #2563eb;
-    color: var(--text-inverse);
+    background: var(--accent-primary);
+    color: #fff;
     box-shadow: 0 1px 2px 0 var(--shadow-color);
 }
 
 .btn-primary-pro:hover {
-    background: #1d4ed8;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background: var(--accent-secondary);
+    box-shadow: 0 4px 12px rgba(var(--accent-primary-rgb), 0.3);
     transform: translateY(-1px);
 }
 
@@ -201,8 +201,8 @@
 .form-group-pro select:focus,
 .form-group-pro textarea:focus {
     outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
 }
 
 .form-group-pro textarea {
