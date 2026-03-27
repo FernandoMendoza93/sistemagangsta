@@ -31,19 +31,21 @@ export default function NotificationManager() {
                 lastDataRef.current = null;
             };
 
-            // Selección agresiva de voz femenina (Sabina detectada en sistema del usuario)
+            // Selección agresiva de voz femenina (Sabina en PC, Paulina/Monica en iOS)
             const voices = window.speechSynthesis.getVoices();
             
             const femaleVoice = voices.find(v => 
                 v.name.toLowerCase().includes('sabina') || 
                 v.name.toLowerCase().includes('helena') ||
                 v.name.toLowerCase().includes('paulina') ||
-                v.name.toLowerCase().includes('zira')
+                v.name.toLowerCase().includes('zira') ||
+                v.name.toLowerCase().includes('monica') ||
+                v.name.toLowerCase().includes('siri') ||
+                v.name.toLowerCase().includes('samantha')
             ) || voices.find(v => 
                 (v.lang.toLowerCase().includes('es')) && 
                 (
                     v.name.toLowerCase().includes('lucia') ||
-                    v.name.toLowerCase().includes('monica') ||
                     v.name.toLowerCase().includes('natural') ||
                     v.name.toLowerCase().includes('female') ||
                     v.name.toLowerCase().includes('google español')
