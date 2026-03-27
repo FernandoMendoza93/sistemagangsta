@@ -34,19 +34,30 @@ export default function NotificationManager() {
                 const mensaje = new SpeechSynthesisUtterance();
                 mensaje.text = `Atención. Tienes una nueva cita de ${data.cliente} a las ${data.hora}. Repito, cita de ${data.cliente} a las ${data.hora}.`;
                 mensaje.lang = 'es-MX';
-                mensaje.rate = 1.1;    // Un poco más rápido como solicitó el usuario
-                mensaje.pitch = 1.1;   // Tono ligeramente más agudo para sonar más femenino si la voz es neutra
+                mensaje.rate = 1.4;    // Aumentado significativamente
+                mensaje.pitch = 1.3;   // Tono más agudo para forzar femineidad
 
-                // Seleccionar una voz femenina si está disponible
+                // Forzar búsqueda de voz femenina
                 const voices = window.speechSynthesis.getVoices();
-                // Buscar voces conocidas como femeninas en español
-                const preferredVoice = voices.find(v => 
+                
+                // Criterios de búsqueda: español + nombres típicamente femeninos o etiquetas de voz
+                const femaleVoice = voices.find(v => 
                     (v.lang.includes('es') || v.lang.includes('ES')) && 
-                    (v.name.includes('Google') || v.name.includes('Paulina') || v.name.includes('Helena') || v.name.includes('Sabina') || v.name.includes('Female'))
+                    (
+                        v.name.toLowerCase().includes('google') || 
+                        v.name.toLowerCase().includes('mexic') ||
+                        v.name.toLowerCase().includes('female') ||
+                        v.name.toLowerCase().includes('paulina') ||
+                        v.name.toLowerCase().includes('helena') ||
+                        v.name.toLowerCase().includes('sabina') ||
+                        v.name.toLowerCase().includes('lucia') ||
+                        v.name.toLowerCase().includes('monica') ||
+                        v.name.toLowerCase().includes('zira')
+                    )
                 );
                 
-                if (preferredVoice) {
-                    mensaje.voice = preferredVoice;
+                if (femaleVoice) {
+                    mensaje.voice = femaleVoice;
                 }
                 
                 window.speechSynthesis.speak(mensaje);
