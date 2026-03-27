@@ -7,14 +7,25 @@ export default function NotificationManager() {
     const { user } = useAuth();
     const audioRef = useRef(null);
     const lastDataRef = useRef(null);
+    const isSpeakingRef = useRef(false);
 
     const hablarCita = (data) => {
+        if (!data || isSpeakingRef.current) return;
+        
         try {
+            isSpeakingRef.current = true;
+            console.log('🗣️ Iniciando síntesis de voz...');
+            
             const mensaje = new SpeechSynthesisUtterance();
             mensaje.text = `Atención. Tienes una nueva cita de ${data.cliente} a las ${data.hora}. Repito, cita de ${data.cliente} a las ${data.hora}.`;
             mensaje.lang = 'es-MX';
             mensaje.rate = 1.4;
             mensaje.pitch = 1.3;
+
+            mensaje.onend = () => {
+                isSpeakingRef.current = false;
+                lastDataRef.current = null;
+            };
 
             const voices = window.speechSynthesis.getVoices();
             const femaleVoice = voices.find(v => 
@@ -36,6 +47,7 @@ export default function NotificationManager() {
             window.speechSynthesis.speak(mensaje);
         } catch (error) {
             console.warn('⚠️ Error en síntesis de voz:', error);
+            isSpeakingRef.current = false;
         }
     };
 
@@ -48,32 +60,31 @@ export default function NotificationManager() {
         const socket = initiateSocket(user.barberia_id);
 
         subscribeToEvent('NUEVA_CITA', (data) => {
-            console.log('🔔 NUEVA CITA RECIBIDA:', data);
+            console.log('🔔 EVENTO RECIBIDO:', data);
             lastDataRef.current = data;
             
             // Alerta Visual
             toast.success(`¡Nueva Cita! ${data.cliente} - ${data.hora}`, {
                 description: `${data.servicio}`,
                 duration: 10000, 
-                action: {
-                    label: 'Ver Citas',
-                    onClick: () => window.location.href = '/panel/citas'
-                }
             });
 
-            // 1. Intentar reproducir el tono de audio
+            // Lógica de reproducción
             if (audioRef.current) {
+                console.log('🎵 Intentando reproducir audio...');
                 audioRef.current.currentTime = 0;
+                
                 audioRef.current.play()
                     .then(() => {
-                        // El audio está sonando. Cuando termine, el evento onEnded disparará la voz.
-                        console.log('🔊 Tono de audio iniciado...');
+                        console.log('✅ Audio reproduciéndose correctamente');
                     })
                     .catch(e => {
-                        console.warn('Bloqueo de audio, disparando voz directamente:', e);
+                        console.error('❌ Error / Bloqueo de audio:', e.message);
+                        // Si el audio falla (bloqueo por navegador o error de carga), saltamos a la voz
                         hablarCita(data);
                     });
             } else {
+                console.warn('⚠️ Referencia de audio no disponible, saltando a voz');
                 hablarCita(data);
             }
         });
@@ -101,7 +112,9 @@ export default function NotificationManager() {
             ref={audioRef} 
             src="/assets/audio/tono_whatsapp_grupo.mp3" 
             preload="auto"
+            onError={(e) => console.error('🔴 Error crítico cargando archivo de audio:', e)}
             onEnded={() => {
+                console.log('🏁 Audio finalizado, iniciando voz...');
                 if (lastDataRef.current) {
                     hablarCita(lastDataRef.current);
                 }
