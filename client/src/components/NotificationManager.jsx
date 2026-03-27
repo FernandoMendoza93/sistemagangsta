@@ -14,37 +14,47 @@ export default function NotificationManager() {
         
         try {
             isSpeakingRef.current = true;
-            console.log('🗣️ Iniciando síntesis de voz...');
+            console.log('🗣️ Iniciando síntesis de voz femenina (Pitch 1.6)...');
             
+            // Cancelar cualquier voz pendiente para limpiar el canal
+            window.speechSynthesis.cancel();
+
             const mensaje = new SpeechSynthesisUtterance();
             mensaje.text = `Atención. Tienes una nueva cita de ${data.cliente} a las ${data.hora}. Repito, cita de ${data.cliente} a las ${data.hora}.`;
             mensaje.lang = 'es-MX';
-            mensaje.rate = 1.4;
-            mensaje.pitch = 1.3; // Tono más agudo para femineidad
-            mensaje.volume = 1;  // Volumen al máximo
+            mensaje.rate = 1.5;    // Un poco más rápido para mayor fluidez
+            mensaje.pitch = 1.6;   // Pitch forzado a nivel femenino
+            mensaje.volume = 1.0;  // Volumen máximo nativo
 
             mensaje.onend = () => {
                 isSpeakingRef.current = false;
                 lastDataRef.current = null;
             };
 
+            // Selección agresiva de voz femenina
             const voices = window.speechSynthesis.getVoices();
             const femaleVoice = voices.find(v => 
-                (v.lang.includes('es') || v.lang.includes('ES')) && 
+                (v.lang.toLowerCase().includes('es')) && 
                 (
-                    v.name.toLowerCase().includes('google') || 
-                    v.name.toLowerCase().includes('mexic') ||
-                    v.name.toLowerCase().includes('female') ||
-                    v.name.toLowerCase().includes('paulina') ||
+                    v.name.toLowerCase().includes('sabina') || 
                     v.name.toLowerCase().includes('helena') ||
-                    v.name.toLowerCase().includes('sabina') ||
+                    v.name.toLowerCase().includes('paulina') ||
                     v.name.toLowerCase().includes('lucia') ||
+                    v.name.toLowerCase().includes('zira') ||
                     v.name.toLowerCase().includes('monica') ||
-                    v.name.toLowerCase().includes('zira')
+                    v.name.toLowerCase().includes('natural') ||
+                    v.name.toLowerCase().includes('female') ||
+                    v.name.toLowerCase().includes('google español')
                 )
             );
             
-            if (femaleVoice) mensaje.voice = femaleVoice;
+            if (femaleVoice) {
+                console.log('✅ Voz seleccionada:', femaleVoice.name);
+                mensaje.voice = femaleVoice;
+            } else {
+                console.warn('⚠️ No se encontró voz femenina específica, usando predeterminada con pitch alto');
+            }
+
             window.speechSynthesis.speak(mensaje);
         } catch (error) {
             console.warn('⚠️ Error en síntesis de voz:', error);
@@ -73,15 +83,13 @@ export default function NotificationManager() {
 
             // Lógica de reproducción SIMULTÁNEA
             if (audioRef.current) {
-                console.log('🎵 Reproduciendo audio y voz al mismo tiempo...');
+                console.log('🎵 Reproduciendo audio (vol 0.5) y voz (vol 1.0) al mismo tiempo...');
                 audioRef.current.currentTime = 0;
+                audioRef.current.volume = 0.5; // Bajamos el tono para que la voz resalte
                 audioRef.current.play().catch(e => {
                     if (e.name === 'NotAllowedError') {
                         console.warn('🔇 Audio bloqueado por el navegador. Se requiere interacción.');
-                        toast.error('Haz clic en cualquier lugar para activar el sonido de las notificaciones', {
-                            duration: 5000,
-                            position: 'top-center'
-                        });
+                        toast.error('Haz clic en la página para activar el sonido de las notificaciones');
                     } else {
                         console.error('❌ Error de audio:', e);
                     }
