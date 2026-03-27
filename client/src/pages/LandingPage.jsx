@@ -93,7 +93,7 @@ export default function LandingPage() {
                 <div className="pricing-cards">
                     <div className="pricing-card">
                         <p className="pricing-plan-name">Mensual</p>
-                        <p className="pricing-price">$299 <small>MXN/mes</small></p>
+                        <p className="pricing-price">$600 <small>MXN/mes</small></p>
                         <ul className="pricing-features">
                             <li><CheckCircle size={16} color="#34D399" /> Citas ilimitadas</li>
                             <li><CheckCircle size={16} color="#34D399" /> Punto de venta</li>
@@ -101,14 +101,16 @@ export default function LandingPage() {
                             <li><CheckCircle size={16} color="#34D399" /> Reportes basicos</li>
                         </ul>
                     </div>
-                    <div className="pricing-card popular">
+                    <div className="pricing-card popular highlighted">
+                        <div className="savings-badge">30% OFF</div>
                         <p className="pricing-plan-name">Anual</p>
-                        <p className="pricing-price">$2,999 <small>MXN/ano</small></p>
+                        <p className="pricing-price">$5,000 <small>MXN/año</small></p>
+                        <p className="pricing-savings">Ahorra $2,200 al año</p>
                         <ul className="pricing-features">
                             <li><CheckCircle size={16} color="#34D399" /> Todo del plan mensual</li>
-                            <li><CheckCircle size={16} color="#34D399" /> 2 meses gratis</li>
                             <li><CheckCircle size={16} color="#34D399" /> Soporte prioritario</li>
-                            <li><CheckCircle size={16} color="#34D399" /> Personalizacion de marca</li>
+                            <li><CheckCircle size={16} color="#34D399" /> Personalización de marca</li>
+                            <li><CheckCircle size={16} color="#34D399" /> <b>Precio garantizado</b></li>
                         </ul>
                     </div>
                 </div>

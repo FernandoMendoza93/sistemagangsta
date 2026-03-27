@@ -263,6 +263,46 @@
     box-shadow: 0 8px 25px rgba(var(--accent-primary-rgb), 0.1);
 }
 
+.pricing-card.highlighted {
+    transform: scale(1.03);
+    border: 2px solid var(--accent-primary);
+    background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(var(--accent-primary-rgb), 0.03) 100%);
+}
+
+.pricing-card.highlighted:hover {
+    transform: scale(1.05);
+}
+
+.savings-badge {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #FFBD2E;
+    color: #000;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(255, 189, 46, 0.3);
+    z-index: 2;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.05); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+
+.pricing-savings {
+    color: #10B981;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
 .pricing-card.popular::after {
     content: 'Popular';
     position: absolute;

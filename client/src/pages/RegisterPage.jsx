@@ -80,7 +80,7 @@ export default function RegisterPage() {
         }
     }
 
-    const precio = formData.plan === 'anual' ? '$2,999 MXN' : '$299 MXN';
+    const precio = formData.plan === 'anual' ? '$5,000 MXN' : '$600 MXN';
 
     if (success) {
         return (
@@ -246,17 +246,17 @@ export default function RegisterPage() {
                                 onClick={() => setFormData({ ...formData, plan: 'mensual' })}
                             >
                                 <p className="plan-name">Mensual</p>
-                                <p className="plan-price">$299</p>
+                                <p className="plan-price">$600</p>
                                 <p className="plan-period">MXN / mes</p>
                             </div>
                             <div
                                 className={`reg-plan-option ${formData.plan === 'anual' ? 'selected' : ''}`}
                                 onClick={() => setFormData({ ...formData, plan: 'anual' })}
                             >
-                                <span className="plan-popular-tag">Popular</span>
+                                <span className="plan-popular-tag">Ahorra $2,200</span>
                                 <p className="plan-name">Anual</p>
-                                <p className="plan-price">$2,999</p>
-                                <p className="plan-period">MXN / ano</p>
+                                <p className="plan-price">$5,000</p>
+                                <p className="plan-period">MXN / año</p>
                             </div>
                         </div>
 
