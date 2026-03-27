@@ -52,6 +52,7 @@ export default function NotificationManager() {
     };
 
     useEffect(() => {
+        console.log('🚀 NotificationManager v1.1.0 - Secuencia Audio+Voz Cargada');
         if (!user || user.rol === 'Cliente') {
             disconnectSocket();
             return;
