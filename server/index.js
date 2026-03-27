@@ -3,14 +3,20 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createServer } from 'http';
+import { initSocket } from './services/socketService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Inicializar Express
+// Inicializar Express e HTTP Server
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 process.env.TZ = 'America/Mexico_City'; // Enforcement de zona horaria
+
+// Inicializar Socket.io
+initSocket(server);
 
 // Middleware
 app.use(cors());
@@ -163,7 +169,7 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log('Servidor activo en puerto:', PORT);
     console.log(`
   ╔════════════════════════════════════════════╗

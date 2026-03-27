@@ -3,6 +3,8 @@ import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/au
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
+import { emitToTenant } from '../services/socketService.js';
+import { sendNewAppointmentEmail } from '../services/emailService.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -137,6 +139,50 @@ router.post('/', verifyToken, async (req, res) => {
             INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas, barberia_id)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `, [req.user.id, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id]);
+
+        // --- NOTIFICACIONES ---
+        try {
+            // Obtener info extendida para la notificación
+            const info = await dbQuery.get(`
+                SELECT 
+                    c.nombre as cliente_nombre,
+                    s.nombre_servicio,
+                    b_u.email as barbero_email,
+                    barb.nombre as barberia_nombre,
+                    barb.email_contacto as barberia_email
+                FROM clientes c
+                JOIN servicios s ON s.id = ?
+                JOIN barberos b ON b.id = ?
+                JOIN usuarios b_u ON b.id_usuario = b_u.id
+                JOIN barberias barb ON barb.id = ?
+                WHERE c.id = ?
+            `, [id_servicio, id_barbero, req.barberia_id, req.user.id]);
+
+            if (info) {
+                // 1. Notificación en Tiempo Real (WebSocket)
+                emitToTenant(req.barberia_id, 'NUEVA_CITA', {
+                    cliente: info.cliente_nombre,
+                    hora: hora,
+                    fecha: fecha,
+                    servicio: info.nombre_servicio
+                });
+
+                // 2. Notificación por Correo (Respaldo)
+                const emails = [info.barberia_email, info.barbero_email].filter(Boolean);
+                for (const email of emails) {
+                    sendNewAppointmentEmail({
+                        to: email,
+                        cliente: info.cliente_nombre,
+                        fecha: dayjs(fecha).format('DD/MM/YYYY'),
+                        hora: hora,
+                        servicio: info.nombre_servicio,
+                        barberiaNombre: info.barberia_nombre
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.error('⚠️ Error en proceso de notificación:', notifErr.message);
+        }
 
         res.status(201).json({
             message: 'Cita agendada exitosamente',

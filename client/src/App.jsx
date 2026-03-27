@@ -26,6 +26,7 @@ import ScannerPage from './pages/ScannerPage';
 import RegisterPage from './pages/RegisterPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
 import { Toaster } from 'sonner';
+import NotificationManager from './components/NotificationManager';
 import './index.css';
 
 // ============================================
@@ -101,40 +102,6 @@ function AppRoutes() {
     }
   }, [user]);
 
-  // Auto-Logout por Inactividad (15 minutos)
-  useEffect(() => {
-    if (!user) return;
-
-    let timeoutId;
-    const INACTIVITY_LIMIT_MS = 15 * 60 * 1000;
-
-    const resetTimer = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        logout();
-        if (user.rol === 'Cliente') {
-            const currentPath = window.location.pathname;
-            if (currentPath.startsWith('/portal/')) {
-                const matchedSlug = currentPath.split('/')[2];
-                navigate(`/portal/${matchedSlug}`);
-            } else {
-                navigate('/mi-perfil');
-            }
-        } else {
-            navigate('/login');
-        }
-      }, INACTIVITY_LIMIT_MS);
-    };
-
-    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-    events.forEach(event => window.addEventListener(event, resetTimer));
-    resetTimer();
-
-    return () => {
-      clearTimeout(timeoutId);
-      events.forEach(event => window.removeEventListener(event, resetTimer));
-    };
-  }, [user, logout, navigate]);
 
   function ClienteProtectedRoute({ children }) {
     const location = useLocation();
@@ -275,6 +242,7 @@ export default function App() {
       <AuthProvider>
         <ThemeProvider>
           <ThemeApplier>
+            <NotificationManager />
             <AppRoutes />
           </ThemeApplier>
           <Toaster
