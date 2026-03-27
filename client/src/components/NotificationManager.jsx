@@ -70,24 +70,15 @@ export default function NotificationManager() {
                 duration: 10000, 
             });
 
-            // Lógica de reproducción
+            // Lógica de reproducción SIMULTÁNEA
             if (audioRef.current) {
-                console.log('🎵 Intentando reproducir audio...');
+                console.log('🎵 Reproduciendo audio y voz al mismo tiempo...');
                 audioRef.current.currentTime = 0;
-                
-                audioRef.current.play()
-                    .then(() => {
-                        console.log('✅ Audio reproduciéndose correctamente');
-                    })
-                    .catch(e => {
-                        console.error('❌ Error / Bloqueo de audio:', e.message);
-                        // Si el audio falla (bloqueo por navegador o error de carga), saltamos a la voz
-                        hablarCita(data);
-                    });
-            } else {
-                console.warn('⚠️ Referencia de audio no disponible, saltando a voz');
-                hablarCita(data);
+                audioRef.current.play().catch(e => console.error('❌ Error de audio:', e));
             }
+            
+            // Disparar voz inmediatamente
+            hablarCita(data);
         });
 
         return () => {
@@ -114,12 +105,6 @@ export default function NotificationManager() {
             src={`/assets/audio/tono_whatsapp_grupo.mp3?v=${Date.now()}`} 
             preload="auto"
             onError={(e) => console.error('🔴 Error crítico cargando archivo de audio:', e)}
-            onEnded={() => {
-                console.log('🏁 Audio finalizado, iniciando voz...');
-                if (lastDataRef.current) {
-                    hablarCita(lastDataRef.current);
-                }
-            }}
         />
     );
 }
