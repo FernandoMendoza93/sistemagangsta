@@ -33,11 +33,22 @@ export default function NotificationManager() {
             try {
                 const mensaje = new SpeechSynthesisUtterance();
                 mensaje.text = `Atención. Tienes una nueva cita de ${data.cliente} a las ${data.hora}. Repito, cita de ${data.cliente} a las ${data.hora}.`;
-                mensaje.lang = 'es-MX'; // Español México
-                mensaje.rate = 0.9;    // Velocidad ligeramente más lenta para claridad
-                mensaje.pitch = 1;     // Tono normal
+                mensaje.lang = 'es-MX';
+                mensaje.rate = 1.1;    // Un poco más rápido como solicitó el usuario
+                mensaje.pitch = 1.1;   // Tono ligeramente más agudo para sonar más femenino si la voz es neutra
+
+                // Seleccionar una voz femenina si está disponible
+                const voices = window.speechSynthesis.getVoices();
+                // Buscar voces conocidas como femeninas en español
+                const preferredVoice = voices.find(v => 
+                    (v.lang.includes('es') || v.lang.includes('ES')) && 
+                    (v.name.includes('Google') || v.name.includes('Paulina') || v.name.includes('Helena') || v.name.includes('Sabina') || v.name.includes('Female'))
+                );
                 
-                // Intentar hablar
+                if (preferredVoice) {
+                    mensaje.voice = preferredVoice;
+                }
+                
                 window.speechSynthesis.speak(mensaje);
             } catch (error) {
                 console.warn('⚠️ Error en síntesis de voz:', error);
