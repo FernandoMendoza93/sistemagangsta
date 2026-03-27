@@ -20,7 +20,8 @@ export default function NotificationManager() {
             mensaje.text = `Atención. Tienes una nueva cita de ${data.cliente} a las ${data.hora}. Repito, cita de ${data.cliente} a las ${data.hora}.`;
             mensaje.lang = 'es-MX';
             mensaje.rate = 1.4;
-            mensaje.pitch = 1.3;
+            mensaje.pitch = 1.3; // Tono más agudo para femineidad
+            mensaje.volume = 1;  // Volumen al máximo
 
             mensaje.onend = () => {
                 isSpeakingRef.current = false;
