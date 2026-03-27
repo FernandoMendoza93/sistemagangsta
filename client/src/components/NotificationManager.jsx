@@ -70,6 +70,17 @@ export default function NotificationManager() {
 
     useEffect(() => {
         console.log('🚀 NotificationManager v1.1.0 - Secuencia Audio+Voz Cargada');
+        
+        const logVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                console.log('🎤 Voces disponibles en este sistema:', voices.map(v => v.name));
+            }
+        };
+
+        logVoices();
+        window.speechSynthesis.onvoiceschanged = logVoices;
+
         if (!user || user.rol === 'Cliente') {
             disconnectSocket();
             return;
