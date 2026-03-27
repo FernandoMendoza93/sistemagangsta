@@ -9,7 +9,7 @@ export const initiateSocket = (tenantId) => {
 
     socket = io(SOCKET_URL, {
         query: { tenantId },
-        transports: ['websocket'],
+        transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 5000

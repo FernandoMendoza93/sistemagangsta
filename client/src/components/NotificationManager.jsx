@@ -111,7 +111,7 @@ export default function NotificationManager() {
     return (
         <audio 
             ref={audioRef} 
-            src="/assets/audio/tono_whatsapp_grupo.mp3" 
+            src={`/assets/audio/tono_whatsapp_grupo.mp3?v=${Date.now()}`} 
             preload="auto"
             onError={(e) => console.error('🔴 Error crítico cargando archivo de audio:', e)}
             onEnded={() => {
