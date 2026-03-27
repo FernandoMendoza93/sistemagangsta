@@ -74,10 +74,20 @@ export default function NotificationManager() {
             if (audioRef.current) {
                 console.log('🎵 Reproduciendo audio y voz al mismo tiempo...');
                 audioRef.current.currentTime = 0;
-                audioRef.current.play().catch(e => console.error('❌ Error de audio:', e));
+                audioRef.current.play().catch(e => {
+                    if (e.name === 'NotAllowedError') {
+                        console.warn('🔇 Audio bloqueado por el navegador. Se requiere interacción.');
+                        toast.error('Haz clic en cualquier lugar para activar el sonido de las notificaciones', {
+                            duration: 5000,
+                            position: 'top-center'
+                        });
+                    } else {
+                        console.error('❌ Error de audio:', e);
+                    }
+                });
             }
             
-            // Disparar voz inmediatamente
+            // Disparar voz inmediatamente (a veces la voz sí funciona aunque el audio falle)
             hablarCita(data);
         });
 
