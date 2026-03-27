@@ -31,26 +31,22 @@ export default function NotificationManager() {
                 lastDataRef.current = null;
             };
 
-            // Selección agresiva de voz femenina
+            // Selección agresiva de voz femenina (Sabina detectada en sistema del usuario)
             const voices = window.speechSynthesis.getVoices();
             
-            // LOG DE DEPURACIÓN PARA EL USUARIO
-            console.log('🎤 Voces disponibles en este sistema:', voices.map(v => v.name));
-
             const femaleVoice = voices.find(v => 
+                v.name.toLowerCase().includes('sabina') || 
+                v.name.toLowerCase().includes('helena') ||
+                v.name.toLowerCase().includes('paulina') ||
+                v.name.toLowerCase().includes('zira')
+            ) || voices.find(v => 
                 (v.lang.toLowerCase().includes('es')) && 
                 (
-                    v.name.toLowerCase().includes('sabina') || 
-                    v.name.toLowerCase().includes('helena') ||
-                    v.name.toLowerCase().includes('paulina') ||
                     v.name.toLowerCase().includes('lucia') ||
-                    v.name.toLowerCase().includes('zira') ||
                     v.name.toLowerCase().includes('monica') ||
                     v.name.toLowerCase().includes('natural') ||
                     v.name.toLowerCase().includes('female') ||
-                    v.name.toLowerCase().includes('google español') ||
-                    v.name.toLowerCase().includes('google spanish') ||
-                    v.name.toLowerCase().includes('microsoft') // A veces las de Microsoft son mejores
+                    v.name.toLowerCase().includes('google español')
                 )
             );
             
