@@ -33,6 +33,10 @@ export default function NotificationManager() {
 
             // Selección agresiva de voz femenina
             const voices = window.speechSynthesis.getVoices();
+            
+            // LOG DE DEPURACIÓN PARA EL USUARIO
+            console.log('🎤 Voces disponibles en este sistema:', voices.map(v => v.name));
+
             const femaleVoice = voices.find(v => 
                 (v.lang.toLowerCase().includes('es')) && 
                 (
@@ -44,7 +48,9 @@ export default function NotificationManager() {
                     v.name.toLowerCase().includes('monica') ||
                     v.name.toLowerCase().includes('natural') ||
                     v.name.toLowerCase().includes('female') ||
-                    v.name.toLowerCase().includes('google español')
+                    v.name.toLowerCase().includes('google español') ||
+                    v.name.toLowerCase().includes('google spanish') ||
+                    v.name.toLowerCase().includes('microsoft') // A veces las de Microsoft son mejores
                 )
             );
             
