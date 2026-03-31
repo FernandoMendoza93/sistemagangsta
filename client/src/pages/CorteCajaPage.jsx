@@ -58,66 +58,57 @@ export default function CorteCajaPage() {
 
     const handleAbrirTurno = async () => {
         if (!montoInicial || parseFloat(montoInicial) < 0) {
-            toast.warning('Ingresa un monto inicial válido');
-            return;
+            return toast.error('Ingresa un monto inicial válido');
         }
-
         try {
-            await corteCajaService.abrir(parseFloat(montoInicial), 'transparente');
-            toast.success(`¡Turno Abierto con $${montoInicial}!`);
+            await corteCajaService.abrir(parseFloat(montoInicial));
+            toast.success('Turno abierto correctamente');
             setMontoInicial('');
             cargarDatos();
         } catch (error) {
             console.error(error);
-            toast.error('Error al abrir el turno');
+            toast.error(error.response?.data?.error || 'Error al abrir el turno');
         }
     };
 
     const handleRegistrarEntrada = async () => {
-        const { monto, descripcion } = entradaForm;
-        if (!monto || !descripcion) {
-            toast.warning('Completa todos los campos');
-            return;
-        }
-
+        if (!entradaForm.monto || !entradaForm.descripcion) return toast.error('Completa los campos');
         try {
-            await corteCajaService.registrarEntrada(parseFloat(monto), descripcion);
-            toast.success('Entrada registrada correctamente');
-            setEntradaForm({ monto: '', descripcion: '' });
+            await corteCajaService.registrarEntrada(parseFloat(entradaForm.monto), entradaForm.descripcion);
+            toast.success('Entrada registrada');
             setShowEntradaModal(false);
+            setEntradaForm({ monto: '', descripcion: '' });
             cargarDatos();
         } catch (error) {
-            console.error(error);
             toast.error('Error al registrar entrada');
         }
     };
 
     const handleRegistrarSalida = async () => {
-        const { monto, descripcion } = salidaForm;
-        if (!monto || !descripcion) {
-            toast.warning('Completa todos los campos');
-            return;
-        }
-
+        if (!salidaForm.monto || !salidaForm.descripcion) return toast.error('Completa los campos');
         try {
-            await corteCajaService.registrarGasto(parseFloat(monto), descripcion);
-            toast.success('Salida registrada correctamente');
-            setSalidaForm({ monto: '', descripcion: '' });
+            await corteCajaService.registrarGasto(parseFloat(salidaForm.monto), salidaForm.descripcion);
+            toast.success('Salida registrada');
             setShowSalidaModal(false);
+            setSalidaForm({ monto: '', descripcion: '' });
             cargarDatos();
         } catch (error) {
-            console.error(error);
             toast.error('Error al registrar salida');
         }
     };
 
-    const handleCerrarTurno = async () => {
-        const { montoReal, notas } = cierreForm;
-        if (montoReal === '' || parseFloat(montoReal) < 0) {
-            toast.warning('Ingresa un monto real válido');
-            return;
+    const handleExportar = async () => {
+        try {
+            window.open(`${import.meta.env.VITE_API_URL}/api/corte-caja/exportar`, '_blank');
+        } catch (error) {
+            toast.error('Error al exportar el historial');
         }
+    };
 
+    const handleCerrarTurno = () => {
+        if (!cierreForm.montoReal || parseFloat(cierreForm.montoReal) < 0) {
+            return toast.error('Ingresa el monto físico contado');
+        }
         setShowCerrarConfirm(true);
     };
 
@@ -127,9 +118,9 @@ export default function CorteCajaPage() {
             const res = await corteCajaService.cerrar(corteActual.corte.id, parseFloat(cierreForm.montoReal), cierreForm.notas);
             const { resumen } = res.data;
 
-            toast.success(`Turno cerrado — Esperado: $${resumen.esperado.toFixed(2)} | Real: $${resumen.monto_real_fisico.toFixed(2)} | Diferencia: $${resumen.diferencia.toFixed(2)}`);
-            setCierreForm({ montoReal: '', notas: '' });
+            toast.success(`Turno cerrado — Esperado: $${resumen.esperado.toFixed(2)} | Real: $${resumen.monto_real_fisico.toFixed(2)} | Utilidad: $${resumen.total_ganancias.toFixed(2)}`);
             setShowCierreModal(false);
+            setCierreForm({ montoReal: '', notas: '' });
             cargarDatos();
         } catch (error) {
             console.error(error);
@@ -137,46 +128,27 @@ export default function CorteCajaPage() {
         }
     };
 
-    const handleExportar = async () => {
-        try {
-            const res = await corteCajaService.exportar();
-            const url = window.URL.createObjectURL(new Blob([res.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', 'corte_caja_historial.csv');
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        } catch (error) {
-            console.error(error);
-            toast.error('Error al exportar');
-        }
-    };
+    if (loading) return <div className="loading-container"><p>Cargando información del turno...</p></div>;
 
-    if (loading) {
-        return <div className="loading">Cargando...</div>;
-    }
-
-    // Vista: Caja Cerrada
-    if (!corteActual || !corteActual.abierto) {
+    if (!corteActual?.abierto) {
         return (
             <div className="corte-caja-page-pro">
                 <div className="page-header-pro">
                     <div className="header-title-wrapper">
                         <div className="title-icon">
-                            <Icon name="cash" size={28} color="var(--accent-primary)" />
+                            <Icon name="lock" size={28} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <h1 className="corte-title">Corte de Caja</h1>
-                            <p className="corte-subtitle">Abre un nuevo turno para comenzar</p>
+                            <h1 className="corte-title">Caja Cerrada</h1>
+                            <p className="corte-subtitle">Abre un nuevo turno para registrar ventas y movimientos</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="abrir-turno-card-pro">
-                    <h2>Abrir Nuevo Turno</h2>
+                <div className="corte-apertura-card">
+                    <h2><Icon name="play-circle" size={20} color="var(--accent-primary)" /> Abrir Nuevo Turno</h2>
                     <div className="form-group-pro">
-                        <label>Fondo Inicial</label>
+                        <label>Fondo Inicial en Caja</label>
                         <input
                             type="number"
                             value={montoInicial}
@@ -201,7 +173,6 @@ export default function CorteCajaPage() {
                     </button>
                 </div>
 
-                {/* Historial de Turnos */}
                 <div className="corte-historial-pro">
                     <h2><Icon name="history" size={20} color="var(--accent-primary)" /> Historial de Turnos Recientes</h2>
                     <div className="table-container-glass">
@@ -212,6 +183,8 @@ export default function CorteCajaPage() {
                                     <th>Encargado</th>
                                     <th>Fondo Inicial</th>
                                     <th>Ventas Totales</th>
+                                    <th>Comisiones</th>
+                                    <th>Utilidad Neta</th>
                                     <th>Diferencia</th>
                                     <th>Estado</th>
                                 </tr>
@@ -223,6 +196,8 @@ export default function CorteCajaPage() {
                                         <td>{corte.nombre_encargado}</td>
                                         <td>${parseFloat(corte.monto_inicial || 0).toFixed(2)}</td>
                                         <td>${parseFloat(corte.total_ventas || 0).toFixed(2)}</td>
+                                        <td style={{ color: '#f97316' }}>-${parseFloat(corte.total_comisiones || 0).toFixed(2)}</td>
+                                        <td style={{ color: '#16a34a', fontWeight: 'bold' }}>${parseFloat(corte.total_ganancias || 0).toFixed(2)}</td>
                                         <td className={corte.diferencia < 0 ? 'text-danger-pro' : corte.diferencia > 0 ? 'text-success-pro' : 'text-neutral-pro'}>
                                             ${parseFloat(corte.diferencia || 0).toFixed(2)}
                                         </td>
@@ -234,7 +209,7 @@ export default function CorteCajaPage() {
                                     </tr>
                                 ))}
                                 {historialCortes.length === 0 && (
-                                    <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay turnos registrados</td></tr>
+                                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay turnos registrados</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -244,7 +219,6 @@ export default function CorteCajaPage() {
         );
     }
 
-    // Vista: Turno Activo
     const { encargado, fecha_apertura, hora_apertura } = corteActual.corte;
     const fechaInicio = new Date(fecha_apertura).toLocaleDateString('es-MX');
 
@@ -283,6 +257,7 @@ export default function CorteCajaPage() {
                 <>
                     <CorteResumen
                         totalVentas={desglose.resumen.total_ventas}
+                        totalComisiones={desglose.resumen.total_comisiones}
                         totalGanancia={desglose.resumen.total_ganancias}
                         dineroEsperado={desglose.resumen.dinero_esperado}
                     />
@@ -301,7 +276,6 @@ export default function CorteCajaPage() {
                 </>
             )}
 
-            {/* Historial de Turnos (Siempre visible) */}
             <div className="corte-historial-pro">
                 <h2><Icon name="history" size={20} color="var(--accent-primary)" /> Historial de Turnos Recientes</h2>
                 <div className="table-container-glass">
@@ -312,6 +286,8 @@ export default function CorteCajaPage() {
                                 <th>Encargado</th>
                                 <th>Fondo Inicial</th>
                                 <th>Ventas Totales</th>
+                                <th>Comisiones</th>
+                                <th>Utilidad Neta</th>
                                 <th>Diferencia</th>
                                 <th>Estado</th>
                             </tr>
@@ -323,6 +299,8 @@ export default function CorteCajaPage() {
                                     <td>{corte.nombre_encargado}</td>
                                     <td>${parseFloat(corte.monto_inicial || 0).toFixed(2)}</td>
                                     <td>${parseFloat(corte.total_ventas || 0).toFixed(2)}</td>
+                                    <td style={{ color: '#f97316' }}>-${parseFloat(corte.total_comisiones || 0).toFixed(2)}</td>
+                                    <td style={{ color: '#16a34a', fontWeight: 'bold' }}>${parseFloat(corte.total_ganancias || 0).toFixed(2)}</td>
                                     <td className={corte.diferencia < 0 ? 'text-danger-pro' : corte.diferencia > 0 ? 'text-success-pro' : 'text-neutral-pro'}>
                                         ${parseFloat(corte.diferencia || 0).toFixed(2)}
                                     </td>
@@ -334,7 +312,7 @@ export default function CorteCajaPage() {
                                 </tr>
                             ))}
                             {historialCortes.length === 0 && (
-                                <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay turnos registrados</td></tr>
+                                <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay turnos registrados</td></tr>
                             )}
                         </tbody>
                     </table>

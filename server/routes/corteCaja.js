@@ -64,6 +64,11 @@ router.get('/desglose', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROL
         const entradasList = await entradasRepo.getByDateRange(fullApertura, new Date().toISOString());
 
         const totalVentas = ventasPorMetodo.reduce((sum, m) => sum + m.total, 0);
+        
+        const totalComisiones = 
+            rentabilidad.servicios.reduce((sum, s) => sum + (s.comision || 0), 0) +
+            rentabilidad.productos.reduce((sum, p) => sum + (p.comision || 0), 0);
+
         const totalGanancias =
             rentabilidad.servicios.reduce((sum, s) => sum + s.ganancia, 0) +
             rentabilidad.productos.reduce((sum, p) => sum + p.ganancia, 0);
@@ -78,6 +83,7 @@ router.get('/desglose', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROL
             resumen: {
                 total_ventas: totalVentas,
                 total_ganancias: totalGanancias,
+                total_comisiones: totalComisiones,
                 dinero_esperado: corte.monto_inicial + ingresosEfectivo + totalEntradas - totalGastos
             },
             ventas_por_metodo: ventasPorMetodo,
@@ -89,6 +95,7 @@ router.get('/desglose', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROL
                 entradas: totalEntradas,
                 salidas: totalGastos,
                 devoluciones: devoluciones,
+                total_comisiones: totalComisiones,
                 total_esperado: corte.monto_inicial + ingresosEfectivo + totalEntradas - totalGastos
             },
             movimientos: {
@@ -162,6 +169,10 @@ router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
         const totalVentas = ventasPorMetodo.reduce((sum, m) => sum + m.total, 0);
 
         const rentabilidad = await corteRepo.getRentabilidadPorDepartamento(fullApertura);
+        const totalComisiones = 
+            rentabilidad.servicios.reduce((sum, s) => sum + (s.comision || 0), 0) +
+            rentabilidad.productos.reduce((sum, p) => sum + (p.comision || 0), 0);
+
         const totalGanancias =
             rentabilidad.servicios.reduce((sum, s) => sum + s.ganancia, 0) +
             rentabilidad.productos.reduce((sum, p) => sum + p.ganancia, 0);
@@ -178,6 +189,7 @@ router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
             notas: notas || '',
             totalVentas,
             totalGanancias,
+            totalComisiones,
             abonos,
             devoluciones,
             entradas
@@ -198,6 +210,7 @@ router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
                 monto_real_fisico,
                 diferencia,
                 total_ventas: totalVentas,
+                total_comisiones: totalComisiones,
                 total_ganancias: totalGanancias
             }
         });
@@ -268,10 +281,11 @@ router.get('/exportar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROL
             'Encargado': item.nombre_encargado || 'N/A',
             'Fondo Inicial': item.monto_inicial || 0,
             'Ventas Totales': item.total_ventas || 0,
+            'Comisiones': item.total_comisiones || 0,
+            'Utilidad Neta': item.total_ganancias || 0,
             'Diferencia': item.diferencia ?? 0,
             'Estado': item.fecha_cierre ? 'Cerrado' : 'En curso',
             'Fecha Cierre': item.fecha_cierre ? new Date(item.fecha_cierre).toLocaleString('es-MX') : 'En curso',
-            'Ganancias': item.total_ganancias || 0,
             'Notas': item.notas || ''
         }));
 

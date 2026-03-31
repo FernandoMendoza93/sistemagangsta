@@ -67,7 +67,8 @@ export class CorteCajaRepository {
                 total_ganancias = ?,
                 abonos_efectivo = ?,
                 devoluciones_efectivo = ?,
-                entradas_efectivo_total = ?
+                entradas_efectivo_total = ?,
+                total_comisiones = ?
             WHERE id = ? AND barberia_id = ?
         `, [
             mxDateTime,
@@ -81,6 +82,7 @@ export class CorteCajaRepository {
             data.abonos || 0,
             data.devoluciones || 0,
             data.entradas || 0,
+            data.totalComisiones || 0,
             id,
             this.barberiaId
         ]);
@@ -134,10 +136,12 @@ export class CorteCajaRepository {
                 s.nombre_servicio as nombre,
                 COUNT(vd.id) as cantidad,
                 COALESCE(SUM(vd.subtotal), 0) as total_ventas,
-                COALESCE(SUM(vd.subtotal), 0) as ganancia
+                COALESCE(SUM(cp.monto), 0) as comision,
+                COALESCE(SUM(vd.subtotal - IFNULL(cp.monto, 0)), 0) as ganancia
             FROM ventas_detalle vd
             JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
             LEFT JOIN servicios s ON vd.id_servicio = s.id
+            LEFT JOIN comisiones_pendientes cp ON vd.id = cp.id_venta_detalle
             WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_servicio IS NOT NULL AND vc.barberia_id = ?
             GROUP BY s.id, s.nombre_servicio
         `, [fullApertura, this.barberiaId]);
@@ -148,11 +152,13 @@ export class CorteCajaRepository {
                 p.nombre as nombre,
                 SUM(vd.cantidad) as cantidad,
                 COALESCE(SUM(vd.subtotal), 0) as total_ventas,
-                COALESCE(SUM((vd.precio_unitario - p.precio_costo) * vd.cantidad), 0) as ganancia
+                COALESCE(SUM(cp.monto), 0) as comision,
+                COALESCE(SUM((vd.precio_unitario - p.precio_costo) * vd.cantidad - IFNULL(cp.monto, 0)), 0) as ganancia
             FROM ventas_detalle vd
             JOIN ventas_cabecera vc ON vd.id_venta_cabecera = vc.id
             LEFT JOIN productos p ON vd.id_producto = p.id
             LEFT JOIN categorias c ON p.id_categoria = c.id
+            LEFT JOIN comisiones_pendientes cp ON vd.id = cp.id_venta_detalle
             WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_producto IS NOT NULL AND vc.barberia_id = ?
             GROUP BY c.id, p.id, c.nombre, p.nombre
         `, [fullApertura, this.barberiaId]);
