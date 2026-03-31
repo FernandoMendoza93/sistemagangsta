@@ -114,7 +114,7 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         }
 
         let query = `
-            SELECT cp.id, cp.monto, cp.fecha, cp.pagado
+            SELECT cp.id, cp.monto, cp.tipo, cp.fecha, cp.pagado
             FROM comisiones_pendientes cp
             WHERE cp.id_barbero = ? AND cp.barberia_id = ?
         `;

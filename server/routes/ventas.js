@@ -203,7 +203,7 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
         // Validar stock de productos (filtrado por tenant)
         for (const item of items) {
             if (item.id_producto) {
-                const producto = await dbQuery.get('SELECT stock_actual FROM productos WHERE id = ? AND barberia_id = ?', [item.id_producto, req.barberia_id]);
+                const producto = await dbQuery.get('SELECT stock_actual, comision_barbero FROM productos WHERE id = ? AND barberia_id = ?', [item.id_producto, req.barberia_id]);
                 if (!producto) {
                     return res.status(400).json({ error: `Producto ${item.id_producto} no encontrado` });
                 }
@@ -255,9 +255,21 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
                     if (barbero) {
                         const comision = subtotal * barbero.porcentaje_comision;
                         await tx.run(`
-                            INSERT INTO comisiones_pendientes (id_barbero, id_venta_detalle, monto, barberia_id)
-                            VALUES (?, ?, ?, ?)
+                            INSERT INTO comisiones_pendientes (id_barbero, id_venta_detalle, monto, tipo, barberia_id)
+                            VALUES (?, ?, ?, 'Servicio', ?)
                         `, [id_barbero, detalleId, comision, req.barberia_id]);
+                    }
+                }
+
+                // Comisión por venta de producto
+                if (item.id_producto && id_barbero) {
+                    const prod = await tx.get('SELECT comision_barbero FROM productos WHERE id = ? AND barberia_id = ?', [item.id_producto, req.barberia_id]);
+                    if (prod && prod.comision_barbero > 0) {
+                        const comisionProducto = prod.comision_barbero * item.cantidad;
+                        await tx.run(`
+                            INSERT INTO comisiones_pendientes (id_barbero, id_venta_detalle, monto, tipo, barberia_id)
+                            VALUES (?, ?, ?, 'Incentivo Producto', ?)
+                        `, [id_barbero, detalleId, comisionProducto, req.barberia_id]);
                     }
                 }
             }

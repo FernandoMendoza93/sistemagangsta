@@ -24,6 +24,7 @@ export default function InventarioPage() {
         stock_actual: 0,
         stock_minimo: 5,
         precio_costo: 0,
+        comision_barbero: 0,
         precio_venta: 0,
         id_categoria: 1,
         activo: 1
@@ -52,7 +53,7 @@ export default function InventarioPage() {
 
     const openCreateModal = () => {
         setEditMode(false);
-        setFormData({ nombre: '', descripcion: '', stock_actual: 0, stock_minimo: 5, precio_costo: 0, precio_venta: 0, id_categoria: 1, activo: 1 });
+        setFormData({ nombre: '', descripcion: '', stock_actual: 0, stock_minimo: 5, precio_costo: 0, comision_barbero: 0, precio_venta: 0, id_categoria: 1, activo: 1 });
         setShowProductModal(true);
     };
 
@@ -64,6 +65,7 @@ export default function InventarioPage() {
             stock_actual: producto.stock_actual,
             stock_minimo: producto.stock_minimo,
             precio_costo: producto.precio_costo || 0,
+            comision_barbero: producto.comision_barbero || 0,
             precio_venta: producto.precio_venta || 0,
             id_categoria: producto.id_categoria || 1,
             activo: producto.activo
@@ -508,6 +510,24 @@ export default function InventarioPage() {
                                         />
                                     </div>
                                     <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, padding: '0 4px', marginTop: '0.25rem' }}>Solo Venta</p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>💰 Comisión por Venta (Barbero)</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#f97316', fontWeight: 700 }}>$</span>
+                                        <input
+                                            type="number"
+                                            style={{ ...inputStyle, paddingLeft: '2rem', borderColor: formData.comision_barbero > 0 ? '#f97316' : undefined }}
+                                            value={formData.comision_barbero}
+                                            onFocus={(e) => e.target.select()}
+                                            onChange={e => setFormData({ ...formData, comision_barbero: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
+                                            min="0"
+                                            step="0.01"
+                                        />
+                                    </div>
+                                    <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, padding: '0 4px', marginTop: '0.25rem' }}>Monto fijo que gana el barbero por cada unidad vendida. Dejar en 0 si no aplica.</p>
                                 </div>
                             </div>
                         </div>

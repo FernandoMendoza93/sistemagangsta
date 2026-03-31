@@ -11,7 +11,7 @@ router.get('/', verifyToken, requireTenant, async (req, res) => {
 
         let query = `
             SELECT p.id, p.nombre, p.descripcion, p.stock_actual, p.stock_minimo,
-                   p.precio_costo, p.precio_venta, p.activo,
+                   p.precio_costo, p.comision_barbero, p.precio_venta, p.activo,
                    c.id as id_categoria, c.nombre as categoria
             FROM productos p
             LEFT JOIN categorias c ON p.id_categoria = c.id
@@ -91,7 +91,7 @@ router.get('/categorias', verifyToken, requireTenant, async (req, res) => {
 router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const { nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria } = req.body;
+        const { nombre, descripcion, stock_actual, stock_minimo, precio_costo, comision_barbero, precio_venta, id_categoria } = req.body;
 
         if (!nombre || nombre.trim() === '') {
             return res.status(400).json({ error: 'El nombre del producto es requerido' });
@@ -103,14 +103,15 @@ router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCA
         }
 
         const result = await dbQuery.run(`
-            INSERT INTO productos (nombre, descripcion, stock_actual, stock_minimo, precio_costo, precio_venta, id_categoria, activo, barberia_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+            INSERT INTO productos (nombre, descripcion, stock_actual, stock_minimo, precio_costo, comision_barbero, precio_venta, id_categoria, activo, barberia_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
         `, [
             nombre.trim(),
             descripcion || '',
             parseInt(stock_actual) || 0,
             parseInt(stock_minimo) || 5,
             parseFloat(precio_costo) || 0,
+            parseFloat(comision_barbero) || 0,
             parseFloat(precio_venta) || 0,
             parseInt(id_categoria) || 1,
             req.barberia_id
@@ -139,7 +140,7 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { nombre, descripcion, stock_minimo, precio_costo, precio_venta, id_categoria, activo } = req.body;
+        const { nombre, descripcion, stock_minimo, precio_costo, comision_barbero, precio_venta, id_categoria, activo } = req.body;
 
         await dbQuery.run(`
             UPDATE productos
@@ -147,11 +148,12 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
                 descripcion = COALESCE(?, descripcion),
                 stock_minimo = COALESCE(?, stock_minimo),
                 precio_costo = COALESCE(?, precio_costo),
+                comision_barbero = COALESCE(?, comision_barbero),
                 precio_venta = COALESCE(?, precio_venta),
                 id_categoria = COALESCE(?, id_categoria),
                 activo = COALESCE(?, activo)
             WHERE id = ? AND barberia_id = ?
-        `, [nombre, descripcion, stock_minimo, precio_costo, precio_venta, id_categoria, activo, id, req.barberia_id]);
+        `, [nombre, descripcion, stock_minimo, precio_costo, comision_barbero, precio_venta, id_categoria, activo, id, req.barberia_id]);
 
         res.json({ message: 'Producto actualizado' });
     } catch (error) {

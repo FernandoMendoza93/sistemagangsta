@@ -138,6 +138,7 @@ export default function ComisionesPage() {
                                     <thead>
                                         <tr>
                                             <th style={thStyle}>Fecha</th>
+                                            <th style={thStyle}>Tipo</th>
                                             <th style={thStyle}>Monto</th>
                                             <th style={thStyle}>Estado</th>
                                         </tr>
@@ -146,6 +147,19 @@ export default function ComisionesPage() {
                                         {comisiones?.comisiones?.map(c => (
                                             <tr key={c.id}>
                                                 <td style={tdStyle}>{new Date(c.fecha).toLocaleDateString('es-MX')}</td>
+                                                <td style={tdStyle}>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '0.25rem 0.625rem',
+                                                        borderRadius: '8px',
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 700,
+                                                        background: c.tipo === 'Incentivo Producto' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                                                        color: c.tipo === 'Incentivo Producto' ? '#f97316' : '#3b82f6'
+                                                    }}>
+                                                        {c.tipo === 'Incentivo Producto' ? '📦 Producto' : '✂️ Servicio'}
+                                                    </span>
+                                                </td>
                                                 <td style={{ ...tdStyle, fontWeight: 600 }}>${c.monto.toFixed(2)}</td>
                                                 <td style={tdStyle}>
                                                     <span className={`badge ${c.pagado ? 'badge-success' : 'badge-warning'}`}>
