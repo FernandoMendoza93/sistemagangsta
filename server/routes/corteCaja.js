@@ -4,6 +4,7 @@ import { CorteCajaRepository } from '../repositories/CorteCajaRepository.js';
 import { GastosRepository } from '../repositories/GastosRepository.js';
 import { EntradasEfectivoRepository } from '../repositories/EntradasEfectivoRepository.js';
 import { ExcelAdapter } from '../patterns/ExcelAdapter.js';
+import dayjs from 'dayjs';
 
 const router = express.Router();
 
@@ -19,7 +20,8 @@ router.get('/actual', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES
 
         if (!corte) return res.json({ abierto: false });
 
-        const fullApertura = `${corte.fecha_apertura} ${corte.hora_apertura}`;
+        const fechaLimpia = dayjs(corte.fecha_apertura).format('YYYY-MM-DD');
+        const fullApertura = `${fechaLimpia} ${corte.hora_apertura}`;
 
         const ingresosEfectivo = await corteRepo.getIngresosEfectivo(fullApertura);
         const gastos = await gastosRepo.getTotalSince(fullApertura);
@@ -52,7 +54,8 @@ router.get('/desglose', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROL
         const corte = await corteRepo.findOpen();
         if (!corte) return res.status(400).json({ error: 'No hay corte abierto' });
 
-        const fullApertura = `${corte.fecha_apertura} ${corte.hora_apertura}`;
+        const fechaLimpia = dayjs(corte.fecha_apertura).format('YYYY-MM-DD');
+        const fullApertura = `${fechaLimpia} ${corte.hora_apertura}`;
 
         const ventasPorMetodo = await corteRepo.getDesglosePorMetodoPago(fullApertura);
         const rentabilidad = await corteRepo.getRentabilidadPorDepartamento(fullApertura);
@@ -146,7 +149,8 @@ router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
 
         if (!corte) return res.status(400).json({ error: 'No hay corte abierto o el ID es inválido' });
 
-        const fullApertura = `${corte.fecha_apertura} ${corte.hora_apertura}`;
+        const fechaLimpia = dayjs(corte.fecha_apertura).format('YYYY-MM-DD');
+        const fullApertura = `${fechaLimpia} ${corte.hora_apertura}`;
 
         const ingresosEfectivo = await corteRepo.getIngresosEfectivo(fullApertura);
         const gastos = await gastosRepo.getTotalSince(fullApertura);
