@@ -89,7 +89,7 @@ router.get('/resumen/hoy', verifyToken, requireTenant, async (req, res) => {
                 COALESCE(SUM(CASE WHEN metodo_pago = 'Tarjeta' THEN total_venta ELSE 0 END), 0) as tarjeta,
                 COALESCE(SUM(CASE WHEN metodo_pago = 'Transferencia' THEN total_venta ELSE 0 END), 0) as transferencia
             FROM ventas_cabecera
-            WHERE DATE(fecha) = ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
+            WHERE DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) = ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
         `, [mxDate, req.barberia_id, ...extraParams]);
 
         res.json(resumen);
@@ -122,11 +122,11 @@ router.get('/resumen/semana', verifyToken, requireTenant, async (req, res) => {
 
         // Get totals grouped by date for last 7 days
         const rows = await dbQuery.all(`
-            SELECT DATE(fecha) as dia, COALESCE(SUM(total_venta), 0) as ingresos
+            SELECT DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) as dia, COALESCE(SUM(total_venta), 0) as ingresos
             FROM ventas_cabecera
-            WHERE DATE(fecha) BETWEEN ? AND ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
-            GROUP BY DATE(fecha)
-            ORDER BY DATE(fecha) ASC
+            WHERE DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) BETWEEN ? AND ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
+            GROUP BY dia
+            ORDER BY dia ASC
         `, [hace7, hoyStr, req.barberia_id, ...extraParams]);
 
         // Build a complete 7-day array (fill gaps with 0)
