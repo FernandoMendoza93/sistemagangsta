@@ -40,12 +40,15 @@ async function initializeDatabase() {
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0,
-            decimalNumbers: true
+            decimalNumbers: true,
+            timezone: '-06:00',
+            dateStrings: true
         });
 
-        // Probar conexión — si falla, el servidor muere
+        // Probar conexión y forzar time_zone de la sesión
         const connection = await pool.getConnection();
-        console.log('✅ Conectado a MySQL exitosamente');
+        await connection.query("SET time_zone = '-06:00'");
+        console.log('✅ Conectado a MySQL exitosamente (Zona Horaria: -06:00)');
         connection.release();
 
         db = pool;

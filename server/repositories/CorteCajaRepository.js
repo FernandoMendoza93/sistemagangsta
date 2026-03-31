@@ -24,17 +24,20 @@ export class CorteCajaRepository {
     }
 
     async createWithDetails(montoInicial, idEncargado, modoCierre = 'transparente') {
-        const hora = dayjs().tz("America/Mexico_City").format("HH:mm:ss");
+        const mxNow = dayjs().tz("America/Mexico_City");
+        const fecha = mxNow.format("YYYY-MM-DD");
+        const hora = mxNow.format("HH:mm:ss");
 
         return await this.dbQuery.run(`
             INSERT INTO cortes_caja (
                 monto_inicial, 
                 id_encargado, 
                 modo_cierre,
+                fecha_apertura,
                 hora_apertura,
                 barberia_id
-            ) VALUES (?, ?, ?, ?, ?)
-        `, [montoInicial, idEncargado, modoCierre, hora, this.barberiaId]);
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        `, [montoInicial, idEncargado, modoCierre, fecha, hora, this.barberiaId]);
     }
 
     async updateWithTotals(id, data) {
