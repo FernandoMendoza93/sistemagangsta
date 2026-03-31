@@ -19,9 +19,11 @@ router.get('/actual', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES
 
         if (!corte) return res.json({ abierto: false });
 
-        const ingresosEfectivo = await corteRepo.getIngresosEfectivo(corte.fecha_apertura);
-        const gastos = await gastosRepo.getTotalSince(corte.fecha_apertura);
-        const entradas = await entradasRepo.getTotalSince(corte.fecha_apertura);
+        const fullApertura = `${corte.fecha_apertura} ${corte.hora_apertura}`;
+
+        const ingresosEfectivo = await corteRepo.getIngresosEfectivo(fullApertura);
+        const gastos = await gastosRepo.getTotalSince(fullApertura);
+        const entradas = await entradasRepo.getTotalSince(fullApertura);
 
         const esperado = corte.monto_inicial + ingresosEfectivo + entradas - gastos;
 
@@ -50,22 +52,24 @@ router.get('/desglose', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROL
         const corte = await corteRepo.findOpen();
         if (!corte) return res.status(400).json({ error: 'No hay corte abierto' });
 
-        const ventasPorMetodo = await corteRepo.getDesglosePorMetodoPago(corte.fecha_apertura);
-        const rentabilidad = await corteRepo.getRentabilidadPorDepartamento(corte.fecha_apertura);
+        const fullApertura = `${corte.fecha_apertura} ${corte.hora_apertura}`;
 
-        const gastosList = await gastosRepo.getByDateRange(corte.fecha_apertura, new Date().toISOString());
-        const entradasList = await entradasRepo.getByDateRange(corte.fecha_apertura, new Date().toISOString());
+        const ventasPorMetodo = await corteRepo.getDesglosePorMetodoPago(fullApertura);
+        const rentabilidad = await corteRepo.getRentabilidadPorDepartamento(fullApertura);
+
+        const gastosList = await gastosRepo.getByDateRange(fullApertura, new Date().toISOString());
+        const entradasList = await entradasRepo.getByDateRange(fullApertura, new Date().toISOString());
 
         const totalVentas = ventasPorMetodo.reduce((sum, m) => sum + m.total, 0);
         const totalGanancias =
             rentabilidad.servicios.reduce((sum, s) => sum + s.ganancia, 0) +
             rentabilidad.productos.reduce((sum, p) => sum + p.ganancia, 0);
 
-        const ingresosEfectivo = await corteRepo.getIngresosEfectivo(corte.fecha_apertura);
-        const totalGastos = await gastosRepo.getTotalSince(corte.fecha_apertura);
-        const totalEntradas = await entradasRepo.getTotalSince(corte.fecha_apertura);
-        const abonos = await corteRepo.getAbonosEfectivo(corte.fecha_apertura);
-        const devoluciones = await corteRepo.getDevolucionesEfectivo(corte.fecha_apertura);
+        const ingresosEfectivo = await corteRepo.getIngresosEfectivo(fullApertura);
+        const totalGastos = await gastosRepo.getTotalSince(fullApertura);
+        const totalEntradas = await entradasRepo.getTotalSince(fullApertura);
+        const abonos = await corteRepo.getAbonosEfectivo(fullApertura);
+        const devoluciones = await corteRepo.getDevolucionesEfectivo(fullApertura);
 
         res.json({
             resumen: {
@@ -136,16 +140,18 @@ router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
         const corte = await corteRepo.findOpen();
         if (!corte) return res.status(400).json({ error: 'No hay corte abierto' });
 
-        const ingresosEfectivo = await corteRepo.getIngresosEfectivo(corte.fecha_apertura);
-        const gastos = await gastosRepo.getTotalSince(corte.fecha_apertura);
-        const entradas = await entradasRepo.getTotalSince(corte.fecha_apertura);
-        const abonos = await corteRepo.getAbonosEfectivo(corte.fecha_apertura);
-        const devoluciones = await corteRepo.getDevolucionesEfectivo(corte.fecha_apertura);
+        const fullApertura = `${corte.fecha_apertura} ${corte.hora_apertura}`;
 
-        const ventasPorMetodo = await corteRepo.getDesglosePorMetodoPago(corte.fecha_apertura);
+        const ingresosEfectivo = await corteRepo.getIngresosEfectivo(fullApertura);
+        const gastos = await gastosRepo.getTotalSince(fullApertura);
+        const entradas = await entradasRepo.getTotalSince(fullApertura);
+        const abonos = await corteRepo.getAbonosEfectivo(fullApertura);
+        const devoluciones = await corteRepo.getDevolucionesEfectivo(fullApertura);
+
+        const ventasPorMetodo = await corteRepo.getDesglosePorMetodoPago(fullApertura);
         const totalVentas = ventasPorMetodo.reduce((sum, m) => sum + m.total, 0);
 
-        const rentabilidad = await corteRepo.getRentabilidadPorDepartamento(corte.fecha_apertura);
+        const rentabilidad = await corteRepo.getRentabilidadPorDepartamento(fullApertura);
         const totalGanancias =
             rentabilidad.servicios.reduce((sum, s) => sum + s.ganancia, 0) +
             rentabilidad.productos.reduce((sum, p) => sum + p.ganancia, 0);
@@ -167,7 +173,7 @@ router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
             entradas
         });
 
-        await corteRepo.marcarVentasCerradas(corte.fecha_apertura);
+        await corteRepo.marcarVentasCerradas(fullApertura);
 
         res.json({
             message: 'Turno cerrado',

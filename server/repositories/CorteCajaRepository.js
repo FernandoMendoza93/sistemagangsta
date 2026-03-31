@@ -84,29 +84,29 @@ export class CorteCajaRepository {
             FROM cortes_caja cc
             JOIN usuarios u ON cc.id_encargado = u.id
             WHERE cc.barberia_id = ?
-            ORDER BY cc.fecha_apertura DESC 
+            ORDER BY cc.fecha_apertura DESC, cc.hora_apertura DESC
             LIMIT ?
         `, [this.barberiaId, cleanLimit]);
     }
 
-    async getIngresosEfectivo(fechaApertura) {
+    async getIngresosEfectivo(fullApertura) {
         const result = await this.dbQuery.get(`
             SELECT COALESCE(SUM(CASE WHEN metodo_pago = 'Efectivo' THEN total_venta ELSE 0 END), 0) as efectivo
             FROM ventas_cabecera 
             WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada' AND barberia_id = ?
-        `, [fechaApertura, this.barberiaId]);
+        `, [fullApertura, this.barberiaId]);
         return result?.efectivo || 0;
     }
 
-    async marcarVentasCerradas(fechaApertura) {
+    async marcarVentasCerradas(fullApertura) {
         return await this.dbQuery.run(`
             UPDATE ventas_cabecera 
             SET estado_corte_caja = 1 
             WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada' AND barberia_id = ?
-        `, [fechaApertura, this.barberiaId]);
+        `, [fullApertura, this.barberiaId]);
     }
 
-    async getDesglosePorMetodoPago(fechaApertura) {
+    async getDesglosePorMetodoPago(fullApertura) {
         return await this.dbQuery.all(`
             SELECT 
                 metodo_pago,
@@ -115,10 +115,10 @@ export class CorteCajaRepository {
             FROM ventas_cabecera 
             WHERE fecha >= ? AND estado_corte_caja = 0 AND estado = 'completada' AND barberia_id = ?
             GROUP BY metodo_pago
-        `, [fechaApertura, this.barberiaId]);
+        `, [fullApertura, this.barberiaId]);
     }
 
-    async getRentabilidadPorDepartamento(fechaApertura) {
+    async getRentabilidadPorDepartamento(fullApertura) {
         const servicios = await this.dbQuery.all(`
             SELECT 
                 'Servicios' as departamento,
@@ -131,7 +131,7 @@ export class CorteCajaRepository {
             LEFT JOIN servicios s ON vd.id_servicio = s.id
             WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_servicio IS NOT NULL AND vc.barberia_id = ?
             GROUP BY s.id, s.nombre_servicio
-        `, [fechaApertura, this.barberiaId]);
+        `, [fullApertura, this.barberiaId]);
 
         const productos = await this.dbQuery.all(`
             SELECT 
@@ -146,7 +146,7 @@ export class CorteCajaRepository {
             LEFT JOIN categorias c ON p.id_categoria = c.id
             WHERE vc.fecha >= ? AND vc.estado_corte_caja = 0 AND vc.estado = 'completada' AND vd.id_producto IS NOT NULL AND vc.barberia_id = ?
             GROUP BY c.id, p.id, c.nombre, p.nombre
-        `, [fechaApertura, this.barberiaId]);
+        `, [fullApertura, this.barberiaId]);
 
         return { servicios, productos };
     }
