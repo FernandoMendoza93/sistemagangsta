@@ -373,8 +373,8 @@ export default function ClientesPage() {
 
             {/* Modal Crear/Editar */}
             {showModal && createPortal(
-                <div className="modal-overlay-pro" onClick={() => setShowModal(false)}>
-                    <div className="modal-content-pro" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-overlay-pro">
+                    <div className="modal-content-pro">
                         <div className="modal-header-pro">
                             <h2>{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
                             <button className="modal-close" onClick={() => setShowModal(false)}>

@@ -124,7 +124,7 @@ export default function CierreServicioModal({ cita, onClose, onSuccess }) {
     };
 
     return (
-        <div className="csm-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="csm-overlay">
             <div className="csm-modal">
                 {/* Header */}
                 <div className="csm-header">

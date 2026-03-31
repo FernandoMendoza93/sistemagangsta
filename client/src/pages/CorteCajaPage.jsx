@@ -176,6 +176,7 @@ export default function CorteCajaPage() {
                         <input
                             type="number"
                             value={montoInicial}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => setMontoInicial(e.target.value)}
                             placeholder="0.00"
                             min="0"
@@ -265,8 +266,8 @@ export default function CorteCajaPage() {
 
             {/* Modal: Registrar Entrada */}
             {showEntradaModal && (
-                <div className="modal-overlay-pro" onClick={() => setShowEntradaModal(false)}>
-                    <div className="modal-content-pro" onClick={e => e.stopPropagation()}>
+                <div className="modal-overlay-pro">
+                    <div className="modal-content-pro">
                         <div className="modal-header-pro">
                             <Icon name="arrow-down-circle" size={24} color="#16a34a" />
                             <h2>Registrar Entrada de Efectivo</h2>
@@ -276,6 +277,7 @@ export default function CorteCajaPage() {
                             <input
                                 type="number"
                                 value={entradaForm.monto}
+                                onFocus={(e) => e.target.select()}
                                 onChange={e => setEntradaForm({ ...entradaForm, monto: e.target.value })}
                                 placeholder="0.00"
                                 min="0"
@@ -304,8 +306,8 @@ export default function CorteCajaPage() {
 
             {/* Modal: Registrar Salida */}
             {showSalidaModal && (
-                <div className="modal-overlay-pro" onClick={() => setShowSalidaModal(false)}>
-                    <div className="modal-content-pro" onClick={e => e.stopPropagation()}>
+                <div className="modal-overlay-pro">
+                    <div className="modal-content-pro">
                         <div className="modal-header-pro">
                             <Icon name="arrow-up-circle" size={24} color="#dc2626" />
                             <h2>Registrar Salida de Efectivo</h2>
@@ -315,6 +317,7 @@ export default function CorteCajaPage() {
                             <input
                                 type="number"
                                 value={salidaForm.monto}
+                                onFocus={(e) => e.target.select()}
                                 onChange={e => setSalidaForm({ ...salidaForm, monto: e.target.value })}
                                 placeholder="0.00"
                                 min="0"
@@ -343,8 +346,8 @@ export default function CorteCajaPage() {
 
             {/* Modal: Cerrar Turno */}
             {showCierreModal && (
-                <div className="modal-overlay-pro" onClick={() => setShowCierreModal(false)}>
-                    <div className="modal-content-pro modal-large-pro" onClick={e => e.stopPropagation()}>
+                <div className="modal-overlay-pro">
+                    <div className="modal-content-pro modal-large-pro">
                         <div className="modal-header-pro">
                             <Icon name="lock" size={24} color="#dc2626" />
                             <h2>Cerrar Turno</h2>
@@ -371,6 +374,7 @@ export default function CorteCajaPage() {
                             <input
                                 type="number"
                                 value={cierreForm.montoReal}
+                                onFocus={(e) => e.target.select()}
                                 onChange={e => setCierreForm({ ...cierreForm, montoReal: e.target.value })}
                                 placeholder="0.00"
                                 min="0"

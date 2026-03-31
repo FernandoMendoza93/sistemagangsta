@@ -407,8 +407,8 @@ export default function InventarioPage() {
 
             {/* Modal de Crear/Editar Producto */}
             {showProductModal && createPortal(
-                <div style={modalOverlayStyle} onClick={() => setShowProductModal(false)}>
-                    <div style={{ ...modalStyle, maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
+                <div style={modalOverlayStyle}>
+                    <div style={{ ...modalStyle, maxWidth: '550px' }}>
                         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-main)' }}>
                             <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 {editMode ? <Edit2 style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} /> : <Plus style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} />}
@@ -459,12 +459,24 @@ export default function InventarioPage() {
                                 {!editMode && (
                                     <div>
                                         <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Stock Inicial</label>
-                                        <input type="number" style={inputStyle} value={formData.stock_actual} onChange={e => setFormData({ ...formData, stock_actual: parseInt(e.target.value) || 0 })} />
+                                        <input 
+                                            type="number" 
+                                            style={inputStyle} 
+                                            value={formData.stock_actual} 
+                                            onFocus={(e) => e.target.select()}
+                                            onChange={e => setFormData({ ...formData, stock_actual: e.target.value === '' ? '' : parseInt(e.target.value) || 0 })} 
+                                        />
                                     </div>
                                 )}
                                 <div>
                                     <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Stock Mínimo</label>
-                                    <input type="number" style={inputStyle} value={formData.stock_minimo} onChange={e => setFormData({ ...formData, stock_minimo: parseInt(e.target.value) || 0 })} />
+                                    <input 
+                                        type="number" 
+                                        style={inputStyle} 
+                                        value={formData.stock_minimo} 
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={e => setFormData({ ...formData, stock_minimo: e.target.value === '' ? '' : parseInt(e.target.value) || 0 })} 
+                                    />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -472,8 +484,15 @@ export default function InventarioPage() {
                                     <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Precio Costo</label>
                                     <div style={{ position: 'relative' }}>
                                         <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontWeight: 700 }}>$</span>
-                                        <input type="number" style={{ ...inputStyle, paddingLeft: '2rem' }} value={formData.precio_costo} onChange={e => setFormData({ ...formData, precio_costo: parseFloat(e.target.value) || 0 })} />
+                                        <input 
+                                            type="number" 
+                                            style={{ ...inputStyle, paddingLeft: '2rem' }} 
+                                            value={formData.precio_costo} 
+                                            onFocus={(e) => e.target.select()}
+                                            onChange={e => setFormData({ ...formData, precio_costo: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} 
+                                        />
                                     </div>
+ drumbox
                                 </div>
                                 <div>
                                     <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: '4px', display: 'block', marginBottom: '0.375rem' }}>Precio Venta</label>
@@ -484,7 +503,8 @@ export default function InventarioPage() {
                                             style={{ ...inputStyle, paddingLeft: '2rem', opacity: formData.id_categoria !== 1 ? 0.5 : 1, cursor: formData.id_categoria !== 1 ? 'not-allowed' : 'text' }}
                                             disabled={formData.id_categoria !== 1}
                                             value={formData.precio_venta}
-                                            onChange={e => setFormData({ ...formData, precio_venta: parseFloat(e.target.value) || 0 })}
+                                            onFocus={(e) => e.target.select()}
+                                            onChange={e => setFormData({ ...formData, precio_venta: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
                                         />
                                     </div>
                                     <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, padding: '0 4px', marginTop: '0.25rem' }}>Solo Venta</p>
@@ -512,8 +532,8 @@ export default function InventarioPage() {
 
             {/* Modal de Movimiento de Stock */}
             {showMovModal && createPortal(
-                <div style={modalOverlayStyle} onClick={() => setShowMovModal(false)}>
-                    <div style={{ ...modalStyle, maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+                <div style={modalOverlayStyle}>
+                    <div style={{ ...modalStyle, maxWidth: '450px' }}>
                         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-main)' }}>
                             <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Activity style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} /> Ajustar Stock
@@ -564,7 +584,8 @@ export default function InventarioPage() {
                                         style={{ ...inputStyle, textAlign: 'center', fontSize: '1.875rem', fontWeight: 900, padding: '1rem 1.5rem' }}
                                         min="0"
                                         value={movimiento.cantidad}
-                                        onChange={e => setMovimiento({ ...movimiento, cantidad: parseInt(e.target.value) || 0 })}
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={e => setMovimiento({ ...movimiento, cantidad: e.target.value === '' ? '' : parseInt(e.target.value) || 0 })}
                                     />
                                 </div>
                                 <div>
@@ -594,8 +615,8 @@ export default function InventarioPage() {
 
             {/* Modal de Historial */}
             {showHistorialModal && createPortal(
-                <div style={modalOverlayStyle} onClick={() => setShowHistorialModal(false)}>
-                    <div style={{ ...modalStyle, maxWidth: '650px' }} onClick={e => e.stopPropagation()}>
+                <div style={modalOverlayStyle}>
+                    <div style={{ ...modalStyle, maxWidth: '650px' }}>
                         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-main)' }}>
                             <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <History style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} /> Historial de Movimientos

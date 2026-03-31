@@ -107,8 +107,8 @@ export default function ServiciosPage() {
             </div>
 
             {showModal && createPortal(
-                <div className="custom-modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="custom-modal" onClick={e => e.stopPropagation()}>
+                <div className="custom-modal-overlay">
+                    <div className="custom-modal">
                         <div className="custom-modal-header">
                             <h3 className="custom-modal-title">{editing ? 'Editar' : 'Nuevo'} Servicio</h3>
                             <button className="custom-modal-close" onClick={() => setShowModal(false)}>×</button>
@@ -121,7 +121,16 @@ export default function ServiciosPage() {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Precio ($)</label>
-                                    <input type="number" step="0.01" className="form-input" required placeholder="100.00" value={form.precio} onChange={e => setForm({ ...form, precio: e.target.value })} />
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        className="form-input" 
+                                        required 
+                                        placeholder="100.00" 
+                                        value={form.precio} 
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={e => setForm({ ...form, precio: e.target.value })} 
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Duración Aproximada (minutos)</label>

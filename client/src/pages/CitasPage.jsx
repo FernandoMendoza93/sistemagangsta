@@ -192,7 +192,7 @@ export default function CitasPage() {
 
             {/* ===== Appointment Detail Modal ===== */}
             {selectedCita && (
-                <div className="confirm-modal-overlay" onClick={() => setSelectedCita(null)}>
+                <div className="confirm-modal-overlay">
                     <div className="confirm-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', textAlign: 'left' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
