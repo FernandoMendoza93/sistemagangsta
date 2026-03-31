@@ -61,17 +61,17 @@ const sanitize = (params) => params.map(p => p === undefined ? null : p);
 // Query wrapper — MySQL puro
 const dbQuery = {
     async all(sql, params = []) {
-        const [rows] = await db.execute(sql, sanitize(params));
+        const [rows] = await db.query(sql, sanitize(params));
         return rows;
     },
 
     async get(sql, params = []) {
-        const [rows] = await db.execute(sql, sanitize(params));
+        const [rows] = await db.query(sql, sanitize(params));
         return rows[0];
     },
 
     async run(sql, params = []) {
-        const [result] = await db.execute(sql, sanitize(params));
+        const [result] = await db.query(sql, sanitize(params));
         return {
             lastInsertRowid: result.insertId,
             changes: result.affectedRows
@@ -83,9 +83,9 @@ const dbQuery = {
         try {
             await conn.beginTransaction();
             const txQuery = {
-                async all(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows; },
-                async get(sql, params = []) { const [rows] = await conn.execute(sql, sanitize(params)); return rows[0]; },
-                async run(sql, params = []) { const [result] = await conn.execute(sql, sanitize(params)); return { lastInsertRowid: result.insertId, changes: result.affectedRows }; }
+                async all(sql, params = []) { const [rows] = await conn.query(sql, sanitize(params)); return rows; },
+                async get(sql, params = []) { const [rows] = await conn.query(sql, sanitize(params)); return rows[0]; },
+                async run(sql, params = []) { const [result] = await conn.query(sql, sanitize(params)); return { lastInsertRowid: result.insertId, changes: result.affectedRows }; }
             };
             const result = await callback(txQuery);
             await conn.commit();
