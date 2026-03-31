@@ -244,17 +244,32 @@ router.get('/exportar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROL
         const dbQuery = req.app.locals.dbQuery;
         const corteRepo = new CorteCajaRepository(dbQuery, req.barberia_id);
 
-        const data = await corteRepo.getHistory(100);
+        // Obtenemos historial extendido para exportar
+        const data = await corteRepo.getHistory(200);
 
-        const adapter = new ExcelAdapter(data);
+        const transformedData = data.map(item => ({
+            'Fecha Apertura': item.fecha_apertura ? new Date(item.fecha_apertura).toLocaleString('es-MX') : '-',
+            'Encargado': item.nombre_encargado || 'N/A',
+            'Fondo Inicial': item.monto_inicial || 0,
+            'Ventas Totales': item.total_ventas || 0,
+            'Diferencia': item.diferencia ?? 0,
+            'Estado': item.fecha_cierre ? 'Cerrado' : 'En curso',
+            'Fecha Cierre': item.fecha_cierre ? new Date(item.fecha_cierre).toLocaleString('es-MX') : 'En curso',
+            'Ganancias': item.total_ganancias || 0,
+            'Notas': item.notas || ''
+        }));
+
+        const adapter = new ExcelAdapter(transformedData);
         const csvContent = adapter.generateReport();
 
-        res.header('Content-Type', 'text/csv');
-        res.attachment('corte_caja_historial.csv');
-        res.send(csvContent);
+        // Headers para descarga correcta
+        res.header('Content-Type', 'text/csv; charset=utf-8');
+        res.attachment('historial_cortes_caja.csv');
+        // Enviamos con BOM para que Excel reconozca los caracteres especiales (tildes, etc)
+        res.send('\uFEFF' + csvContent);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error en el servidor' });
+        console.error('Error en exportar:', error);
+        res.status(500).json({ error: 'Error al generar el reporte' });
     }
 });
 

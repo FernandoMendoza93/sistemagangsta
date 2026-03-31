@@ -441,3 +441,105 @@
         left: 0;
     }
 }
+/* Historial de Turnos */
+.corte-historial-pro {
+    margin-top: 3rem;
+}
+
+.corte-historial-pro h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.table-container-glass {
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.table-glass-pro {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.table-glass-pro th {
+    padding: 1rem 1.5rem;
+    background: rgba(var(--accent-primary-rgb), 0.05);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-glass-pro td {
+    padding: 1rem 1.5rem;
+    color: var(--text-main);
+    font-size: 0.9375rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-glass-pro tr:last-child td {
+    border-bottom: none;
+}
+
+.table-glass-pro tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Badges */
+.badge-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-activo {
+    background: rgba(22, 163, 74, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.badge-cerrado {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9ca3af;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* Colores condicionales */
+.text-success-pro {
+    color: #10b981 !important;
+    font-weight: 600;
+}
+
+.text-danger-pro {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+
+.text-neutral-pro {
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .table-container-glass {
+        overflow-x: auto;
+    }
+    
+    .table-glass-pro th, 
+    .table-glass-pro td {
+        padding: 0.75rem 1rem;
+        white-space: nowrap;
+    }
+}

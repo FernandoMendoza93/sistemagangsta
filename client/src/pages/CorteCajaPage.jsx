@@ -16,6 +16,7 @@ export default function CorteCajaPage() {
     const { user } = useAuth();
     const [corteActual, setCorteActual] = useState(null);
     const [desglose, setDesglose] = useState(null);
+    const [historialCortes, setHistorialCortes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [montoInicial, setMontoInicial] = useState('');
 
@@ -44,6 +45,9 @@ export default function CorteCajaPage() {
                 const desgloseRes = await corteCajaService.getDesglose();
                 setDesglose(desgloseRes.data);
             }
+
+            const historialRes = await corteCajaService.getHistorial();
+            setHistorialCortes(historialRes.data);
         } catch (error) {
             console.error('Error cargando datos:', error);
             toast.error('Error al cargar los datos del corte');
@@ -196,6 +200,46 @@ export default function CorteCajaPage() {
                         <span>Exportar Historial</span>
                     </button>
                 </div>
+
+                {/* Historial de Turnos */}
+                <div className="corte-historial-pro">
+                    <h2><Icon name="history" size={20} color="var(--accent-primary)" /> Historial de Turnos Recientes</h2>
+                    <div className="table-container-glass">
+                        <table className="table-glass-pro">
+                            <thead>
+                                <tr>
+                                    <th>Apertura</th>
+                                    <th>Encargado</th>
+                                    <th>Fondo Inicial</th>
+                                    <th>Ventas Totales</th>
+                                    <th>Diferencia</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {historialCortes.map(corte => (
+                                    <tr key={corte.id}>
+                                        <td>{new Date(corte.fecha_apertura).toLocaleDateString('es-MX')} {corte.hora_apertura}</td>
+                                        <td>{corte.nombre_encargado}</td>
+                                        <td>${parseFloat(corte.monto_inicial || 0).toFixed(2)}</td>
+                                        <td>${parseFloat(corte.total_ventas || 0).toFixed(2)}</td>
+                                        <td className={corte.diferencia < 0 ? 'text-danger-pro' : corte.diferencia > 0 ? 'text-success-pro' : 'text-neutral-pro'}>
+                                            ${parseFloat(corte.diferencia || 0).toFixed(2)}
+                                        </td>
+                                        <td>
+                                            <span className={`badge-status ${corte.fecha_cierre ? 'badge-cerrado' : 'badge-activo'}`}>
+                                                {corte.fecha_cierre ? 'Cerrado' : 'Activo'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {historialCortes.length === 0 && (
+                                    <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay turnos registrados</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -256,6 +300,46 @@ export default function CorteCajaPage() {
                     </div>
                 </>
             )}
+
+            {/* Historial de Turnos (Siempre visible) */}
+            <div className="corte-historial-pro">
+                <h2><Icon name="history" size={20} color="var(--accent-primary)" /> Historial de Turnos Recientes</h2>
+                <div className="table-container-glass">
+                    <table className="table-glass-pro">
+                        <thead>
+                            <tr>
+                                <th>Apertura</th>
+                                <th>Encargado</th>
+                                <th>Fondo Inicial</th>
+                                <th>Ventas Totales</th>
+                                <th>Diferencia</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {historialCortes.map(corte => (
+                                <tr key={corte.id}>
+                                    <td>{new Date(corte.fecha_apertura).toLocaleDateString('es-MX')} {corte.hora_apertura}</td>
+                                    <td>{corte.nombre_encargado}</td>
+                                    <td>${parseFloat(corte.monto_inicial || 0).toFixed(2)}</td>
+                                    <td>${parseFloat(corte.total_ventas || 0).toFixed(2)}</td>
+                                    <td className={corte.diferencia < 0 ? 'text-danger-pro' : corte.diferencia > 0 ? 'text-success-pro' : 'text-neutral-pro'}>
+                                        ${parseFloat(corte.diferencia || 0).toFixed(2)}
+                                    </td>
+                                    <td>
+                                        <span className={`badge-status ${corte.fecha_cierre ? 'badge-cerrado' : 'badge-activo'}`}>
+                                            {corte.fecha_cierre ? 'Cerrado' : 'Activo'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {historialCortes.length === 0 && (
+                                <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay turnos registrados</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <div className="acciones-cierre-pro">
                 <button className="btn-danger-pro" onClick={() => setShowCierreModal(true)}>

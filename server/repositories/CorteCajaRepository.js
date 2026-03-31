@@ -74,12 +74,12 @@ export class CorteCajaRepository {
         ]);
     }
 
-    async getHistory(limit = 30) {
+    async getHistory(limit = 7) {
         return await this.dbQuery.all(`
-            SELECT cc.*, u.nombre as encargado 
+            SELECT cc.*, u.nombre as nombre_encargado 
             FROM cortes_caja cc
             JOIN usuarios u ON cc.id_encargado = u.id
-            WHERE cc.fecha_cierre IS NOT NULL AND cc.barberia_id = ?
+            WHERE cc.barberia_id = ?
             ORDER BY cc.fecha_apertura DESC 
             LIMIT ?
         `, [this.barberiaId, limit]);
