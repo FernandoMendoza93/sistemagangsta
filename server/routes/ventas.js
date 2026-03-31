@@ -132,7 +132,10 @@ router.get('/resumen/semana', verifyToken, requireTenant, async (req, res) => {
         // Build a complete 7-day array (fill gaps with 0)
         const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         const dataMap = {};
-        rows.forEach(r => { dataMap[r.dia] = r.ingresos; });
+        rows.forEach(r => { 
+            const dateKey = dayjs(r.dia).format("YYYY-MM-DD");
+            dataMap[dateKey] = r.ingresos; 
+        });
 
         const resultado = [];
         for (let i = 6; i >= 0; i--) {
