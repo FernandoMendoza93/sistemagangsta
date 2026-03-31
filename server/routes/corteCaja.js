@@ -134,11 +134,17 @@ router.post('/cerrar', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLE
         const gastosRepo = new GastosRepository(dbQuery, req.barberia_id);
         const entradasRepo = new EntradasEfectivoRepository(dbQuery, req.barberia_id);
 
-        const { monto_real_fisico, notas } = req.body;
+        const { id, monto_real_fisico, notas } = req.body;
         if (monto_real_fisico === undefined) return res.status(400).json({ error: 'Monto requerido' });
 
-        const corte = await corteRepo.findOpen();
-        if (!corte) return res.status(400).json({ error: 'No hay corte abierto' });
+        let corte;
+        if (id) {
+            corte = await corteRepo.findById(id);
+        } else {
+            corte = await corteRepo.findOpen();
+        }
+
+        if (!corte) return res.status(400).json({ error: 'No hay corte abierto o el ID es inválido' });
 
         const fullApertura = `${corte.fecha_apertura} ${corte.hora_apertura}`;
 

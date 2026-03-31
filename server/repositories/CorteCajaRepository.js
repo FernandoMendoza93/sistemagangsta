@@ -12,6 +12,15 @@ export class CorteCajaRepository {
         this.barberiaId = barberiaId;
     }
 
+    async findById(id) {
+        return await this.dbQuery.get(`
+            SELECT cc.*, u.nombre as encargado 
+            FROM cortes_caja cc
+            JOIN usuarios u ON cc.id_encargado = u.id
+            WHERE cc.id = ? AND cc.barberia_id = ?
+        `, [id, this.barberiaId]);
+    }
+
     async findOpen() {
         return await this.dbQuery.get(`
             SELECT cc.*, u.nombre as encargado 

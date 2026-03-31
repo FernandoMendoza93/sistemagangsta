@@ -124,7 +124,7 @@ export default function CorteCajaPage() {
     const confirmarCierre = async () => {
         setShowCerrarConfirm(false);
         try {
-            const res = await corteCajaService.cerrar(parseFloat(cierreForm.montoReal), cierreForm.notas);
+            const res = await corteCajaService.cerrar(corteActual.corte.id, parseFloat(cierreForm.montoReal), cierreForm.notas);
             const { resumen } = res.data;
 
             toast.success(`Turno cerrado — Esperado: $${resumen.esperado.toFixed(2)} | Real: $${resumen.monto_real_fisico.toFixed(2)} | Diferencia: $${resumen.diferencia.toFixed(2)}`);
