@@ -1078,15 +1078,30 @@ body {
 }
 
 /* =============================================
-   SIDEBAR TOGGLE (Tablet / Mobile)
+   SIDEBAR TOP BAR (Toggle + Notification Bell)
    ============================================= */
+
+.sidebar-top-bar {
+  position: fixed;
+  top: 0;
+  left: 280px;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--spacing-lg);
+  z-index: 200;
+  background: transparent;
+  pointer-events: none;
+}
+
+.sidebar-top-bar > * {
+  pointer-events: auto;
+}
 
 .sidebar-toggle {
   display: none;
-  position: fixed;
-  top: var(--spacing-md);
-  left: var(--spacing-md);
-  z-index: 200;
   width: 44px;
   height: 44px;
   border-radius: var(--radius-md);
@@ -1299,9 +1314,22 @@ body {
 
 @media (max-width: 834px) {
 
-  /* Mostrar botón hamburguesa */
+  /* Mostrar barra superior con toggle + campana */
+  .sidebar-top-bar {
+    left: 0;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-color);
+    justify-content: space-between;
+    padding: 0 var(--spacing-md);
+    pointer-events: auto;
+  }
+
   .sidebar-toggle {
     display: flex;
+  }
+
+  .main-content {
+    padding-top: 70px !important;
   }
 
   /* Sidebar colapsable */
@@ -1727,6 +1755,10 @@ body {
    ============================================= */
 
 @media (max-width: 768px) {
+  .sidebar-top-bar {
+    display: flex;
+  }
+
   .sidebar-toggle {
     display: flex;
   }

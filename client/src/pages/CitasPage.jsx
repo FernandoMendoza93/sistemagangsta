@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { citasService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -12,9 +13,13 @@ const END_HOUR = 22;
 const MINUTE_HEIGHT = 1.6;
 
 export default function CitasPage() {
+    const [searchParams] = useSearchParams();
     const [citas, setCitas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filtroFecha, setFiltroFecha] = useState(() => {
+        // Si viene de una notificación con ?fecha=, usar esa fecha
+        const fromNotif = searchParams.get('fecha');
+        if (fromNotif) return fromNotif;
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     });

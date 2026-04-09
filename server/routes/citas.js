@@ -167,7 +167,21 @@ router.post('/', verifyToken, async (req, res) => {
                     servicio: info.nombre_servicio
                 });
 
-                // 2. Notificación por Correo (Respaldo)
+                // 2. Notificación Persistente (Base de Datos)
+                try {
+                    await dbQuery.run(`
+                        INSERT INTO notificaciones (barberia_id, id_cita, mensaje, tipo)
+                        VALUES (?, ?, ?, 'nueva_cita')
+                    `, [
+                        req.barberia_id,
+                        result.lastInsertRowid,
+                        `${info.cliente_nombre} agendó una cita para ${info.nombre_servicio} el ${dayjs(fecha).format('DD/MM')} a las ${hora}`
+                    ]);
+                } catch (notifDbErr) {
+                    console.error('⚠️ Error guardando notificación en DB:', notifDbErr.message);
+                }
+
+                // 3. Notificación por Correo (Respaldo)
                 const emails = [info.barberia_email, info.barbero_email].filter(Boolean);
                 for (const email of emails) {
                     sendNewAppointmentEmail({

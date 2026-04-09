@@ -195,4 +195,11 @@ export const publicService = {
     getConfig: (slug) => api.get(`/super/public/config/${slug}`)
 };
 
+// Notificaciones
+export const notificacionesService = {
+    getAll: () => api.get('/notificaciones'),
+    marcarLeida: (id) => api.patch(`/notificaciones/${id}`),
+    marcarTodasLeidas: () => api.patch('/notificaciones/marcar-todas/leidas')
+};
+
 export default api;

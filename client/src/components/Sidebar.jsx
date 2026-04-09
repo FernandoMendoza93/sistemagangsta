@@ -2,6 +2,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { Settings } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 export default function Sidebar({ isOpen, onToggle }) {
     const { user, logout, isAdmin, isEncargado } = useAuth();
@@ -33,13 +34,16 @@ export default function Sidebar({ isOpen, onToggle }) {
 
     return (
         <>
-            <button
-                className="sidebar-toggle"
-                onClick={() => onToggle?.(!isOpen)}
-                aria-label="Menu"
-            >
-                <i className={`bi ${isOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
-            </button>
+            <div className="sidebar-top-bar">
+                <button
+                    className="sidebar-toggle"
+                    onClick={() => onToggle?.(!isOpen)}
+                    aria-label="Menu"
+                >
+                    <i className={`bi ${isOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
+                </button>
+                <NotificationBell />
+            </div>
 
             <div
                 className={`sidebar-backdrop ${isOpen ? 'active' : ''}`}
