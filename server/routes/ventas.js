@@ -48,6 +48,10 @@ router.get('/', verifyToken, requireTenant, async (req, res) => {
                 conditions.push('v.id_barbero = ?');
                 params.push(barbero.id);
             }
+        } else if (req.query.barbero_id) {
+            // Un Admin/Encargado filtrando por un barbero específico
+            conditions.push('v.id_barbero = ?');
+            params.push(req.query.barbero_id);
         }
 
         query += ' WHERE ' + conditions.join(' AND ');

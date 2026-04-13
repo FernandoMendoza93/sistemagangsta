@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ventasService } from '../services/api';
+import { ventasService, barberosService } from '../services/api';
 import Icon from '../components/Icon';
 
 // Función para obtener la fecha local en formato YYYY-MM-DD
@@ -17,15 +17,32 @@ export default function VentasPage() {
     const [fecha, setFecha] = useState(getLocalDate());
     const [selectedVenta, setSelectedVenta] = useState(null);
     const [detalles, setDetalles] = useState([]);
+    const [barberos, setBarberos] = useState([]);
+    const [barberoId, setBarberoId] = useState('');
+
+    useEffect(() => {
+        loadBarberos();
+    }, []);
 
     useEffect(() => {
         loadVentas();
-    }, [fecha]);
+    }, [fecha, barberoId]);
+
+    const loadBarberos = async () => {
+        try {
+            const res = await barberosService.getAll();
+            setBarberos(res.data);
+        } catch (error) {
+            console.error('Error cargando barberos:', error);
+        }
+    };
 
     const loadVentas = async () => {
         setLoading(true);
         try {
-            const res = await ventasService.getAll({ fecha });
+            const params = { fecha };
+            if (barberoId) params.barbero_id = barberoId;
+            const res = await ventasService.getAll(params);
             setVentas(res.data);
         } catch (error) {
             console.error('Error cargando ventas:', error);
@@ -64,13 +81,26 @@ export default function VentasPage() {
                         </div>
                     </div>
                 </div>
-                <input
-                    type="date"
-                    className="form-input"
-                    style={{ width: 'auto' }}
-                    value={fecha}
-                    onChange={(e) => setFecha(e.target.value)}
-                />
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <select
+                        className="form-input"
+                        style={{ width: 'auto' }}
+                        value={barberoId}
+                        onChange={(e) => setBarberoId(e.target.value)}
+                    >
+                        <option value="">Todos los barberos</option>
+                        {barberos.map(b => (
+                            <option key={b.id} value={b.id}>{b.nombre}</option>
+                        ))}
+                    </select>
+                    <input
+                        type="date"
+                        className="form-input"
+                        style={{ width: 'auto' }}
+                        value={fecha}
+                        onChange={(e) => setFecha(e.target.value)}
+                    />
+                </div>
             </div>
 
             <div className="card-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '1.5rem' }}>

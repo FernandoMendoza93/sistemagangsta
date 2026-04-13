@@ -154,6 +154,7 @@ export const citasService = {
     getMisCitas: () => api.get('/citas/mis-citas'),
     getMiPerfil: () => api.get('/citas/perfil'),
     crear: (data) => api.post('/citas', data),
+    crearAdmin: (data) => api.post('/citas/admin', data),
     actualizar: (id, data) => api.put(`/citas/${id}`, data),
     getDisponibilidad: (fecha, id_barbero) => api.get('/citas/disponibilidad', { params: { fecha, id_barbero } }),
     getDiasDisponibles: (id_barbero) => api.get('/citas/diasDisponibles', { params: { id_barbero } }),
@@ -200,6 +201,11 @@ export const notificacionesService = {
     getAll: () => api.get('/notificaciones'),
     marcarLeida: (id) => api.patch(`/notificaciones/${id}`),
     marcarTodasLeidas: () => api.patch('/notificaciones/marcar-todas/leidas')
+};
+
+export const escanerService = {
+    getConfig: () => api.get('/escaner/config'),
+    validarMembresia: (code) => api.post('/escaner/validar-membresia', { code })
 };
 
 export default api;

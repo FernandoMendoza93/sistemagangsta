@@ -9,8 +9,18 @@ export default function ComisionesPage() {
     const [comisiones, setComisiones] = useState(null);
     const [historialPagos, setHistorialPagos] = useState([]);
     const [paying, setPaying] = useState(false);
+    
+    // Add Range State
+    const [desde, setDesde] = useState('');
+    const [hasta, setHasta] = useState('');
 
     useEffect(() => { loadBarberos(); }, []);
+
+    useEffect(() => {
+        if (selectedBarbero) {
+            loadComisiones(selectedBarbero.id);
+        }
+    }, [desde, hasta]);
 
     const loadBarberos = async () => {
         try {
@@ -26,7 +36,7 @@ export default function ComisionesPage() {
     const loadComisiones = async (id) => {
         try {
             const [comRes, histRes] = await Promise.all([
-                barberosService.getComisiones(id),
+                barberosService.getComisiones(id, desde || undefined, hasta || undefined),
                 barberosService.getHistorialPagos(id)
             ]);
             setComisiones(comRes.data);
@@ -59,8 +69,18 @@ export default function ComisionesPage() {
 
     return (
         <div>
-            <div className="page-header">
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h1 className="page-title">💎 Comisiones</h1>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div>
+                        <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Desde</label>
+                        <input type="date" className="form-input" value={desde} onChange={(e) => setDesde(e.target.value)} />
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Hasta</label>
+                        <input type="date" className="form-input" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+                    </div>
+                </div>
             </div>
 
             <div className="card-grid comisiones-layout">

@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import ConfirmModal from '../components/ConfirmModal';
 import CierreServicioModal from '../components/CierreServicioModal';
-import { Calendar, CheckCircle, XCircle, User, Clock, CheckSquare, X, MessageCircle } from 'lucide-react';
+import AgendarAdminModal from '../components/AgendarAdminModal';
+import { Calendar, CheckCircle, XCircle, User, Clock, CheckSquare, X, MessageCircle, PlusCircle } from 'lucide-react';
 import './CitasPage.css';
 
 const START_HOUR = 10;
@@ -34,6 +35,9 @@ export default function CitasPage() {
     // Cierre Modal State
     const [showCierreModal, setShowCierreModal] = useState(false);
     const [selectedCierreCita, setSelectedCierreCita] = useState(null);
+
+    // Agendar Admin State
+    const [showAgendarModal, setShowAgendarModal] = useState(false);
 
     useEffect(() => {
         loadCitas();
@@ -125,13 +129,21 @@ export default function CitasPage() {
                     <Calendar size={28} color="var(--accent-primary)" />
                     <h2>Agenda del Día</h2>
                 </div>
-                <div className="header-right">
+                <div className="header-right" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <input
                         type="date"
                         className="calendar-date-picker"
                         value={filtroFecha}
                         onChange={(e) => setFiltroFecha(e.target.value)}
                     />
+                    <button 
+                        className="btn btn-primary" 
+                        onClick={() => setShowAgendarModal(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: '42px' }}
+                    >
+                        <PlusCircle size={18} />
+                        Agendar Cita
+                    </button>
                 </div>
             </div>
 
@@ -283,6 +295,12 @@ export default function CitasPage() {
                 danger
                 onConfirm={confirmCancel}
                 onCancel={() => { setShowCancelConfirm(false); setCancelTargetId(null); }}
+            />
+
+            <AgendarAdminModal 
+                isOpen={showAgendarModal}
+                onClose={() => setShowAgendarModal(false)}
+                onRefresh={loadCitas}
             />
 
             {/* Cierre Servicio Modal */}

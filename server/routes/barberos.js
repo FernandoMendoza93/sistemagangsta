@@ -129,17 +129,28 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
             params.push(hasta);
         }
 
-        query += ' ORDER BY cp.fecha DESC';
-
-        const comisiones = await dbQuery.all(query, params);
-
-        const totales = await dbQuery.get(`
+        let totalQuery = `
             SELECT
                 SUM(CASE WHEN pagado = 0 THEN monto ELSE 0 END) as pendiente,
                 SUM(CASE WHEN pagado = 1 THEN monto ELSE 0 END) as pagado
             FROM comisiones_pendientes
             WHERE id_barbero = ? AND barberia_id = ?
-        `, [id, req.barberia_id]);
+        `;
+        const totalParams = [id, req.barberia_id];
+        
+        if (desde) {
+            totalQuery += ' AND fecha >= ?';
+            totalParams.push(desde);
+        }
+        if (hasta) {
+            totalQuery += ' AND fecha <= ?';
+            totalParams.push(hasta);
+        }
+
+        const totales = await dbQuery.get(totalQuery, totalParams);
+
+        query += ' ORDER BY cp.fecha DESC';
+        const comisiones = await dbQuery.all(query, params);
 
         res.json({
             comisiones,

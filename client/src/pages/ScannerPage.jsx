@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { loyaltyService } from '../services/api';
 import { toast } from 'sonner';
-import { QrCode, ArrowLeft, RefreshCw, User, Star, Gift, Clock, LogOut, Stamp, CheckCircle } from 'lucide-react';
+import { QrCode, ArrowLeft, RefreshCw, User, Star, Gift, Clock, LogOut, Stamp, CheckCircle, Camera, Barcode } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { ScannerLogic } from '../utils/ScannerLogic';
+import { escanerService } from '../services/api';
 import './ScannerPage.css';
 
 export default function ScannerPage() {
@@ -14,6 +16,31 @@ export default function ScannerPage() {
     const [loading, setLoading] = useState(false);
     const [scanActive, setScanActive] = useState(true);
     const [scanMessage, setScanMessage] = useState('');
+    const [scanMode, setScanMode] = useState('camera'); // 'camera' or 'hardware'
+
+    // Efecto para invocar dinámicamente la clase ScannerLogic si es seleccionado
+    useEffect(() => {
+        let scanner = null;
+        if (scanMode === 'hardware' && !scanData && scanActive) {
+
+            // Instanciar listener global. Por defecto el threshold es agresivo (35ms)
+            scanner = new ScannerLogic({
+                onScan: async (code) => {
+                    // El hardware interceptó una ráfaga. Mapeamos exactamente igual a la cámara
+                    handleScan([{ rawValue: code }]);
+                },
+                onError: (err) => console.log('Ruido ignorado por Hardware Scanner: ', err)
+            });
+
+            // Opcional: Podrías hacer fetch a escanerService.getConfig() aquí y configurar dinámicamente
+            // pero el config por defecto es robusto.
+            scanner.start();
+        }
+
+        return () => {
+            if (scanner) scanner.stop();
+        };
+    }, [scanMode, scanData, scanActive]);
 
     const handleScan = async (detectedCodes) => {
         if (!detectedCodes || detectedCodes.length === 0 || !scanActive) return;
@@ -73,17 +100,45 @@ export default function ScannerPage() {
                         </div>
 
                         <div className="camera-wrapper">
-                            {scanActive && (
-                                <Scanner
-                                    onScan={handleScan}
-                                    onError={(e) => console.log('Camera error:', e)}
-                                    constraints={{ facingMode: "environment" }}
-                                    options={{
-                                        delayBetweenScanAttempts: 1000,
-                                        delayBetweenScanSuccess: 2000,
-                                    }}
-                                />
+                            <div className="mode-toggle-wrapper">
+                                <button
+                                    className={`mode-btn ${scanMode === 'camera' ? 'active' : ''}`}
+                                    onClick={() => setScanMode('camera')}
+                                >
+                                    <Camera size={18} />
+                                    Cámara
+                                </button>
+                                <button
+                                    className={`mode-btn ${scanMode === 'hardware' ? 'active' : ''}`}
+                                    onClick={() => setScanMode('hardware')}
+                                >
+                                    <Barcode size={18} />
+                                    Lector Físico
+                                </button>
+                            </div>
+
+                            {scanMode === 'camera' ? (
+                                scanActive && (
+                                    <Scanner
+                                        onScan={handleScan}
+                                        onError={(e) => console.log('Camera error:', e)}
+                                        constraints={{ facingMode: "environment" }}
+                                        options={{
+                                            delayBetweenScanAttempts: 1000,
+                                            delayBetweenScanSuccess: 2000,
+                                        }}
+                                    />
+                                )
+                            ) : (
+                                <div className="hardware-scanner-wait">
+                                    <div className="hardware-pulse-icon">
+                                        <Barcode size={32} color="var(--accent-primary)" />
+                                    </div>
+                                    <h4>Esperando hardware...</h4>
+                                    <p>Pasa el láser sobre la membresía QR/Código de Barras de tu cliente de manera fluida.</p>
+                                </div>
                             )}
+
                             {loading && (
                                 <div className="camera-loading">
                                     <div className="spinner"></div>

@@ -3,6 +3,7 @@ import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/au
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
+import bcrypt from 'bcryptjs';
 import { emitToTenant } from '../services/socketService.js';
 import { sendNewAppointmentEmail } from '../services/emailService.js';
 
@@ -208,7 +209,99 @@ router.post('/', verifyToken, async (req, res) => {
     }
 });
 
-// GET /api/citas/diasDisponibles?id_barbero=X — días de la semana en que trabaja el barbero
+// POST /api/citas/admin - Crear cita (Lado Admin/Staff)
+router.post('/admin', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO, ROLES.BARBERO), async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        
+        let { id_cliente, cliente_nuevo, id_servicio, id_barbero, fecha, hora, notas } = req.body;
+
+        if (!fecha || !hora || !id_servicio) {
+            return res.status(400).json({ error: 'Fecha, hora y servicio son requeridos' });
+        }
+
+        // Si es cliente nuevo, lo creamos primero
+        if (cliente_nuevo && cliente_nuevo.nombre) {
+            
+            let finalPasswordHash = 'temp_hash';
+            if (cliente_nuevo.password) {
+                finalPasswordHash = await bcrypt.hash(cliente_nuevo.password, 10);
+            }
+
+            // Check si existe por telefono temporalmente
+            if (cliente_nuevo.telefono) {
+                const existe = await dbQuery.get('SELECT id FROM clientes WHERE telefono = ? AND barberia_id = ?', [cliente_nuevo.telefono, req.barberia_id]);
+                if (existe) {
+                    id_cliente = existe.id;
+                } else {
+                    const result = await dbQuery.run(
+                        'INSERT INTO clientes (nombre, telefono, password_hash, qr_code, ptos_lealtad, barberia_id) VALUES (?, ?, ?, ?, 0, ?)',
+                        [cliente_nuevo.nombre, cliente_nuevo.telefono || null, finalPasswordHash, 'temp_qr', req.barberia_id]
+                    );
+                    id_cliente = result.lastInsertRowid;
+                }
+            } else {
+                const result = await dbQuery.run(
+                    'INSERT INTO clientes (nombre, password_hash, qr_code, ptos_lealtad, barberia_id) VALUES (?, ?, ?, 0, ?)',
+                    [cliente_nuevo.nombre, finalPasswordHash, 'temp_qr', req.barberia_id]
+                );
+                id_cliente = result.lastInsertRowid;
+            }
+        }
+
+        if (!id_cliente) {
+            return res.status(400).json({ error: 'Debes seleccionar un cliente o crear uno nuevo.' });
+        }
+
+        if (!id_barbero) {
+            const primero = await dbQuery.get("SELECT id FROM barberos WHERE barberia_id = ? AND estado = 'Activo' LIMIT 1", [req.barberia_id]);
+            if (!primero) return res.status(400).json({ error: 'No hay barberos disponibles en este negocio' });
+            id_barbero = primero.id;
+        }
+
+        const barberoValido = await dbQuery.get("SELECT id FROM barberos WHERE id = ? AND barberia_id = ? AND estado = 'Activo'", [id_barbero, req.barberia_id]);
+        if (!barberoValido) return res.status(400).json({ error: 'Barbero no disponible' });
+
+        const servicio = await dbQuery.get('SELECT duracion_aprox FROM servicios WHERE id = ? AND barberia_id = ?', [id_servicio, req.barberia_id]);
+        if (!servicio) return res.status(404).json({ error: 'Servicio no encontrado' });
+
+        const duracionTotal = servicio.duracion_aprox + 15;
+        const horaFin = addMinutes(hora, duracionTotal);
+
+        const dateObj = dayjs.tz(fecha, "America/Mexico_City");
+        const dayOfWeek = dateObj.day();
+        const horarioLaboral = await getHorarioFromDB(dbQuery, id_barbero, dayOfWeek, req.barberia_id);
+
+        if (!horarioLaboral) return res.status(400).json({ error: 'El barbero no trabaja en ese día de la semana' });
+        if (hora < horarioLaboral.apertura) return res.status(400).json({ error: 'La hora es antes de apertura' });
+        if (horaFin > horarioLaboral.cierre) return res.status(400).json({ error: 'La cita supera el horario de cierre' });
+
+        const citasExistentes = await dbQuery.all(`
+            SELECT c.hora as hora_inicio, s.duracion_aprox
+            FROM citas c JOIN servicios s ON c.id_servicio = s.id
+            WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
+        `, [id_barbero, fecha, req.barberia_id]);
+
+        for (const cita of citasExistentes) {
+            const exInicio = cita.hora_inicio;
+            const exFin = addMinutes(exInicio, cita.duracion_aprox + 15);
+            if (hora < exFin && horaFin > exInicio) {
+                return res.status(409).json({ error: 'Este horario ya ha sido reservado o choca con otra cita' });
+            }
+        }
+
+        const result = await dbQuery.run(`
+            INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas, barberia_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [id_cliente, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id]);
+
+        res.status(201).json({ message: 'Cita agendada exitosamente por el Staff', id: result.lastInsertRowid });
+
+    } catch (error) {
+        console.error('Error creando cita por admin:', error);
+        res.status(500).json({ error: 'Error interno del servidor al agenar cita manual' });
+    }
+});
 router.get('/diasDisponibles', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;

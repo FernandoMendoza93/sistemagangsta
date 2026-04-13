@@ -322,3 +322,94 @@
         transform: rotate(360deg);
     }
 }
+
+/* ================== Toggle Scanner Mode ================== */
+.mode-toggle-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    background: var(--bg-input);
+    padding: 0.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn.active {
+    background: var(--bg-surface);
+    color: var(--accent-primary);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mode-btn:hover:not(.active) {
+    color: var(--text-main);
+}
+
+/* ================== Hardware Scanner Wait State ================== */
+.hardware-scanner-wait {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-height: 250px;
+    background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.05), transparent);
+}
+
+.hardware-pulse-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.hardware-pulse-icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    border: 2px solid var(--accent-primary);
+    animation: pulseHardware 2s infinite;
+}
+
+@keyframes pulseHardware {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+.hardware-scanner-wait h4 {
+    margin: 0 0 0.5rem;
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.hardware-scanner-wait p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    max-width: 80%;
+    margin: 0 auto;
+}

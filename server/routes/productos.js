@@ -43,7 +43,7 @@ router.get('/venta', verifyToken, requireTenant, async (req, res) => {
             SELECT p.id, p.nombre, p.precio_venta, p.stock_actual
             FROM productos p
             JOIN categorias c ON p.id_categoria = c.id
-            WHERE c.nombre = 'Venta' AND p.activo = 1 AND p.stock_actual > 0 AND p.barberia_id = ?
+            WHERE c.nombre NOT IN ('Insumos de Limpieza', 'Herramientas') AND p.activo = 1 AND p.stock_actual > 0 AND p.barberia_id = ?
             ORDER BY p.nombre
         `, [req.barberia_id]);
 

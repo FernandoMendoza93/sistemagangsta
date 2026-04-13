@@ -125,6 +125,7 @@ const superadminRoutes = (await import('./routes/superadmin.js')).default;
 const themesRoutes = (await import('./routes/themes.js')).default;
 const horariosRoutes = (await import('./routes/horarios.js')).default;
 const notificacionesRoutes = (await import('./routes/notificaciones.js')).default;
+const escanerRoutes = (await import('./routes/escaner.js')).default;
 
 // Servir archivos subidos (como Logos) de forma estática
 app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
@@ -145,6 +146,7 @@ app.use('/api/superadmin', superadminRoutes);
 app.use('/api/super', themesRoutes);
 app.use('/api/horarios', horariosRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
+app.use('/api/escaner', escanerRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {
