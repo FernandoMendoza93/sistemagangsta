@@ -119,9 +119,14 @@ export default function ComisionesPage() {
         return Object.entries(grupos)
             .sort(([a], [b]) => new Date(a) - new Date(b))
             .map(([dia, items]) => {
-                // dia ya viene como YYYY-MM-DD gracias al fix de en-CA
-                const dateObj = new Date(`${dia}T12:00:00Z`);
-                const nombreDia = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+            // Quitamos la Z para que se interprete en hora local y forzamos el timezone en el formateo
+            const dateObj = new Date(`${dia}T12:00:00`);
+            const nombreDia = dateObj.toLocaleDateString('es-MX', { 
+                timeZone: 'America/Mexico_City',
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long' 
+            });
                 
                 return {
                     diaFormateado: nombreDia.toUpperCase(),
