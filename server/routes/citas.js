@@ -121,7 +121,7 @@ router.post('/', verifyToken, async (req, res) => {
             SELECT c.hora as hora_inicio, s.duracion_aprox
             FROM citas c
             JOIN servicios s ON c.id_servicio = s.id
-            WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
+            WHERE c.id_barbero = ? AND DATE(CONVERT_TZ(c.fecha, '+00:00', '-05:00')) = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
         `, [id_barbero, fecha, req.barberia_id]);
 
         for (const cita of citasExistentes) {
@@ -282,7 +282,7 @@ router.post('/admin', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES
         const citasExistentes = await dbQuery.all(`
             SELECT c.hora as hora_inicio, s.duracion_aprox
             FROM citas c JOIN servicios s ON c.id_servicio = s.id
-            WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
+            WHERE c.id_barbero = ? AND DATE(CONVERT_TZ(c.fecha, '+00:00', '-05:00')) = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
         `, [id_barbero, fecha, req.barberia_id]);
 
         for (const cita of citasExistentes) {
@@ -362,7 +362,7 @@ router.get('/disponibilidad', verifyToken, async (req, res) => {
             SELECT hora, COALESCE(duracion_minutos, duracion_aprox, 30) as duracion_minutos
             FROM citas c
             LEFT JOIN servicios s ON c.id_servicio = s.id
-            WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada'
+            WHERE c.id_barbero = ? AND DATE(CONVERT_TZ(c.fecha, '+00:00', '-05:00')) = ? AND c.estado != 'Cancelada'
         `, [parseInt(id_barbero), fecha]);
 
         // 4. Generar todos los slots cada 30 min entre apertura y cierre
@@ -447,7 +447,7 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
         }
 
         if (fecha) {
-            conditions.push('c.fecha = ?');
+            conditions.push("DATE(CONVERT_TZ(c.fecha, '+00:00', '-05:00')) = ?");
             params.push(fecha);
         }
 

@@ -31,14 +31,14 @@ router.get('/', verifyToken, requireTenant, async (req, res) => {
         const params = [req.barberia_id];
 
         if (fecha) {
-            conditions.push("DATE(v.fecha) = DATE(?)");
+            conditions.push("DATE(CONVERT_TZ(v.fecha, '+00:00', '-05:00')) = ?");
             params.push(fecha);
         } else if (desde && hasta) {
-            conditions.push("DATE(v.fecha) BETWEEN DATE(?) AND DATE(?)");
+            conditions.push("DATE(CONVERT_TZ(v.fecha, '+00:00', '-05:00')) BETWEEN ? AND ?");
             params.push(desde, hasta);
         } else {
             const mxDate = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
-            conditions.push("DATE(v.fecha) = ?");
+            conditions.push("DATE(CONVERT_TZ(v.fecha, '+00:00', '-05:00')) = ?");
             params.push(mxDate);
         }
 
@@ -93,7 +93,7 @@ router.get('/resumen/hoy', verifyToken, requireTenant, async (req, res) => {
                 COALESCE(SUM(CASE WHEN metodo_pago = 'Tarjeta' THEN total_venta ELSE 0 END), 0) as tarjeta,
                 COALESCE(SUM(CASE WHEN metodo_pago = 'Transferencia' THEN total_venta ELSE 0 END), 0) as transferencia
             FROM ventas_cabecera
-            WHERE DATE(fecha) = ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
+            WHERE DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) = ? AND estado = 'completada' AND barberia_id = ? ${extraCondition}
         `, [mxDate, req.barberia_id, ...extraParams]);
 
         res.json(resumen);

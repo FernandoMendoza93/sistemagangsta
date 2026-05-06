@@ -14,24 +14,15 @@ async function checkDates() {
     console.log('Tablas encontradas:', tables);
 
     // Intentamos buscar en 'barberia_ventas' o 'citas' que son nombres comunes en tu proyecto
-    console.log('--- Analizando COMISIONES_PENDIENTES ---');
-    const [comisiones] = await connection.query(`
-        SELECT id, fecha, DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) as fecha_mexico 
-        FROM comisiones_pendientes 
-        WHERE DATE(fecha) IN ('2026-05-05', '2026-05-06')
-        ORDER BY fecha;
-    `);
-    console.table(comisiones);
-
-    console.log('--- Analizando VENTAS_CABECERA ---');
-    const [ventas] = await connection.query(`
-        SELECT id, fecha, DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) as fecha_mexico 
+    console.log('--- Últimas 10 ventas en VENTAS_CABECERA ---');
+    const [rows] = await connection.query(`
+        SELECT id, fecha
         FROM ventas_cabecera 
-        WHERE DATE(fecha) IN ('2026-05-05', '2026-05-06')
-        ORDER BY fecha;
+        ORDER BY id DESC
+        LIMIT 10;
     `);
-    console.table(ventas);
 
+    console.table(rows);
     await connection.end();
 }
 

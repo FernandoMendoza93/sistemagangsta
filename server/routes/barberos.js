@@ -132,11 +132,11 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         // Blindaje de fechas: usar DATE() para comparar solo la parte de fecha,
         // evitando que la zona horaria de Railway (UTC) corte horas de México
         if (desde) {
-            query += ' AND DATE(cp.fecha) >= ?';
+            query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) >= ?";
             params.push(desde);
         }
         if (hasta) {
-            query += ' AND DATE(cp.fecha) <= ?';
+            query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) <= ?";
             params.push(hasta);
         }
 
@@ -150,11 +150,11 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         const totalParams = [id, req.barberia_id];
 
         if (desde) {
-            totalQuery += ' AND DATE(fecha) >= ?';
+            totalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?";
             totalParams.push(desde);
         }
         if (hasta) {
-            totalQuery += ' AND DATE(fecha) <= ?';
+            totalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?";
             totalParams.push(hasta);
         }
 
@@ -179,8 +179,8 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
             WHERE id_barbero = ? AND barberia_id = ?
         `;
         const semanalParams = [id, req.barberia_id];
-        if (desde) { semanalQuery += ' AND DATE(fecha) >= ?'; semanalParams.push(desde); }
-        if (hasta) { semanalQuery += ' AND DATE(fecha) <= ?'; semanalParams.push(hasta); }
+        if (desde) { semanalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?"; semanalParams.push(desde); }
+        if (hasta) { semanalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?"; semanalParams.push(hasta); }
         semanalQuery += ' GROUP BY semana_id, semana_inicio, semana_fin ORDER BY semana_id DESC';
 
         const resumen_semanal = await dbQuery.all(semanalQuery, semanalParams);
@@ -214,11 +214,11 @@ router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROL
         const pendienteParams = [id, req.barberia_id];
 
         if (desde) {
-            pendienteQuery += ' AND DATE(fecha) >= ?';
+            pendienteQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?";
             pendienteParams.push(desde);
         }
         if (hasta) {
-            pendienteQuery += ' AND DATE(fecha) <= ?';
+            pendienteQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?";
             pendienteParams.push(hasta);
         }
 
@@ -241,11 +241,11 @@ router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROL
         const updateParams = [id, req.barberia_id];
 
         if (desde) {
-            updateQuery += ' AND DATE(fecha) >= ?';
+            updateQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?";
             updateParams.push(desde);
         }
         if (hasta) {
-            updateQuery += ' AND DATE(fecha) <= ?';
+            updateQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?";
             updateParams.push(hasta);
         }
 
