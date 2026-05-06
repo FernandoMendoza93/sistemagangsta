@@ -91,7 +91,12 @@ export default function DashboardPage() {
                         Bienvenido, <span style={{ color: 'var(--accent-primary)' }}>{user?.nombre}</span>
                     </h1>
                     <p className="page-subtitle" style={{ color: 'var(--text-muted)' }}>
-                        Panel de Control - {new Date().toLocaleDateString('es-MX', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        Panel de Control - {new Date().toLocaleDateString('es-MX', { 
+                            timeZone: 'America/Mexico_City',
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        })}
                     </p>
                 </div>
             </motion.div>
@@ -184,7 +189,13 @@ export default function DashboardPage() {
                                 ) : (
                                     ventas.slice(0, 8).map(v => (
                                         <tr key={v.id}>
-                                            <td style={{ fontWeight: 600 }}>{new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
+                                            <td style={{ fontWeight: 600 }}>
+                                                {new Date(v.fecha).toLocaleTimeString('es-MX', { 
+                                                    timeZone: 'America/Mexico_City',
+                                                    hour: '2-digit', 
+                                                    minute: '2-digit' 
+                                                })}
+                                            </td>
                                             <td>{v.barbero || 'General'}</td>
                                             <td>
                                                 <span className={`glow-badge ${v.metodo_pago === 'Efectivo' ? 'success' : v.metodo_pago === 'Tarjeta' ? 'info' : 'warning'}`}>

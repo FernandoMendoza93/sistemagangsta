@@ -192,7 +192,10 @@ export default function CorteCajaPage() {
                             <tbody>
                                 {historialCortes.map(corte => (
                                     <tr key={corte.id}>
-                                        <td>{new Date(corte.fecha_apertura).toLocaleDateString('es-MX')} {corte.hora_apertura}</td>
+                                        <td>
+                                            {new Date(corte.fecha_apertura).toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })} 
+                                            {corte.hora_apertura}
+                                        </td>
                                         <td>{corte.nombre_encargado}</td>
                                         <td>${parseFloat(corte.monto_inicial || 0).toFixed(2)}</td>
                                         <td>${parseFloat(corte.total_ventas || 0).toFixed(2)}</td>
@@ -220,7 +223,7 @@ export default function CorteCajaPage() {
     }
 
     const { encargado, fecha_apertura, hora_apertura } = corteActual.corte;
-    const fechaInicio = new Date(fecha_apertura).toLocaleDateString('es-MX');
+    const fechaInicio = new Date(fecha_apertura).toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' });
 
     return (
         <div className="corte-caja-page-pro">

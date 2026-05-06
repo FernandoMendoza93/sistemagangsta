@@ -155,7 +155,13 @@ export default function VentasPage() {
                                         ventas.map(v => (
                                             <tr key={v.id}>
                                                 <td style={{ ...tdStyle, background: selectedVenta?.id === v.id ? 'rgba(201, 162, 39, 0.1)' : 'var(--bg-surface)' }}>{v.id}</td>
-                                                <td style={{ ...tdStyle, background: selectedVenta?.id === v.id ? 'rgba(201, 162, 39, 0.1)' : 'var(--bg-surface)' }}>{new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
+                                                <td style={{ ...tdStyle, background: selectedVenta?.id === v.id ? 'rgba(201, 162, 39, 0.1)' : 'var(--bg-surface)' }}>
+                                                    {new Date(v.fecha).toLocaleTimeString('es-MX', { 
+                                                        timeZone: 'America/Mexico_City',
+                                                        hour: '2-digit', 
+                                                        minute: '2-digit' 
+                                                    })}
+                                                </td>
                                                 <td style={{ ...tdStyle, background: selectedVenta?.id === v.id ? 'rgba(201, 162, 39, 0.1)' : 'var(--bg-surface)' }}>{v.barbero || '-'}</td>
                                                 <td style={{ ...tdStyle, background: selectedVenta?.id === v.id ? 'rgba(201, 162, 39, 0.1)' : 'var(--bg-surface)' }}>
                                                     <span className={`badge ${v.metodo_pago === 'Efectivo' ? 'badge-success' :
@@ -200,7 +206,7 @@ export default function VentasPage() {
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                                 <strong style={{ color: 'var(--text-main)' }}>Barbero:</strong> {selectedVenta.barbero || 'Sin asignar'}<br />
                                 <strong style={{ color: 'var(--text-main)' }}>Método:</strong> {selectedVenta.metodo_pago}<br />
-                                <strong style={{ color: 'var(--text-main)' }}>Hora:</strong> {new Date(selectedVenta.fecha).toLocaleTimeString('es-MX')}
+                                <strong style={{ color: 'var(--text-main)' }}>Hora:</strong> {new Date(selectedVenta.fecha).toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City' })}
                             </p>
                         </div>
 

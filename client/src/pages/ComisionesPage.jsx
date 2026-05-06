@@ -108,11 +108,8 @@ export default function ComisionesPage() {
         });
 
         comisionesSemana.forEach(item => {
-            const diaKey = new Date(item.fecha).toLocaleDateString('es-MX', {
-                timeZone: 'America/Mexico_City',
-                year: 'numeric',
-                month: '2-digit', 
-                day: '2-digit'
+            const diaKey = new Date(item.fecha).toLocaleDateString('en-CA', {
+                timeZone: 'America/Mexico_City'
             });
             
             if (!grupos[diaKey]) grupos[diaKey] = [];
@@ -120,18 +117,10 @@ export default function ComisionesPage() {
         });
         
         return Object.entries(grupos)
-            .sort(([a], [b]) => {
-                // a y b vienen como dd/mm/yyyy. Convertimos a yyyy-mm-dd para ordenar correctamente
-                const format = (str) => {
-                    const [d, m, y] = str.split('/');
-                    return `${y}-${m}-${d}`;
-                };
-                return new Date(format(a)) - new Date(format(b));
-            })
+            .sort(([a], [b]) => new Date(a) - new Date(b))
             .map(([dia, items]) => {
-                // Convertimos el dd/mm/yyyy a fecha para sacar el nombre del día
-                const [d, m, y] = dia.split('/');
-                const dateObj = new Date(`${y}-${m}-${d}T12:00:00Z`);
+                // dia ya viene como YYYY-MM-DD gracias al fix de en-CA
+                const dateObj = new Date(`${dia}T12:00:00Z`);
                 const nombreDia = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
                 
                 return {
