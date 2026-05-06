@@ -11,6 +11,8 @@ export default function ComisionesPage() {
     const [payingWeek, setPayingWeek] = useState(null); // To track which week is being paid
     const [payingAll, setPayingAll] = useState(false);
     const [expandedWeeks, setExpandedWeeks] = useState(new Set());
+    const [semanasDesglosadas, setSemanasDesglosadas] = useState({}); // { semanaId: [ {fecha, items, subtotal} ] }
+    const [loadingDesglose, setLoadingDesglose] = useState(null); // ID de la semana cargando
 
     useEffect(() => { loadBarberos(); }, []);
 
@@ -79,62 +81,74 @@ export default function ComisionesPage() {
         }
     };
 
-    const toggleExpand = (semanaId) => {
-        setExpandedWeeks(prev => {
-            const next = new Set(prev);
-            if (next.has(semanaId)) {
+    const toggleExpand = async (semana) => {
+        const semanaId = semana.semana_id;
+        
+        if (expandedWeeks.has(semanaId)) {
+            setExpandedWeeks(prev => {
+                const next = new Set(prev);
                 next.delete(semanaId);
-            } else {
-                next.add(semanaId);
+                return next;
+            });
+            return;
+        }
+
+        // Si no tenemos los datos de esta semana, los cargamos día por día
+        if (!semanasDesglosadas[semanaId]) {
+            await cargarDesgloseSemana(semana);
+        }
+
+        setExpandedWeeks(prev => new Set(prev).add(semanaId));
+    };
+
+    const cargarDesgloseSemana = async (semana) => {
+        if (!selectedBarbero) return;
+        
+        setLoadingDesglose(semana.semana_id);
+        try {
+            const dias = [];
+            // Usamos mediodía para evitar problemas de redondeo de fecha al iterar
+            let current = new Date(`${semana.semana_inicio}T12:00:00`);
+            const fin = new Date(`${semana.semana_fin}T12:00:00`);
+
+            while (current <= fin) {
+                const fechaKey = current.toLocaleDateString('en-CA', {
+                    timeZone: 'America/Mexico_City'
+                });
+
+                // Consultamos el backend filtrado por día real (ya con CONVERT_TZ)
+                const res = await barberosService.getComisiones(selectedBarbero.id, { fecha: fechaKey });
+                const data = res.data.comisiones || [];
+
+                if (data.length > 0) {
+                    dias.push({
+                        fecha: fechaKey,
+                        nombreDia: new Date(`${fechaKey}T12:00:00`).toLocaleDateString('es-MX', {
+                            timeZone: 'America/Mexico_City',
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long'
+                        }).toUpperCase(),
+                        items: data,
+                        subtotal: data.reduce((sum, i) => sum + parseFloat(i.monto), 0)
+                    });
+                }
+                current.setDate(current.getDate() + 1);
             }
-            return next;
-        });
+
+            setSemanasDesglosadas(prev => ({
+                ...prev,
+                [semana.semana_id]: dias
+            }));
+        } catch (error) {
+            console.error('Error cargando desglose:', error);
+            toast.error('Error al cargar el detalle de la semana');
+        } finally {
+            setLoadingDesglose(null);
+        }
     };
 
-    const agruparPorDia = (comisiones, semanaInicio, semanaFin) => {
-        const grupos = {};
-        
-        // Convertir strings de fecha a Date para comparación, sumando un día a semanaFin para incluirlo completo en la comparación si fuera necesario
-        const start = new Date(semanaInicio);
-        start.setHours(0,0,0,0);
-        const end = new Date(semanaFin);
-        end.setHours(23,59,59,999);
 
-        // Filtrar comisiones planas por rango de la semana y que estén pendientes
-        const comisionesSemana = (comisiones || []).filter(item => {
-            if (item.pagado) return false;
-            const itemDate = new Date(item.fecha);
-            return itemDate >= start && itemDate <= end;
-        });
-
-        comisionesSemana.forEach(item => {
-            const diaKey = new Date(item.fecha).toLocaleDateString('en-CA', {
-                timeZone: 'America/Mexico_City'
-            });
-            
-            if (!grupos[diaKey]) grupos[diaKey] = [];
-            grupos[diaKey].push(item);
-        });
-        
-        return Object.entries(grupos)
-            .sort(([a], [b]) => new Date(a) - new Date(b))
-            .map(([dia, items]) => {
-            // Quitamos la Z para que se interprete en hora local y forzamos el timezone en el formateo
-            const dateObj = new Date(`${dia}T12:00:00`);
-            const nombreDia = dateObj.toLocaleDateString('es-MX', { 
-                timeZone: 'America/Mexico_City',
-                weekday: 'long', 
-                day: 'numeric', 
-                month: 'long' 
-            });
-                
-                return {
-                    diaFormateado: nombreDia.toUpperCase(),
-                    items,
-                    subtotal: items.reduce((sum, i) => sum + parseFloat(i.monto), 0)
-                };
-            });
-    };
 
     const cardStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' };
     
@@ -247,7 +261,7 @@ export default function ComisionesPage() {
                                                         cursor: 'pointer',
                                                         transition: 'all 0.2s ease'
                                                     }}
-                                                    onClick={() => toggleExpand(semana.semana_id)}
+                                                    onClick={() => toggleExpand(semana)}
                                                 >
                                                     {/* Header Card */}
                                                     <div style={{
@@ -302,10 +316,15 @@ export default function ComisionesPage() {
                                                             flexDirection: 'column',
                                                             gap: '1.5rem'
                                                         }}>
-                                                            {agruparPorDia(comisionesData.comisiones, semana.semana_inicio, semana.semana_fin).map((dia) => (
-                                                                <div key={dia.diaFormateado}>
+                                                            {loadingDesglose === semana.semana_id ? (
+                                                                <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>
+                                                                    <div className="spinner" style={{ width: '20px', height: '20px', margin: '0 auto 10px' }}></div>
+                                                                    Cargando desglose diario...
+                                                                </div>
+                                                            ) : (semanasDesglosadas[semana.semana_id] || []).map((dia) => (
+                                                                <div key={dia.nombreDia}>
                                                                     <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '0.75rem', paddingLeft: '1rem' }}>
-                                                                        {dia.diaFormateado}
+                                                                        {dia.nombreDia}
                                                                     </div>
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1.5rem' }}>
                                                                         {dia.items.map((item, idx) => (

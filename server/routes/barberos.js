@@ -97,7 +97,7 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { desde, hasta } = req.query;
+        const { desde, hasta, fecha } = req.query;
 
         // Verificar que el barbero pertenece al tenant
         const barberoCheck = await dbQuery.get('SELECT id FROM barberos WHERE id = ? AND barberia_id = ?', [id, req.barberia_id]);
@@ -129,15 +129,19 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         `;
         const params = [id, req.barberia_id];
 
-        // Blindaje de fechas: usar DATE() para comparar solo la parte de fecha,
-        // evitando que la zona horaria de Railway (UTC) corte horas de México
-        if (desde) {
-            query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) >= ?";
-            params.push(desde);
-        }
-        if (hasta) {
-            query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) <= ?";
-            params.push(hasta);
+        // Blindaje de fechas: usar DATE() con CONVERT_TZ para comparar contra hora México
+        if (fecha) {
+            query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) = ?";
+            params.push(fecha);
+        } else {
+            if (desde) {
+                query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) >= ?";
+                params.push(desde);
+            }
+            if (hasta) {
+                query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) <= ?";
+                params.push(hasta);
+            }
         }
 
         let totalQuery = `

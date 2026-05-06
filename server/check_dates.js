@@ -14,11 +14,13 @@ async function checkDates() {
     console.log('Tablas encontradas:', tables);
 
     // Intentamos buscar en 'barberia_ventas' o 'citas' que son nombres comunes en tu proyecto
-    console.log('--- Últimas 10 ventas en VENTAS_CABECERA ---');
+    console.log('--- Comparación UTC vs México (Últimas 10 Ventas) ---');
     const [rows] = await connection.query(`
-        SELECT id, fecha
+        SELECT id, fecha, 
+        DATE(fecha) as fecha_utc,
+        DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) as fecha_mexico
         FROM ventas_cabecera 
-        ORDER BY id DESC
+        ORDER BY id DESC 
         LIMIT 10;
     `);
 
