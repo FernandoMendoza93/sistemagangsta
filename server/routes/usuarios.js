@@ -25,6 +25,35 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req
     }
 });
 
+// GET /api/usuarios/staff-admin - Obtener lista de administradores/dueños del tenant
+router.get('/staff-admin', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+    try {
+        console.log("Consultando staff para la barbería:", req.barberia_id);
+        const dbQuery = req.app.locals.dbQuery;
+
+        // DEBUG: Imprimir cuántos usuarios encuentra sin filtrar por rol
+        const usuariosRaw = await dbQuery.all('SELECT id, nombre, email FROM usuarios WHERE barberia_id = ?', [req.barberia_id]);
+        console.log("DEBUG: Total usuarios en esta barberia_id (sin filtro de roles):", usuariosRaw.length);
+        console.log("DEBUG: Usuarios en barberia:", usuariosRaw);
+
+        const usuarios = await dbQuery.all(`
+            SELECT u.id, u.nombre, u.email as correo 
+            FROM usuarios u
+            LEFT JOIN roles r ON u.id_rol = r.id
+            WHERE u.barberia_id = ? 
+            AND (LOWER(r.nombre_rol) LIKE '%admin%' OR LOWER(r.nombre_rol) LIKE '%encargado%')
+            AND u.activo = 1
+        `, [req.barberia_id]);
+        
+        console.log("DEBUG: Usuarios filtrados a retornar:", usuarios);
+
+        res.json(usuarios);
+    } catch (error) {
+        console.error('Error listando staff admin:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // GET /api/usuarios/:id - Obtener usuario por ID (verificado por tenant)
 router.get('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
@@ -55,7 +84,7 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { nombre, email, id_rol, activo, password } = req.body;
+        const { nombre, email, id_rol, activo, password, telefono_whatsapp } = req.body;
 
         if (password && password.trim()) {
             const passwordHash = await bcrypt.hash(password, 10);
@@ -78,11 +107,11 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (
             if (roleInfo && roleInfo.nombre_rol === 'Barbero') {
                 if (!checkBarber) {
                     await dbQuery.run(`
-                        INSERT INTO barberos (id_usuario, porcentaje_comision, estado, turno, barberia_id)
-                        VALUES (?, 0.50, 'Activo', 'Completo', ?)
-                    `, [id, req.barberia_id]);
-                } else if (checkBarber.estado === 'Inactivo') {
-                    await dbQuery.run("UPDATE barberos SET estado = 'Activo' WHERE id = ?", [checkBarber.id]);
+                        INSERT INTO barberos (id_usuario, porcentaje_comision, estado, turno, barberia_id, telefono_whatsapp)
+                        VALUES (?, 0.50, 'Activo', 'Completo', ?, ?)
+                    `, [id, req.barberia_id, telefono_whatsapp || null]);
+                } else {
+                    await dbQuery.run("UPDATE barberos SET estado = 'Activo', telefono_whatsapp = COALESCE(?, telefono_whatsapp) WHERE id = ?", [telefono_whatsapp, checkBarber.id]);
                 }
             } else {
                 // Soft-Delete: Inactivar perfil público si el nuevo rol ya no es Barbero

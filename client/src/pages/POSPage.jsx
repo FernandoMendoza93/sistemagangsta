@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { serviciosService, productosService, barberosService, ventasService } from '../services/api';
+import { serviciosService, productosService, barberosService, ventasService, clientesService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
 
@@ -14,7 +14,11 @@ export default function POSPage() {
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [message, setMessage] = useState(null);
+    const [clienteId, setClienteId] = useState('');
+    const [clientes, setClientes] = useState([]);
+    const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
     const [tab, setTab] = useState('servicios');
+    const [showRewardModal, setShowRewardModal] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -30,13 +34,22 @@ export default function POSPage() {
             setServicios(servRes.data);
             setProductos(prodRes.data);
             setBarberos(barbRes.data);
+            
+            try {
+                // Se aisla la carga de clientes para que no rompa el POS si falla
+                const cliRes = await clientesService.getAll();
+                setClientes(cliRes.data);
+            } catch (cliError) {
+                console.error('Error cargando la libreta de clientes:', cliError);
+                setClientes([]);
+            }
 
             // Si el usuario es barbero, seleccionarlo automáticamente
             if (user?.barbero) {
                 setBarberoId(user.barbero.id);
             }
         } catch (error) {
-            console.error('Error cargando datos:', error);
+            console.error('Error cargando catalogo base:', error);
         } finally {
             setLoading(false);
         }
@@ -77,7 +90,15 @@ export default function POSPage() {
         setCart(newCart);
     };
 
-    const getTotal = () => cart.reduce((sum, item) => sum + item.subtotal, 0);
+    const getSubtotal = () => cart.reduce((sum, item) => sum + item.subtotal, 0);
+
+    const getDescuento = () => {
+        if (!clienteSeleccionado) return 0;
+        const discountRate = (clienteSeleccionado.descuento_activo || 0) / 100;
+        return getSubtotal() * discountRate;
+    };
+
+    const getTotal = () => getSubtotal() - getDescuento();
 
     const handleVenta = async () => {
         if (cart.length === 0) {
@@ -103,17 +124,22 @@ export default function POSPage() {
 
             const res = await ventasService.create({
                 id_barbero: barberoId || null,
+                id_cliente: clienteId || null,
                 metodo_pago: metodoPago,
                 items
             });
 
-            setMessage({ type: 'success', text: `¡Venta #${res.data.id} registrada exitosamente! ✅` });
-            setCart([]);
+            if (res.data.recompensa?.alcanzada) {
+                setShowRewardModal(res.data.recompensa);
+            } else {
+                setMessage({ type: 'success', text: `¡Venta #${res.data.id} registrada exitosamente! ✅` });
+                // Ocultar mensaje de éxito después de 3 segundos
+                setTimeout(() => {
+                    setMessage(null);
+                }, 3000);
+            }
 
-            // Ocultar mensaje de éxito después de 3 segundos
-            setTimeout(() => {
-                setMessage(null);
-            }, 3000);
+            setCart([]);
 
         } catch (error) {
             setMessage({ type: 'error', text: error.response?.data?.error || 'Error al registrar venta' });
@@ -249,6 +275,34 @@ export default function POSPage() {
                         </div>
 
                         <div className="form-group">
+                            <label className="form-label">Cliente (Opcional - Para Puntos y Descuentos)</label>
+                            <select
+                                className="form-select"
+                                value={clienteId}
+                                onChange={(e) => {
+                                    setClienteId(e.target.value);
+                                    if(e.target.value) {
+                                        const cli = clientes.find(c => c.id.toString() === e.target.value);
+                                        setClienteSeleccionado(cli);
+                                    } else {
+                                        setClienteSeleccionado(null);
+                                    }
+                                }}
+                            >
+                                <option value="">Venta Pública (Sin Asignar)</option>
+                                {clientes.map(c => (
+                                    <option key={c.id} value={c.id}>{c.nombre} {c.nivel ? `(${c.nivel.nombre})` : ''}</option>
+                                ))}
+                            </select>
+                            {clienteSeleccionado?.descuento_activo > 0 && (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <Icon name="tag" size={14} />
+                                    Aplica {clienteSeleccionado.descuento_activo}% de desc. por Nivel {clienteSeleccionado.nivel.nombre}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="form-group">
                             <label className="form-label">Método de Pago</label>
                             <select
                                 className="form-select"
@@ -261,8 +315,18 @@ export default function POSPage() {
                             </select>
                         </div>
 
-                        <div className="cart-total">
-                            <span>Total:</span>
+                        <div className="cart-total" style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '1rem', paddingBottom: '0.5rem' }}>
+                            <span>Subtotal:</span>
+                            <span style={{fontWeight: '500'}}>${getSubtotal().toFixed(2)}</span>
+                        </div>
+                        {getDescuento() > 0 && (
+                            <div className="cart-total" style={{ color: 'var(--success)', marginBottom: '0.5rem', paddingBottom: '0.5rem' }}>
+                                <span>Descuento Nivel:</span>
+                                <span>-${getDescuento().toFixed(2)}</span>
+                            </div>
+                        )}
+                        <div className="cart-total" style={{ fontSize: '1.4rem' }}>
+                            <span>Total a Cobrar:</span>
                             <span className="cart-total-value">${getTotal().toFixed(2)}</span>
                         </div>
 
@@ -287,6 +351,35 @@ export default function POSPage() {
     return (
         <>
             {mainContent}
+
+            {showRewardModal && (
+                <div className="modal-overlay" style={{ zIndex: 9999 }}>
+                    <div className="modal-content" style={{ textAlign: 'center', maxWidth: '400px', background: 'var(--bg-surface)', padding: '2rem', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '8px', background: 'linear-gradient(90deg, #F59E0B, #EF4444)' }}></div>
+                        <div style={{ width: '80px', height: '80px', margin: '0 auto 1.5rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon name="gift" size={40} color="#F59E0B" />
+                        </div>
+                        <h2 style={{ color: 'var(--text-main)', fontSize: '1.8rem', marginBottom: '0.5rem' }}>¡Premio Alcanzado!</h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                            Este cliente ha completado su ciclo de frecuencia y ganó:
+                        </p>
+                        <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
+                            <strong style={{ fontSize: '1.2rem', color: 'var(--accent-primary)' }}>{showRewardModal.nombre_premio}</strong>
+                        </div>
+                        {showRewardModal.nuevo_nivel && (
+                            <p style={{ color: 'var(--success)', fontWeight: '600', marginBottom: '1.5rem' }}>
+                                ⭐ ¡Además subió al de rango {showRewardModal.nuevo_nivel}!
+                            </p>
+                        )}
+                        <button 
+                            className="btn btn-primary btn-block btn-lg" 
+                            onClick={() => setShowRewardModal(null)}
+                        >
+                            Entendido, Cobrar Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

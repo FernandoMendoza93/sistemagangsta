@@ -18,20 +18,43 @@ router.get('/', verifyToken, requireTenant, async (req, res) => {
         const { q } = req.query;
 
         let query = `
-            SELECT id, nombre, telefono, puntos_lealtad, ultima_visita, fecha_registro, notas, activo
-            FROM clientes
-            WHERE activo = 1 AND barberia_id = ?
+            SELECT c.id, c.nombre, c.telefono, c.puntos_lealtad, c.ultima_visita, c.fecha_registro, c.notas, c.activo,
+                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex
+            FROM clientes c
+            LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad
+            WHERE c.activo = 1 AND c.barberia_id = ?
         `;
         const params = [req.barberia_id];
 
         if (q) {
-            query += ` AND (nombre LIKE ? OR telefono LIKE ?)`;
+            query += ` AND (c.nombre LIKE ? OR c.telefono LIKE ?)`;
             params.push(`%${q}%`, `%${q}%`);
         }
 
-        query += ` ORDER BY nombre`;
+        query += ` ORDER BY c.nombre`;
 
-        const clientes = await dbQuery.all(query, params);
+        const rows = await dbQuery.all(query, params);
+        
+        const clientes = rows.map(c => ({
+            id: c.id,
+            nombre: c.nombre,
+            telefono: c.telefono,
+            puntos_lealtad: c.puntos_lealtad,
+            ultima_visita: c.ultima_visita,
+            fecha_registro: c.fecha_registro,
+            notas: c.notas,
+            activo: c.activo,
+            descuento_activo: c.porcentaje_descuento || 0,
+            nivel: {
+                id: c.id_rol_lealtad,
+                nombre: c.nivel_lealtad || 'Nivel General',
+                descuento: c.porcentaje_descuento || 0,
+                frecuencia: c.dias_max_frecuencia || 999,
+                premio: c.premio_descripcion || 'Recompensa por sellos',
+                color_hex: c.color_hex || '#e2725b'
+            }
+        }));
+
         res.json(clientes);
     } catch (error) {
         console.error('Error listando clientes:', error);
@@ -45,16 +68,37 @@ router.get('/inactivos', verifyToken, requireTenant, async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
         const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
 
-        const clientes = await dbQuery.all(`
-            SELECT id, nombre, telefono, puntos_lealtad, ultima_visita, fecha_registro, notas,
-                   DATEDIFF(?, ultima_visita) as dias_sin_visita
-            FROM clientes
-            WHERE activo = 1
-              AND ultima_visita IS NOT NULL
-              AND DATEDIFF(?, ultima_visita) > 30
-              AND barberia_id = ?
-            ORDER BY ultima_visita ASC
+        const rows = await dbQuery.all(`
+            SELECT c.id, c.nombre, c.telefono, c.puntos_lealtad, c.ultima_visita, c.fecha_registro, c.notas,
+                   DATEDIFF(?, c.ultima_visita) as dias_sin_visita,
+                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex
+            FROM clientes c
+            LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad
+            WHERE c.activo = 1
+              AND c.ultima_visita IS NOT NULL
+              AND DATEDIFF(?, c.ultima_visita) > 30
+              AND c.barberia_id = ?
+            ORDER BY c.ultima_visita ASC
         `, [mxDateTime, mxDateTime, req.barberia_id]);
+
+        const clientes = rows.map(c => ({
+            id: c.id,
+            nombre: c.nombre,
+            telefono: c.telefono,
+            puntos_lealtad: c.puntos_lealtad,
+            ultima_visita: c.ultima_visita,
+            fecha_registro: c.fecha_registro,
+            notas: c.notas,
+            dias_sin_visita: c.dias_sin_visita,
+            descuento_activo: c.porcentaje_descuento || 0,
+            nivel: {
+                id: c.id_rol_lealtad,
+                nombre: c.nivel_lealtad || 'Bronce (Base)',
+                descuento: c.porcentaje_descuento || 0,
+                frecuencia: c.dias_max_frecuencia || 999,
+                premio: c.premio_descripcion || 'Recompensa por sellos'
+            }
+        }));
 
         res.json(clientes);
     } catch (error) {
@@ -69,15 +113,37 @@ router.get('/:id', verifyToken, requireTenant, async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
 
-        const cliente = await dbQuery.get(`
-            SELECT id, nombre, telefono, puntos_lealtad, ultima_visita, fecha_registro, notas, activo
-            FROM clientes
-            WHERE id = ? AND barberia_id = ?
+        const row = await dbQuery.get(`
+            SELECT c.id, c.nombre, c.telefono, c.puntos_lealtad, c.ultima_visita, c.fecha_registro, c.notas, c.activo,
+                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex
+            FROM clientes c
+            LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad
+            WHERE c.id = ? AND c.barberia_id = ?
         `, [id, req.barberia_id]);
 
-        if (!cliente) {
+        if (!row) {
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
+
+        const cliente = {
+            id: row.id,
+            nombre: row.nombre,
+            telefono: row.telefono,
+            puntos_lealtad: row.puntos_lealtad,
+            ultima_visita: row.ultima_visita,
+            fecha_registro: row.fecha_registro,
+            notas: row.notas,
+            activo: row.activo,
+            descuento_activo: row.porcentaje_descuento || 0,
+            nivel: {
+                id: row.id_rol_lealtad,
+                nombre: row.nivel_lealtad || 'Nivel General',
+                descuento: row.porcentaje_descuento || 0,
+                frecuencia: row.dias_max_frecuencia || 999,
+                premio: row.premio_descripcion || 'Recompensa por sellos',
+                color_hex: row.color_hex || '#e2725b'
+            }
+        };
 
         res.json(cliente);
     } catch (error) {

@@ -10,8 +10,8 @@ export default function PersonalPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [form, setForm] = useState({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo' });
-    const [editForm, setEditForm] = useState({ id: null, nombre: '', email: '', password: '', id_rol: 3 });
+    const [form, setForm] = useState({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', telefono_whatsapp: '' });
+    const [editForm, setEditForm] = useState({ id: null, nombre: '', email: '', password: '', id_rol: 3, telefono_whatsapp: '' });
 
     useEffect(() => { loadData(); }, []);
 
@@ -35,7 +35,7 @@ export default function PersonalPage() {
         try {
             await usuariosService.create({ ...form, esBarbero: form.id_rol === 3 });
             setShowModal(false);
-            setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo' });
+            setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', telefono_whatsapp: '' });
             loadData();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Error al crear usuario');
@@ -48,7 +48,8 @@ export default function PersonalPage() {
             nombre: usuario.nombre,
             email: usuario.email,
             password: '',
-            id_rol: usuario.id_rol
+            id_rol: usuario.id_rol,
+            telefono_whatsapp: usuario.telefono_whatsapp || ''
         });
         setShowEditModal(true);
     };
@@ -59,7 +60,8 @@ export default function PersonalPage() {
             const data = {
                 nombre: editForm.nombre,
                 email: editForm.email,
-                id_rol: editForm.id_rol
+                id_rol: editForm.id_rol,
+                telefono_whatsapp: editForm.id_rol === 3 ? editForm.telefono_whatsapp : null
             };
             // Solo enviar password si se escribió una nueva
             if (editForm.password.trim()) {
@@ -67,7 +69,7 @@ export default function PersonalPage() {
             }
             await usuariosService.update(editForm.id, data);
             setShowEditModal(false);
-            setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3 });
+            setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3, telefono_whatsapp: '' });
             loadData();
             toast.success('Usuario actualizado correctamente');
         } catch (error) {
@@ -165,14 +167,23 @@ export default function PersonalPage() {
                                     </select>
                                 </div>
                                 {form.id_rol === 3 && (
-                                    <div className="form-group">
-                                        <label className="form-label">Turno</label>
-                                        <select className="form-select" value={form.turno} onChange={e => setForm({ ...form, turno: e.target.value })}>
-                                            <option value="Mañana">Mañana</option>
-                                            <option value="Tarde">Tarde</option>
-                                            <option value="Completo">Completo</option>
-                                        </select>
-                                    </div>
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">Turno</label>
+                                            <select className="form-select" value={form.turno} onChange={e => setForm({ ...form, turno: e.target.value })}>
+                                                <option value="Mañana">Mañana</option>
+                                                <option value="Tarde">Tarde</option>
+                                                <option value="Completo">Completo</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">WhatsApp de Contacto (Opcional)</label>
+                                            <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={form.telefono_whatsapp} onChange={e => setForm({ ...form, telefono_whatsapp: e.target.value })} />
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+                                                Si se deja vacío, se usará el de la barbería. (Incluye código de país).
+                                            </small>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                             <div className="custom-modal-footer">
@@ -209,6 +220,15 @@ export default function PersonalPage() {
                                         {roles.map(r => <option key={r.id} value={r.id}>{r.nombre_rol}</option>)}
                                     </select>
                                 </div>
+                                {editForm.id_rol === 3 && (
+                                    <div className="form-group">
+                                        <label className="form-label">WhatsApp de Contacto (Opcional)</label>
+                                        <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={editForm.telefono_whatsapp} onChange={e => setEditForm({ ...editForm, telefono_whatsapp: e.target.value })} />
+                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+                                            Si se deja vacío, se usará el de la barbería. (Incluye código de país).
+                                        </small>
+                                    </div>
+                                )}
                                 <div className="form-group">
                                     <label className="form-label">Nueva Contraseña</label>
                                     <input

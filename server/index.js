@@ -48,7 +48,49 @@ async function initializeDatabase() {
         // Probar conexión y forzar time_zone de la sesión
         const connection = await pool.getConnection();
         await connection.query("SET time_zone = '-06:00'");
-        console.log('✅ Conectado a MySQL exitosamente (Zona Horaria: -06:00)');
+        
+        // --- MIGRACIONES DINÁMICAS (Anti-Errors) ---
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS \`barberia_lealtad_niveles\` (
+              \`id_rol_lealtad\` int NOT NULL AUTO_INCREMENT,
+              \`barberia_id\` int NOT NULL,
+              \`nombre_nivel\` varchar(50) NOT NULL,
+              \`dias_max_frecuencia\` int NOT NULL,
+              \`beneficio_id\` int DEFAULT NULL,
+              \`porcentaje_descuento\` decimal(5,2) DEFAULT '0.00',
+              \`premio_descripcion\` text,
+              \`color_hex\` varchar(20) DEFAULT '#e2725b',
+              \`created_at\` timestamp DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (\`id_rol_lealtad\`),
+              KEY \`idx_niveles_barberia\` (\`barberia_id\`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+
+        try {
+            await connection.query('ALTER TABLE `barberia_lealtad_niveles` ADD COLUMN `porcentaje_descuento` decimal(5,2) DEFAULT 0.00');
+        } catch (e) {
+            if (e.code !== 'ER_DUP_FIELDNAME') console.error('Error alterando barberia_lealtad_niveles (porcentaje_descuento):', e.message);
+        }
+
+        try {
+            await connection.query('ALTER TABLE `barberia_lealtad_niveles` ADD COLUMN `premio_descripcion` text DEFAULT NULL');
+        } catch (e) {
+            if (e.code !== 'ER_DUP_FIELDNAME') console.error('Error alterando barberia_lealtad_niveles (premio_descripcion):', e.message);
+        }
+
+        try {
+            await connection.query("ALTER TABLE `barberia_lealtad_niveles` ADD COLUMN `color_hex` varchar(20) DEFAULT '#e2725b'");
+        } catch (e) {
+            if (e.code !== 'ER_DUP_FIELDNAME') console.error('Error alterando barberia_lealtad_niveles (color_hex):', e.message);
+        }
+
+        try {
+            await connection.query('ALTER TABLE `clientes` ADD COLUMN `id_rol_lealtad` int DEFAULT NULL');
+        } catch (e) {
+            if (e.code !== 'ER_DUP_FIELDNAME') console.error('Error alterando clientes (id_rol_lealtad):', e.message);
+        }
+
+        console.log('✅ Conectado a MySQL exitosamente (Zona Horaria: -06:00) y Migraciones Completadas');
         connection.release();
 
         db = pool;
@@ -121,11 +163,13 @@ const reportesRoutes = (await import('./routes/reportes.js')).default;
 const clientesRoutes = (await import('./routes/clientes.js')).default;
 const citasRoutes = (await import('./routes/citas.js')).default;
 const loyaltyRoutes = (await import('./routes/loyalty.js')).default;
+const lealtadRoutes = (await import('./routes/lealtad.js')).default;
 const superadminRoutes = (await import('./routes/superadmin.js')).default;
 const themesRoutes = (await import('./routes/themes.js')).default;
 const horariosRoutes = (await import('./routes/horarios.js')).default;
 const notificacionesRoutes = (await import('./routes/notificaciones.js')).default;
 const escanerRoutes = (await import('./routes/escaner.js')).default;
+const settingsRoutes = (await import('./routes/settings.js')).default;
 
 // Servir archivos subidos (como Logos) de forma estática
 app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
@@ -142,11 +186,13 @@ app.use('/api/reportes', reportesRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/citas', citasRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/lealtad', lealtadRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/super', themesRoutes);
 app.use('/api/horarios', horariosRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
 app.use('/api/escaner', escanerRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {

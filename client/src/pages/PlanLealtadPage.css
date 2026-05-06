@@ -1,0 +1,378 @@
+/* PlanLealtadPage.css */
+.lealtad-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    color: #e2e8f0;
+}
+
+.lealtad-header {
+    margin-bottom: 2rem;
+}
+
+.lealtad-header h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+}
+
+.lealtad-header p {
+    color: #94a3b8;
+    font-size: 1.1rem;
+}
+
+/* ==== BENTO GRID ==== */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.bento-col-span-1 { grid-column: span 1; }
+.bento-col-span-2 { grid-column: span 2; }
+.bento-col-span-3 { grid-column: span 3; }
+
+@media (max-width: 1024px) {
+    .bento-grid {
+        grid-template-columns: 1fr;
+    }
+    .bento-col-span-1, .bento-col-span-2, .bento-col-span-3 {
+        grid-column: span 1;
+    }
+}
+
+/* ==== BENTO CARDS ==== */
+.bento-card {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.bento-card.glassmorphism {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.bento-card.card-gradient {
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.9) 0%, rgba(10, 12, 18, 0.95) 100%);
+    border-top: 1px solid rgba(224, 186, 128, 0.3); /* Champagne accent */
+}
+
+.bento-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.bento-card-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.text-gold { color: #f59e0b; }
+.text-champagne { color: #e0ba80; }
+
+/* ==== BENTO FORM ==== */
+.bento-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.flex-1 { flex: 1; min-width: 200px; }
+
+.form-group label {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.styled-input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.styled-input:focus {
+    outline: none;
+    border-color: #e0ba80;
+    box-shadow: 0 0 0 3px rgba(224, 186, 128, 0.15);
+}
+
+.uppercase-input { text-transform: uppercase; }
+
+/* Hide Number Spinner */
+.hide-spinner::-webkit-outer-spin-button,
+.hide-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.hide-spinner[type=number] {
+    -moz-appearance: textfield;
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-addon {
+    position: absolute;
+    right: 1rem;
+    color: #94a3b8;
+    pointer-events: none;
+    font-size: 0.9rem;
+}
+
+.input-with-icon .styled-input {
+    padding-right: 3rem;
+}
+
+/* ==== BUTTONS ==== */
+.btn-bento-primary {
+    background: linear-gradient(135deg, #e0ba80 0%, #b8935c 100%);
+    color: #0f172a;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 48px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(224, 186, 128, 0.3);
+}
+
+.btn-bento-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(224, 186, 128, 0.4);
+}
+
+.btn-bento-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: #475569;
+    box-shadow: none;
+    color: #cbd5e1;
+}
+
+.btn-bento-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    height: 48px;
+    transition: all 0.2s;
+}
+
+.btn-bento-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* ==== TABLE (CRUD) ==== */
+.bento-table-container {
+    overflow-x: auto;
+    margin-top: 0.5rem;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 1rem;
+    padding: 0.5rem;
+}
+
+.bento-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.bento-table th {
+    text-align: left;
+    padding: 1rem;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bento-table td {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    color: #e2e8f0;
+}
+
+.bento-table tr:last-child td {
+    border-bottom: none;
+}
+
+.bento-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.nivel-badge {
+    background: linear-gradient(135deg, rgba(224, 186, 128, 0.2) 0%, rgba(224, 186, 128, 0.05) 100%);
+    color: #e0ba80;
+    border: 1px solid rgba(224, 186, 128, 0.3);
+    padding: 0.35rem 0.85rem;
+    border-radius: 2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.flex-actions-right {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.action-btn-edit, .action-btn-delete {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid transparent;
+    color: #94a3b8;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn-edit:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.action-btn-delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ==== INFO BOX ==== */
+.bento-info-box {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    flex: 1;
+}
+
+.bento-info-box p {
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.info-stat {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+
+.info-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid #3b82f6;
+    padding: 1rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    color: #93c5fd;
+    font-size: 0.9rem;
+    margin-top: auto;
+}
+
+.info-alert svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.badge-count {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.loading-spinner-box {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.empty-state svg {
+    opacity: 0.5;
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { citasService, clientesService, publicService } from '../services/api';
 import { toast } from 'sonner';
-import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store } from 'lucide-react';
+import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store, Settings } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import heroImg from '../assets/hero-bg.jpg';
 import './ClientePortalPage.css';
@@ -29,6 +29,9 @@ export default function ClientePortalPage() {
     const [horarioLaboral, setHorarioLaboral] = useState(null);
     const [diasActivos, setDiasActivos] = useState([]);
     const [pasoModal, setPasoModal] = useState(1); // 1=Barbero 2=Servicio+Notas 3=Fecha/Hora
+    const [showAccountSheet, setShowAccountSheet] = useState(false);
+    const [accountSheetView, setAccountSheetView] = useState('menu'); // 'menu' | 'password'
+    const [passwordForm, setPasswordForm] = useState({ passwordActual: '', passwordNueva: '', confirmarPassword: '' });
 
     useEffect(() => {
         if (slug) loadPublicConfig();
@@ -203,6 +206,43 @@ export default function ClientePortalPage() {
         navigate(`/portal/${slug}`);
     }
 
+    async function handleChangePassword(e) {
+        e.preventDefault();
+        if (passwordForm.passwordNueva !== passwordForm.confirmarPassword) {
+            toast.error('Las contraseñas nuevas no coinciden');
+            return;
+        }
+        if (passwordForm.passwordNueva.length < 6) {
+            toast.error('La contraseña debe tener al menos 6 caracteres');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/auth/cambiar-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    passwordActual: passwordForm.passwordActual,
+                    passwordNueva: passwordForm.passwordNueva
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error cambiando contraseña');
+
+            toast.success('Contraseña actualizada exitosamente');
+            setShowAccountSheet(false);
+            setPasswordForm({ passwordActual: '', passwordNueva: '', confirmarPassword: '' });
+            setAccountSheetView('menu');
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
     // --- Loyalty stamps calculations ---
     const sellosActuales = wallet?.sellos_actuales || 0;
     const maxStamps = wallet?.total_requerido || 10;
@@ -323,7 +363,15 @@ export default function ClientePortalPage() {
                     </button>
                 </div>
                 <div className="portal-greeting">
-                    <h1>Hola, {user?.nombre?.split(' ')[0]}</h1>
+                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        Hola, {user?.nombre?.split(' ')[0]}
+                        <Settings 
+                            size={20} 
+                            color="var(--text-muted)" 
+                            onClick={() => setShowAccountSheet(true)} 
+                            style={{ cursor: 'pointer', padding: '2px' }} 
+                        />
+                    </h1>
                     <p>Estas a {remaining} cortes de tu acceso VIP.</p>
                 </div>
             </div>
@@ -470,9 +518,15 @@ export default function ClientePortalPage() {
                             <button
                                 className="btn-whatsapp-cita"
                                 onClick={() => {
+                                    const numeroDestino = cita.barbero_whatsapp || publicConfig?.telefono_whatsapp;
+                                    if (!numeroDestino) {
+                                        toast.error('No hay número de contacto disponible');
+                                        return;
+                                    }
+                                    const nombreDestino = cita.barbero_nombre || publicConfig?.nombre || 'la barbería';
                                     const fechaStr = new Date(cita.fecha + 'T00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
-                                    const msg = encodeURIComponent(`Hola Fernando, tengo una duda sobre mi cita del ${fechaStr}`);
-                                    window.open(`https://wa.me/529511955349?text=${msg}`, '_blank');
+                                    const msg = encodeURIComponent(`Hola ${nombreDestino}, tengo una duda sobre mi cita del ${fechaStr}`);
+                                    window.open(`https://wa.me/${numeroDestino}?text=${msg}`, '_blank');
                                 }}
                             >
                                 <MessageCircle size={16} /> Contactar sobre cita
@@ -677,6 +731,100 @@ export default function ClientePortalPage() {
                                         </button>
                                     </>
                                 )}
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ========= BOTTOM SHEET DE CUENTA ========= */}
+            {showAccountSheet && (
+                <div className="modal-overlay" onClick={() => {
+                    setShowAccountSheet(false);
+                    setAccountSheetView('menu');
+                    setPasswordForm({ passwordActual: '', passwordNueva: '', confirmarPassword: '' });
+                }}>
+                    <div className="modal-content bottom-sheet" onClick={e => e.stopPropagation()}>
+                        <div className="bottom-sheet-handle"></div>
+                        
+                        {accountSheetView === 'menu' ? (
+                            <>
+                                <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                                    <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.25rem', color: 'var(--text-main)' }}>{user?.nombre}</h3>
+                                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>{user?.email}</p>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <button 
+                                        onClick={() => setAccountSheetView('password')}
+                                        style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '1rem', borderRadius: '14px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%' }}
+                                    >
+                                        <Settings size={18} /> Cambiar Contraseña
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowAccountSheet(false)}
+                                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '1rem', borderRadius: '14px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', width: '100%' }}
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <form onSubmit={handleChangePassword}>
+                                <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <button type="button" onClick={() => setAccountSheetView('menu')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                                        <X size={24} />
+                                    </button>
+                                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-main)' }}>Cambiar Contraseña</h3>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Contraseña Actual</label>
+                                    <input 
+                                        type="password" 
+                                        className="form-control" 
+                                        required 
+                                        value={passwordForm.passwordActual}
+                                        onChange={e => setPasswordForm(prev => ({ ...prev, passwordActual: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Nueva Contraseña</label>
+                                    <input 
+                                        type="password" 
+                                        className="form-control" 
+                                        required 
+                                        minLength={6}
+                                        value={passwordForm.passwordNueva}
+                                        onChange={e => setPasswordForm(prev => ({ ...prev, passwordNueva: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                    <label className="form-label">Confirmar Nueva Contraseña</label>
+                                    <input 
+                                        type="password" 
+                                        className="form-control" 
+                                        required 
+                                        minLength={6}
+                                        value={passwordForm.confirmarPassword}
+                                        onChange={e => setPasswordForm(prev => ({ ...prev, confirmarPassword: e.target.value }))}
+                                    />
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setAccountSheetView('menu')}
+                                        style={{ flex: 1, background: 'var(--bg-hover)', border: 'none', color: 'var(--text-main)', padding: '0.85rem', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        style={{ flex: 1, background: 'var(--accent-primary)', border: 'none', color: 'var(--text-inverse)', padding: '0.85rem', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(var(--accent-primary-rgb), 0.3)' }}
+                                    >
+                                        Confirmar
+                                    </button>
+                                </div>
                             </form>
                         )}
                     </div>

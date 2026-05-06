@@ -4,7 +4,7 @@ import QRCode from 'react-qr-code';
 import { Star, Gift, Crown, Trophy, CheckCircle, Smartphone } from 'lucide-react';
 import './MembershipCard.css';
 
-export default function MembershipCard({ clientName, rank, stamps, rewardAvailable, qrToken, totalRequired = 10 }) {
+export default function MembershipCard({ clientName, rank, puntos_lealtad = 0, ultima_visita = null, rewardAvailable, qrToken, totalRequired = 10 }) {
     const [isFlipped, setIsFlipped] = useState(false);
 
     // Determines rank icon and color
@@ -17,6 +17,16 @@ export default function MembershipCard({ clientName, rank, stamps, rewardAvailab
     };
 
     const rankDetails = getRankDetails(rank);
+
+    const getDaysSince = (dateString) => {
+        if (!dateString) return 'Nuevo cliente';
+        const lastDate = new Date(dateString);
+        lastDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+        return diff === 0 ? 'Visitó hoy' : `${diff} días sin venir`;
+    };
 
     return (
         <div className="membership-container">
@@ -44,6 +54,7 @@ export default function MembershipCard({ clientName, rank, stamps, rewardAvailab
                         <div className="card-body">
                             <div className="card-chip"></div>
                             <h2 className="client-name">{clientName}</h2>
+                            <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.25rem' }}>{getDaysSince(ultima_visita)}</p>
                         </div>
 
                         {rewardAvailable ? (
@@ -54,13 +65,13 @@ export default function MembershipCard({ clientName, rank, stamps, rewardAvailab
                             <div className="stamps-tracker">
                                 <div className="stamps-header">
                                     <span>Progreso de Lealtad</span>
-                                    <span>{stamps} / {totalRequired}</span>
+                                    <span>{puntos_lealtad} / {totalRequired}</span>
                                 </div>
                                 <div className="stamps-bar-bg">
                                     <motion.div
                                         className="stamps-bar-fill"
                                         initial={{ width: 0 }}
-                                        animate={{ width: `${(stamps / totalRequired) * 100}%` }}
+                                        animate={{ width: `${(puntos_lealtad / totalRequired) * 100}%` }}
                                         transition={{ duration: 1, delay: 0.2 }}
                                     />
                                 </div>

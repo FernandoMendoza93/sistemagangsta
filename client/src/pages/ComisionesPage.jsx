@@ -6,13 +6,11 @@ export default function ComisionesPage() {
     const [barberos, setBarberos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedBarbero, setSelectedBarbero] = useState(null);
-    const [comisiones, setComisiones] = useState(null);
+    const [comisionesData, setComisionesData] = useState(null);
     const [historialPagos, setHistorialPagos] = useState([]);
-    const [paying, setPaying] = useState(false);
-    
-    // Add Range State
-    const [desde, setDesde] = useState('');
-    const [hasta, setHasta] = useState('');
+    const [payingWeek, setPayingWeek] = useState(null); // To track which week is being paid
+    const [payingAll, setPayingAll] = useState(false);
+    const [expandedWeeks, setExpandedWeeks] = useState(new Set());
 
     useEffect(() => { loadBarberos(); }, []);
 
@@ -20,7 +18,7 @@ export default function ComisionesPage() {
         if (selectedBarbero) {
             loadComisiones(selectedBarbero.id);
         }
-    }, [desde, hasta]);
+    }, [selectedBarbero]);
 
     const loadBarberos = async () => {
         try {
@@ -28,6 +26,7 @@ export default function ComisionesPage() {
             setBarberos(res.data);
         } catch (error) {
             console.error('Error:', error);
+            toast.error('Error al cargar barberos');
         } finally {
             setLoading(false);
         }
@@ -36,68 +35,144 @@ export default function ComisionesPage() {
     const loadComisiones = async (id) => {
         try {
             const [comRes, histRes] = await Promise.all([
-                barberosService.getComisiones(id, desde || undefined, hasta || undefined),
+                barberosService.getComisiones(id), // Removed global desde/hasta
                 barberosService.getHistorialPagos(id)
             ]);
-            setComisiones(comRes.data);
+            setComisionesData(comRes.data);
             setHistorialPagos(histRes.data);
-            setSelectedBarbero(barberos.find(b => b.id === id));
         } catch (error) {
             console.error('Error:', error);
+            toast.error('Error al cargar detalles del barbero');
         }
     };
 
-    const pagarComisiones = async () => {
+    const pagarComisionesSemana = async (semana) => {
         if (!selectedBarbero) return;
-        setPaying(true);
+        setPayingWeek(semana.semana_id);
         try {
-            const res = await barberosService.pagarComisiones(selectedBarbero.id, 'Pago de comisiones');
-            toast.success(`¡Pago Realizado! Se pagaron $${res.data.monto.toFixed(2)}`);
+            const res = await barberosService.pagarComisiones(
+                selectedBarbero.id, 
+                `Pago semana ${semana.semana_inicio} a ${semana.semana_fin}`,
+                semana.semana_inicio,
+                semana.semana_fin
+            );
+            toast.success(`¡Pago Realizado! Se liquidó la semana por $${res.data.monto.toFixed(2)}`);
             loadComisiones(selectedBarbero.id);
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Error al pagar');
+            toast.error(error.response?.data?.error || 'Error al pagar semana');
         } finally {
-            setPaying(false);
+            setPayingWeek(null);
         }
+    };
+
+    const pagarTodo = async () => {
+        if (!selectedBarbero) return;
+        setPayingAll(true);
+        try {
+            const res = await barberosService.pagarComisiones(selectedBarbero.id, 'Pago total de comisiones pendientes');
+            toast.success(`¡Pago Total Realizado! Se pagaron $${res.data.monto.toFixed(2)}`);
+            loadComisiones(selectedBarbero.id);
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Error al pagar todo');
+        } finally {
+            setPayingAll(false);
+        }
+    };
+
+    const toggleExpand = (semanaId) => {
+        setExpandedWeeks(prev => {
+            const next = new Set(prev);
+            if (next.has(semanaId)) {
+                next.delete(semanaId);
+            } else {
+                next.add(semanaId);
+            }
+            return next;
+        });
+    };
+
+    const agruparPorDia = (comisiones, semanaInicio, semanaFin) => {
+        const grupos = {};
+        
+        // Convertir strings de fecha a Date para comparación, sumando un día a semanaFin para incluirlo completo en la comparación si fuera necesario
+        const start = new Date(semanaInicio);
+        start.setHours(0,0,0,0);
+        const end = new Date(semanaFin);
+        end.setHours(23,59,59,999);
+
+        // Filtrar comisiones planas por rango de la semana y que estén pendientes
+        const comisionesSemana = (comisiones || []).filter(item => {
+            if (item.pagado) return false;
+            const itemDate = new Date(item.fecha);
+            return itemDate >= start && itemDate <= end;
+        });
+
+        comisionesSemana.forEach(item => {
+            const diaKey = new Date(item.fecha).toLocaleDateString('es-MX', {
+                timeZone: 'America/Mexico_City',
+                year: 'numeric',
+                month: '2-digit', 
+                day: '2-digit'
+            });
+            
+            if (!grupos[diaKey]) grupos[diaKey] = [];
+            grupos[diaKey].push(item);
+        });
+        
+        return Object.entries(grupos)
+            .sort(([a], [b]) => {
+                // a y b vienen como dd/mm/yyyy. Convertimos a yyyy-mm-dd para ordenar correctamente
+                const format = (str) => {
+                    const [d, m, y] = str.split('/');
+                    return `${y}-${m}-${d}`;
+                };
+                return new Date(format(a)) - new Date(format(b));
+            })
+            .map(([dia, items]) => {
+                // Convertimos el dd/mm/yyyy a fecha para sacar el nombre del día
+                const [d, m, y] = dia.split('/');
+                const dateObj = new Date(`${y}-${m}-${d}T12:00:00Z`);
+                const nombreDia = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+                
+                return {
+                    diaFormateado: nombreDia.toUpperCase(),
+                    items,
+                    subtotal: items.reduce((sum, i) => sum + parseFloat(i.monto), 0)
+                };
+            });
     };
 
     const cardStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' };
-    const thStyle = { background: 'var(--bg-input)', color: 'var(--text-muted)', padding: '0.75rem 1.25rem', textAlign: 'left', borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' };
-    const tdStyle = { padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--text-main)' };
-
+    
     if (loading) return <div className="loading"><div className="spinner"></div></div>;
+
+    // Filtrar solo las semanas que tienen pendiente de pago, ordenar de más antigua a más nueva
+    const semanasPendientes = (comisionesData?.resumen_semanal || [])
+        .filter(s => s.pendiente > 0)
+        .sort((a, b) => new Date(a.semana_inicio) - new Date(b.semana_inicio));
 
     return (
         <div>
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h1 className="page-title">💎 Comisiones</h1>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div>
-                        <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Desde</label>
-                        <input type="date" className="form-input" value={desde} onChange={(e) => setDesde(e.target.value)} />
-                    </div>
-                    <div>
-                        <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Hasta</label>
-                        <input type="date" className="form-input" value={hasta} onChange={(e) => setHasta(e.target.value)} />
-                    </div>
-                </div>
             </div>
 
             <div className="card-grid comisiones-layout">
-                {/* Lista de Barberos */}
+                {/* Lista de Barberos (Sidebar Izquierdo) */}
                 <div style={cardStyle}>
                     <h2 style={{ margin: 0, marginBottom: '1rem', color: 'var(--text-main)', fontWeight: 700, fontSize: '1.1rem' }}>Barberos</h2>
                     {barberos.map(b => (
                         <div
                             key={b.id}
-                            onClick={() => loadComisiones(b.id)}
+                            onClick={() => setSelectedBarbero(b)}
                             style={{
                                 padding: '1rem',
                                 background: selectedBarbero?.id === b.id ? 'rgba(201, 162, 39, 0.1)' : 'var(--bg-input)',
                                 borderRadius: '12px',
                                 marginBottom: '0.5rem',
                                 cursor: 'pointer',
-                                border: selectedBarbero?.id === b.id ? '1px solid var(--accent-primary)' : '1px solid transparent'
+                                border: selectedBarbero?.id === b.id ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                                transition: 'all 0.2s ease'
                             }}
                         >
                             <strong style={{ color: 'var(--text-main)' }}>{b.nombre}</strong>
@@ -108,137 +183,213 @@ export default function ComisionesPage() {
                     ))}
                 </div>
 
-                {/* Detalle de Comisiones */}
+                {/* Área Principal (Detalle) */}
                 <div style={cardStyle}>
                     {!selectedBarbero ? (
                         <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem' }}>
                             Selecciona un barbero para ver sus comisiones
                         </p>
                     ) : (
-                        <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                <h2 style={{ margin: 0, color: 'var(--text-main)', fontWeight: 700, fontSize: '1.1rem' }}>Comisiones de {selectedBarbero.nombre}</h2>
-                                {comisiones?.totales?.pendiente > 0 && (
-                                    <button className="btn btn-primary" onClick={pagarComisiones} disabled={paying}>
-                                        {paying ? 'Pagando...' : `💰 Pagar $${comisiones.totales.pendiente.toFixed(2)}`}
-                                    </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                            
+                            {/* BLOQUE A — Header del barbero */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                <div>
+                                    <h2 style={{ margin: 0, color: 'var(--text-main)', fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.25rem' }}>
+                                        {selectedBarbero.nombre}
+                                    </h2>
+                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                        Nivel de Comisión: <strong>{(selectedBarbero.porcentaje_comision * 100).toFixed(0)}%</strong>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ 
+                                        display: 'inline-block', 
+                                        padding: '0.35rem 0.8rem', 
+                                        background: semanasPendientes.length > 0 ? 'rgba(234, 179, 8, 0.1)' : 'rgba(34, 197, 94, 0.1)', 
+                                        color: semanasPendientes.length > 0 ? '#eab308' : '#22c55e', 
+                                        borderRadius: '20px', 
+                                        fontWeight: 700, 
+                                        fontSize: '0.85rem',
+                                        border: `1px solid ${semanasPendientes.length > 0 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
+                                    }}>
+                                        {semanasPendientes.length > 0 
+                                            ? `${semanasPendientes.length} semana${semanasPendientes.length > 1 ? 's' : ''} pendiente${semanasPendientes.length > 1 ? 's' : ''}`
+                                            : 'Todo al día ✓'}
+                                    </div>
+                                    <div style={{ marginTop: '0.5rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                        Deuda Total: <span style={{ color: 'var(--warning)' }}>${(comisionesData?.totales?.pendiente || 0).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* BLOQUE B — Semanas pendientes (Cards) */}
+                            <div>
+                                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', marginBottom: '1rem', fontWeight: 700 }}>
+                                    Liquidaciones Pendientes
+                                </h3>
+                                
+                                {semanasPendientes.length === 0 ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bg-input)', borderRadius: '12px', border: '1px dashed var(--border-color)', color: 'var(--text-muted)' }}>
+                                        No hay pagos pendientes para este barbero.
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {semanasPendientes.map((semana) => {
+                                            const options = { weekday: 'short', day: 'numeric', month: 'short' };
+                                            const startStr = new Date(semana.semana_inicio).toLocaleDateString('es-MX', options);
+                                            const endStr = new Date(semana.semana_fin).toLocaleDateString('es-MX', options);
+                                            const isPayingThis = payingWeek === semana.semana_id;
+
+                                            return (
+                                                <div key={semana.semana_id} 
+                                                    style={{ 
+                                                        background: 'var(--bg-input)', 
+                                                        border: '1px solid var(--border-color)', 
+                                                        borderRadius: '16px', 
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        overflow: 'hidden',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                    onClick={() => toggleExpand(semana.semana_id)}
+                                                >
+                                                    {/* Header Card */}
+                                                    <div style={{
+                                                        padding: '1.5rem',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        flexWrap: 'wrap',
+                                                        gap: '1rem',
+                                                        background: expandedWeeks.has(semana.semana_id) ? 'rgba(0,0,0,0.1)' : 'transparent'
+                                                    }}>
+                                                        <div>
+                                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <span>{expandedWeeks.has(semana.semana_id) ? '▼' : '▶'}</span>
+                                                                Semana {semana.semana_id.toString().slice(-2)}
+                                                            </div>
+                                                            <div style={{ color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+                                                                {startStr} — {endStr}
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                <span>✂️ {semana.servicios} Servicios</span>
+                                                                <span>📦 {semana.productos} Productos</span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                                            <div style={{ textAlign: 'right' }}>
+                                                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--warning)' }}>
+                                                                    ${parseFloat(semana.pendiente).toFixed(2)}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total a Pagar</div>
+                                                            </div>
+                                                            
+                                                            <button 
+                                                                className="btn btn-primary" 
+                                                                style={{ padding: '0.75rem 1.5rem', minWidth: '140px' }}
+                                                                onClick={(e) => { e.stopPropagation(); pagarComisionesSemana(semana); }}
+                                                                disabled={isPayingThis || payingAll}
+                                                            >
+                                                                {isPayingThis ? 'Procesando...' : `Pagar Semana`}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Desglose Expandido */}
+                                                    {expandedWeeks.has(semana.semana_id) && (
+                                                        <div style={{
+                                                            padding: '1.5rem',
+                                                            background: 'var(--bg-surface)',
+                                                            borderTop: '1px solid var(--border-color)',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            gap: '1.5rem'
+                                                        }}>
+                                                            {agruparPorDia(comisionesData.comisiones, semana.semana_inicio, semana.semana_fin).map((dia) => (
+                                                                <div key={dia.diaFormateado}>
+                                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '0.75rem', paddingLeft: '1rem' }}>
+                                                                        {dia.diaFormateado}
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1.5rem' }}>
+                                                                        {dia.items.map((item, idx) => (
+                                                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: 'var(--text-main)', borderLeft: '2px solid var(--border-subtle)', paddingLeft: '0.75rem' }}>
+                                                                                <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                                                                                    <span style={{ minWidth: '150px' }}>{item.nombre || item.tipo}</span>
+                                                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{item.tipo}</span>
+                                                                                </div>
+                                                                                <div style={{ fontWeight: 600 }}>${parseFloat(item.monto).toFixed(2)}</div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                        Subtotal día: <strong style={{ color: 'var(--text-main)', marginLeft: '0.5rem' }}>${dia.subtotal.toFixed(2)}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Acciones Globales */}
+                                        {semanasPendientes.length > 1 && (
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                                <button 
+                                                    className="btn btn-secondary"
+                                                    onClick={pagarTodo}
+                                                    disabled={payingAll || payingWeek !== null}
+                                                    style={{ border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
+                                                >
+                                                    {payingAll ? 'Procesando...' : `Liquidar Todo ($${comisionesData.totales.pendiente.toFixed(2)})`}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
-                            <div className="card-grid comisiones-summary-grid">
-                                <div style={{
-                                    background: 'var(--bg-input)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '12px',
-                                    padding: '1.5rem',
-                                    textAlign: 'center'
-                                }}>
-                                    <div style={{ fontSize: '1.875rem', fontWeight: '700', color: 'var(--warning)', marginBottom: '0.5rem' }}>
-                                        ${comisiones?.totales?.pendiente?.toFixed(2) || '0.00'}
-                                    </div>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>Pendiente de Pago</div>
-                                </div>
-                                <div style={{
-                                    background: 'var(--bg-input)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '12px',
-                                    padding: '1.5rem',
-                                    textAlign: 'center'
-                                }}>
-                                    <div style={{ fontSize: '1.875rem', fontWeight: '700', color: 'var(--success)', marginBottom: '0.5rem' }}>
-                                        ${comisiones?.totales?.pagado?.toFixed(2) || '0.00'}
-                                    </div>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>Total Pagado</div>
-                                </div>
-                            </div>
-
-                            {/* Tabla de comisiones individuales */}
-                            <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)', maxHeight: '300px', overflow: 'auto', marginTop: '1rem' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={thStyle}>Fecha</th>
-                                            <th style={thStyle}>Tipo</th>
-                                            <th style={thStyle}>Monto</th>
-                                            <th style={thStyle}>Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {comisiones?.comisiones?.map(c => (
-                                            <tr key={c.id}>
-                                                <td style={tdStyle}>{new Date(c.fecha).toLocaleDateString('es-MX')}</td>
-                                                <td style={tdStyle}>
-                                                    <span style={{
-                                                        display: 'inline-block',
-                                                        padding: '0.25rem 0.625rem',
-                                                        borderRadius: '8px',
-                                                        fontSize: '0.7rem',
-                                                        fontWeight: 700,
-                                                        background: c.tipo === 'Incentivo Producto' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                                                        color: c.tipo === 'Incentivo Producto' ? '#f97316' : '#3b82f6'
-                                                    }}>
-                                                        {c.tipo === 'Incentivo Producto' ? '📦 Producto' : '✂️ Servicio'}
-                                                    </span>
-                                                </td>
-                                                <td style={{ ...tdStyle, fontWeight: 600 }}>${c.monto.toFixed(2)}</td>
-                                                <td style={tdStyle}>
-                                                    <span className={`badge ${c.pagado ? 'badge-success' : 'badge-warning'}`}>
-                                                        {c.pagado ? 'Pagado' : 'Pendiente'}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Historial de Pagos */}
+                            {/* BLOQUE C — Historial de pagos (Informativo) */}
                             {historialPagos.length > 0 && (
-                                <div style={{ marginTop: '1.5rem' }}>
-                                    <h3 style={{
-                                        fontSize: '1.1rem',
-                                        fontWeight: '600',
-                                        color: 'var(--text-main)',
-                                        marginBottom: '1rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem'
-                                    }}>
-                                        📋 Historial de Pagos
+                                <div style={{ 
+                                    marginTop: '1rem', 
+                                    paddingTop: '2rem', 
+                                    borderTop: '1px solid var(--border-subtle)',
+                                    opacity: 0.85
+                                }}>
+                                    <h3 style={{ fontSize: '0.95rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '1rem', fontWeight: 600 }}>
+                                        Historial de Pagos Realizados
                                     </h3>
-                                    <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)', maxHeight: '300px', overflow: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
+                                    
+                                    <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.1)' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                                             <thead>
                                                 <tr>
-                                                    <th style={thStyle}>Fecha de Pago</th>
-                                                    <th style={thStyle}>Monto</th>
-                                                    <th style={thStyle}>Pagado por</th>
-                                                    <th style={thStyle}>Notas</th>
+                                                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-subtle)' }}>Fecha Pago</th>
+                                                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-subtle)' }}>Monto</th>
+                                                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-subtle)' }}>Operador</th>
+                                                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-subtle)' }}>Notas</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {historialPagos.map(p => (
                                                     <tr key={p.id}>
-                                                        <td style={tdStyle}>
-                                                            {new Date(p.fecha_pago).toLocaleDateString('es-MX', {
-                                                                year: 'numeric',
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            })}
-                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                                {new Date(p.fecha_pago).toLocaleTimeString('es-MX', {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                })}
-                                                            </div>
+                                                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-main)', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                                            {new Date(p.fecha_pago).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                            <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                                                                {new Date(p.fecha_pago).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
                                                         </td>
-                                                        <td style={{ ...tdStyle, fontWeight: 700, color: 'var(--success)', fontSize: '1rem' }}>
+                                                        <td style={{ padding: '0.75rem 1rem', fontWeight: 700, color: 'var(--success)', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                                                             ${p.monto.toFixed(2)}
                                                         </td>
-                                                        <td style={tdStyle}>
+                                                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                                                             {p.pagado_por || 'Admin'}
                                                         </td>
-                                                        <td style={{ ...tdStyle, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                                                             {p.notas || '—'}
                                                         </td>
                                                     </tr>
@@ -248,7 +399,8 @@ export default function ComisionesPage() {
                                     </div>
                                 </div>
                             )}
-                        </>
+
+                        </div>
                     )}
                 </div>
             </div>

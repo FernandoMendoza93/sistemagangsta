@@ -46,7 +46,7 @@ router.get('/mis-citas', verifyToken, async (req, res) => {
         const citas = await dbQuery.all(`
             SELECT c.id, c.fecha, c.hora, c.estado, c.notas, c.fecha_creacion,
                    s.nombre_servicio, s.precio, s.duracion_aprox,
-                   u.nombre as barbero_nombre
+                   u.nombre as barbero_nombre, b.telefono_whatsapp as barbero_whatsapp
             FROM citas c
             LEFT JOIN servicios s ON c.id_servicio = s.id
             LEFT JOIN barberos b ON c.id_barbero = b.id
@@ -191,7 +191,9 @@ router.post('/', verifyToken, async (req, res) => {
                         fecha: dayjs(fecha).format('DD/MM/YYYY'),
                         hora: hora,
                         servicio: info.nombre_servicio,
-                        barberiaNombre: info.barberia_nombre
+                        barberiaNombre: info.barberia_nombre,
+                        barberia_id: req.barberia_id,
+                        dbQuery: dbQuery
                     });
                 }
             }
@@ -235,15 +237,15 @@ router.post('/admin', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES
                     id_cliente = existe.id;
                 } else {
                     const result = await dbQuery.run(
-                        'INSERT INTO clientes (nombre, telefono, password_hash, qr_code, ptos_lealtad, barberia_id) VALUES (?, ?, ?, ?, 0, ?)',
-                        [cliente_nuevo.nombre, cliente_nuevo.telefono || null, finalPasswordHash, 'temp_qr', req.barberia_id]
+                        'INSERT INTO clientes (nombre, telefono, password_hash, puntos_lealtad, barberia_id) VALUES (?, ?, ?, 0, ?)',
+                        [cliente_nuevo.nombre, cliente_nuevo.telefono || null, finalPasswordHash, req.barberia_id]
                     );
                     id_cliente = result.lastInsertRowid;
                 }
             } else {
                 const result = await dbQuery.run(
-                    'INSERT INTO clientes (nombre, password_hash, qr_code, ptos_lealtad, barberia_id) VALUES (?, ?, ?, 0, ?)',
-                    [cliente_nuevo.nombre, finalPasswordHash, 'temp_qr', req.barberia_id]
+                    'INSERT INTO clientes (nombre, password_hash, puntos_lealtad, barberia_id) VALUES (?, ?, 0, ?)',
+                    [cliente_nuevo.nombre, finalPasswordHash, req.barberia_id]
                 );
                 id_cliente = result.lastInsertRowid;
             }
@@ -521,6 +523,62 @@ router.put('/:id/estado', verifyToken, requireTenant, requireRole(ROLES.ADMIN, R
         }
 
         await dbQuery.run('UPDATE citas SET estado = ? WHERE id = ? AND barberia_id = ?', [estado, id, req.barberia_id]);
+        
+        // --- HOOK DE LEALTAD (FRECUENCIA) ---
+        if (estado === 'Completada') {
+            const cita = await dbQuery.get('SELECT id_cliente FROM citas WHERE id = ? AND barberia_id = ?', [id, req.barberia_id]);
+            if (cita) {
+                const id_cliente = cita.id_cliente;
+                
+                // 1. Incrementar tarjeta clásica (Bronce base) vía puntos_lealtad
+                await dbQuery.run('UPDATE clientes SET puntos_lealtad = COALESCE(puntos_lealtad, 0) + 1 WHERE id = ?', [id_cliente]);
+                
+                // 2. Extraer métricas de frecuencia
+                const cliente = await dbQuery.get('SELECT nombre, id_rol_lealtad, ultima_visita, fecha_registro FROM clientes WHERE id = ?', [id_cliente]);
+                
+                if (cliente) {
+                    const ultima_fecha = cliente.ultima_visita || cliente.fecha_registro;
+                    const today = new Date();
+                    const lastDate = new Date(ultima_fecha);
+                    
+                    const diffTime = Math.abs(today - lastDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    
+                    // 3. Buscar niveles premium del tenant ordenados de mayor a menor exigencia (menor config de dias)
+                    const niveles = await dbQuery.all('SELECT id_rol_lealtad, nombre_nivel, dias_max_frecuencia FROM barberia_lealtad_niveles WHERE barberia_id = ? ORDER BY dias_max_frecuencia ASC', [req.barberia_id]);
+                    
+                    let newRolId = null;
+                    let newRolName = null;
+                    
+                    for (const nivel of niveles) {
+                        if (diffDays <= nivel.dias_max_frecuencia) {
+                            newRolId = nivel.id_rol_lealtad;
+                            newRolName = nivel.nombre_nivel;
+                            break; // Se detiene en el primero (el más exigente/bajo) que cumple
+                        }
+                    }
+                    
+                    // 4. Actualizar estado
+                    await dbQuery.run('UPDATE clientes SET id_rol_lealtad = ?, ultima_visita = CURRENT_TIMESTAMP WHERE id = ?', [newRolId, id_cliente]);
+                    
+                    // 5. Notificar si subió a un rol premium diferente
+                    if (newRolId !== null && cliente.id_rol_lealtad !== newRolId) {
+                        const { emitToTenant } = await import('../services/socketService.js');
+                        emitToTenant(req.barberia_id, 'NUEVA_NOTIFICACION', {
+                            mensaje: `¡${cliente.nombre} ha alcanzado el Nivel ${newRolName}!`,
+                            tipo: 'lealtad'
+                        });
+                        
+                        // Campanita DB
+                        await dbQuery.run(
+                            'INSERT INTO notificaciones (barberia_id, id_cita, mensaje, tipo) VALUES (?, ?, ?, ?)',
+                            [req.barberia_id, id, `¡${cliente.nombre} ha calificado para Nivel ${newRolName}! Premio desbloqueado.`, 'lealtad']
+                        );
+                    }
+                }
+            }
+        }
+
         res.json({ message: 'Estado actualizado' });
     } catch (error) {
         console.error('Error actualizando cita:', error);

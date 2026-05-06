@@ -149,6 +149,11 @@ export default function Sidebar({ isOpen, onToggle }) {
                                     <i className="bi bi-gem"></i>
                                     <span>Comisiones</span>
                                 </NavLink>
+                                
+                                <NavLink to="/panel/lealtad" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={handleNavClick}>
+                                    <i className="bi bi-award"></i>
+                                    <span>Plan Lealtad</span>
+                                </NavLink>
 
 
                             </>

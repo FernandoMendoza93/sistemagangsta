@@ -148,7 +148,7 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/register — Staff registration (admin creates users within their barberia)
 router.post('/register', async (req, res) => {
     try {
-        const { nombre, email, password, id_rol, esBarbero, turno } = req.body;
+        const { nombre, email, password, id_rol, esBarbero, turno, telefono_whatsapp } = req.body;
         const dbQuery = req.app.locals.dbQuery;
 
         if (!nombre || !email || !password || !id_rol) {
@@ -180,8 +180,8 @@ router.post('/register', async (req, res) => {
         const userId = result.lastInsertRowid;
 
         if (esBarbero || id_rol === 3) {
-            await dbQuery.run('INSERT INTO barberos (id_usuario, turno, barberia_id) VALUES (?, ?, ?)',
-                [userId, turno || 'Completo', barberia_id]);
+            await dbQuery.run('INSERT INTO barberos (id_usuario, turno, barberia_id, telefono_whatsapp) VALUES (?, ?, ?, ?)',
+                [userId, turno || 'Completo', barberia_id, telefono_whatsapp || null]);
         }
 
         res.status(201).json({ message: 'Usuario creado exitosamente', userId });
@@ -314,7 +314,7 @@ router.post('/cliente', async (req, res) => {
                 barberia_id: barberia_id
             },
             JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '30d' }
         );
 
         res.json({
@@ -466,6 +466,44 @@ router.post('/register-barberia', upload.single('logo'), async (req, res) => {
     } catch (error) {
         console.error('Error registrando barberia:', error);
         res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// POST /api/auth/cambiar-password — Change password for authenticated user
+router.post('/cambiar-password', verifyToken, async (req, res) => {
+    try {
+        const { passwordActual, passwordNueva } = req.body;
+        const dbQuery = req.app.locals.dbQuery;
+        const userId = req.user.id; // from verifyToken
+
+        if (!passwordActual || !passwordNueva) {
+            return res.status(400).json({ error: 'Ambas contraseñas son requeridas' });
+        }
+
+        if (passwordNueva.length < 6) {
+            return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+        }
+
+        // Obtener el usuario actual
+        const user = await dbQuery.get('SELECT password_hash FROM usuarios WHERE id = ?', [userId]);
+        if (!user) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Verificar la contraseña actual
+        const isValid = await bcrypt.compare(passwordActual, user.password_hash);
+        if (!isValid) {
+            return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+        }
+
+        // Hashear la nueva contraseña y actualizar
+        const nuevoHash = await bcrypt.hash(passwordNueva, 10);
+        await dbQuery.run('UPDATE usuarios SET password_hash = ? WHERE id = ?', [nuevoHash, userId]);
+
+        res.json({ message: 'Contraseña actualizada correctamente' });
+    } catch (error) {
+        console.error('Error cambiando contraseña:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
 

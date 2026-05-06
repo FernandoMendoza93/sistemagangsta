@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 || error.response?.status === 403) {
             // No redirigir si estamos en una página de login — el 401 ahí
             // significa credenciales incorrectas, no sesión expirada
             const path = window.location.pathname;
@@ -71,7 +71,7 @@ export const barberosService = {
     getById: (id) => api.get(`/barberos/${id}`),
     update: (id, data) => api.put(`/barberos/${id}`, data),
     getComisiones: (id, desde, hasta) => api.get(`/barberos/${id}/comisiones`, { params: { desde, hasta } }),
-    pagarComisiones: (id, notas) => api.post(`/barberos/${id}/pagar-comisiones`, { notas }),
+    pagarComisiones: (id, notas, desde, hasta) => api.post(`/barberos/${id}/pagar-comisiones`, { notas, desde, hasta }),
     getHistorialPagos: (id) => api.get(`/barberos/${id}/historial-pagos`)
 };
 

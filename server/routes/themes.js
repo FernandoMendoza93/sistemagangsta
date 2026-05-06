@@ -30,7 +30,7 @@ router.get('/public/config/:slug', async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
         
         const config = await dbQuery.get(
-            `SELECT b.id as barberia_id, b.nombre, b.theme, b.logo_url, b.loyalty_card_image_url, b.color_acento,
+            `SELECT b.id as barberia_id, b.nombre, b.theme, b.logo_url, b.loyalty_card_image_url, b.color_acento, b.telefono_whatsapp,
                     t.bg_main, t.bg_surface, t.accent_primary, t.accent_secondary, t.text_main, t.text_muted, t.clase_glass
              FROM barberias b
              LEFT JOIN temas t ON LOWER(REPLACE(t.nombre, ' ', '_')) = LOWER(b.theme)
@@ -96,7 +96,7 @@ router.get('/barberias/:id/config', verifyToken, async (req, res) => {
 router.put('/barberias/:id/config', verifyToken, upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'loyalty_card', maxCount: 1 }]), async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, direccion, theme } = req.body;
+        const { nombre, direccion, theme, telefono_whatsapp } = req.body;
         const dbQuery = req.app.locals.dbQuery;
 
         // Security: Ensure user is SuperAdmin OR Admin of this specific barberia
@@ -127,6 +127,11 @@ router.put('/barberias/:id/config', verifyToken, upload.fields([{ name: 'logo', 
         if (direccion !== undefined) { 
             updates.push('direccion = ?'); 
             params.push(direccion); 
+        }
+
+        if (telefono_whatsapp !== undefined) {
+            updates.push('telefono_whatsapp = ?');
+            params.push(telefono_whatsapp);
         }
         
         if (logoUrl) { 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { superAdminService, configuracionService } from '../services/api';
-import { QrCode, Copy, Download, CheckCircle, Store, Calendar, Tag, Link as LinkIcon, Palette, Sparkles, Upload, Save, MapPin } from 'lucide-react';
+import { QrCode, Copy, Download, CheckCircle, Store, Calendar, Tag, Link as LinkIcon, Palette, Sparkles, Upload, Save, MapPin, Server, Mail, Key, FileText, Clock, Bell, Users, MessageSquare, CalendarRange } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { toast } from 'sonner';
 
@@ -18,6 +18,7 @@ export default function ConfiguracionPage() {
     
     const [nombre, setNombre] = useState('');
     const [direccion, setDireccion] = useState('');
+    const [telefonoWhatsapp, setTelefonoWhatsapp] = useState('');
     const [theme, setTheme] = useState('default');
     
     // Archivos
@@ -25,6 +26,29 @@ export default function ConfiguracionPage() {
     const [logoPreview, setLogoPreview] = useState(null);
     const [loyaltyFile, setLoyaltyFile] = useState(null);
     const [loyaltyPreview, setLoyaltyPreview] = useState(null);
+
+    // Ajustes SMTP
+    const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
+    const [smtpPort, setSmtpPort] = useState(465);
+    const [smtpUser, setSmtpUser] = useState('');
+    const [smtpPass, setSmtpPass] = useState('');
+    const [smtpFromName, setSmtpFromName] = useState('');
+    const [smtpSecure, setSmtpSecure] = useState(true);
+
+    // Preferencias de Reportes
+    const [reportPeriod, setReportPeriod] = useState('semanal');
+    const [reportEnabled, setReportEnabled] = useState(true);
+    const [emailsReporte, setEmailsReporte] = useState('');
+    const [diaReporte, setDiaReporte] = useState('Viernes');
+    const [horaReporte, setHoraReporte] = useState('18:00');
+    const [admins, setAdmins] = useState([]);
+    const [adminsLoaded, setAdminsLoaded] = useState(false);
+    const [sendingTest, setSendingTest] = useState(false);
+
+    // Fidelización
+    const [fidelizacionActiva, setFidelizacionActiva] = useState(false);
+    const [diasInactividad, setDiasInactividad] = useState(30);
+    const [mensajeFidelizacion, setMensajeFidelizacion] = useState('Hola {nombre_cliente}, te echamos de menos. ¡Regresa pronto para un gran corte!');
     
     const qrRef = useRef(null);
 
@@ -41,9 +65,11 @@ export default function ConfiguracionPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const [barberiaRes, themesRes] = await Promise.all([
+            const [barberiaRes, themesRes, smtpRes, usuariosRes] = await Promise.all([
                 fetch(`/api/super/barberias/${user.barberia_id}/config`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/super/temas', { headers: { Authorization: `Bearer ${token}` } })
+                fetch('/api/super/temas', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/settings/smtp', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/usuarios/staff-admin', { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             if (barberiaRes.ok) {
@@ -51,10 +77,31 @@ export default function ConfiguracionPage() {
                 setBarberia(data);
                 setNombre(data.nombre || '');
                 setDireccion(data.direccion || '');
+                setTelefonoWhatsapp(data.telefono_whatsapp || '');
                 setTheme(data.theme || 'default');
                 setLogoPreview(data.logo_url || null);
                 setLoyaltyPreview(data.loyalty_card_image_url || null);
                 if (data.bg_main) applyTheme(data, data.id);
+            }
+
+            if (smtpRes.ok) {
+                const smtpData = await smtpRes.json();
+                if (smtpData.isConfigured) {
+                    setSmtpHost(smtpData.smtp_host || 'smtp.gmail.com');
+                    setSmtpPort(smtpData.smtp_port || 587);
+                    setSmtpUser(smtpData.smtp_user || '');
+                    setSmtpPass(smtpData.smtp_pass || '');
+                    setSmtpFromName(smtpData.smtp_from_name || '');
+                    setSmtpSecure(!!smtpData.smtp_secure);
+                    setReportEnabled(smtpData.enviar_reportes);
+                    setReportPeriod(smtpData.frecuencia_reporte || 'semanal');
+                    setEmailsReporte(smtpData.emails_reporte || '');
+                    setDiaReporte(smtpData.dia_reporte || 'Viernes');
+                    setHoraReporte(smtpData.hora_reporte || '18:00');
+                    setFidelizacionActiva(!!smtpData.fidelizacion_activa);
+                    setDiasInactividad(smtpData.dias_inactividad || 30);
+                    setMensajeFidelizacion(smtpData.mensaje_fidelizacion || 'Hola {nombre_cliente}, te echamos de menos. ¡Regresa pronto para un gran corte!');
+                }
             }
 
             if (themesRes.ok) {
@@ -66,11 +113,17 @@ export default function ConfiguracionPage() {
                 }
                 setThemes(themesData);
             }
+
+            if (usuariosRes.ok) {
+                const adminsList = await usuariosRes.json();
+                setAdmins(adminsList);
+            }
         } catch (err) {
             console.error('Error cargando data:', err);
             toast.error('Error al cargar configuración');
         } finally {
             setLoading(false);
+            setAdminsLoaded(true);
         }
     }
 
@@ -165,12 +218,44 @@ export default function ConfiguracionPage() {
             const formData = new FormData();
             formData.append('nombre', nombre);
             formData.append('direccion', direccion);
+            formData.append('telefono_whatsapp', telefonoWhatsapp);
             formData.append('theme', theme);
             if (logoFile) {
                 formData.append('logo', logoFile);
             }
             if (loyaltyFile) {
                 formData.append('loyalty_card', loyaltyFile);
+            }
+
+            // Guardar SMTP Settings si existen campos base
+            if (smtpUser && smtpPass) {
+                try {
+                    await fetch('/api/settings/smtp', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            Authorization: `Bearer ${localStorage.getItem('token')}` 
+                        },
+                        body: JSON.stringify({
+                            smtp_host: smtpHost,
+                            smtp_port: parseInt(smtpPort) || 587,
+                            smtp_user: smtpUser,
+                            smtp_pass: smtpPass,
+                            smtp_from_name: smtpFromName,
+                            smtp_secure: smtpSecure ? 1 : 0,
+                            enviar_reportes: reportEnabled,
+                            frecuencia_reporte: reportPeriod,
+                            dia_reporte: diaReporte,
+                            hora_reporte: horaReporte,
+                            emails_reporte: emailsReporte,
+                            fidelizacion_activa: fidelizacionActiva ? 1 : 0,
+                            dias_inactividad: parseInt(diasInactividad) || 30,
+                            mensaje_fidelizacion: mensajeFidelizacion
+                        })
+                    });
+                } catch (err) {
+                    console.error('Error no fatal guardando SMTP', err);
+                }
             }
 
             const res = await configuracionService.updateBarberiaSettings(barberia.id, formData);
@@ -198,6 +283,74 @@ export default function ConfiguracionPage() {
             toast.error(err.response?.data?.error || 'Error al guardar perfil');
         } finally {
             setSavingProfile(false);
+        }
+    }
+
+    async function handleTestSMTP() {
+        if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
+            toast.error('Llena todos los campos SMTP antes de probar la conexión.');
+            return;
+        }
+        
+        let loadingToast = toast.loading('Probando conexión con servidor SMTP...');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/settings/smtp/test', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                    test_email: smtpUser, // Intentará enviarle al mismo dueño que configuró
+                    smtp_host: smtpHost,
+                    smtp_port: parseInt(smtpPort) || 587,
+                    smtp_user: smtpUser,
+                    smtp_pass: smtpPass,
+                    smtp_secure: smtpSecure ? 1 : 0,
+                    smtp_from_name: smtpFromName
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                toast.success('¡Conexión Exitosa! Revisar el buzón de correo.', { id: loadingToast });
+            } else {
+                toast.error(data.error || 'Fallo de conexión SMTP', { id: loadingToast });
+            }
+        } catch (err) {
+            toast.error('Error al intentar conectar al servidor', { id: loadingToast });
+        }
+    }
+
+    async function handleSendReportNow() {
+        if (!emailsReporte) {
+            toast.error('Selecciona al menos un destinatario para enviar el reporte.');
+            return;
+        }
+
+        setSendingTest(true);
+        let loadingToast = toast.loading('Generando y enviando reporte...');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/settings/smtp/send-report-now', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}` 
+                }
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                toast.success('¡Reporte enviado exitosamente!', { id: loadingToast });
+            } else {
+                toast.error(data.error || 'Fallo al enviar reporte', { id: loadingToast });
+            }
+        } catch (err) {
+            toast.error('Error al solicitar envío del reporte', { id: loadingToast });
+        } finally {
+            setSendingTest(false);
         }
     }
 
@@ -403,6 +556,21 @@ export default function ConfiguracionPage() {
                                 />
                             </div>
                         </div>
+
+                        {/* WhatsApp General */}
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>WhatsApp de la Barbería</label>
+                            <div style={{ position: 'relative' }}>
+                                <MessageSquare size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="tel"
+                                    value={telefonoWhatsapp}
+                                    onChange={(e) => setTelefonoWhatsapp(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                    placeholder="Ej. 529511234567"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -578,6 +746,341 @@ export default function ConfiguracionPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* ══════════════ COMUNICACIONES, NOTIFICACIONES Y SMTP ══════════════ */}
+                <div style={{ ...cardStyle, gridColumn: '1 / -1', background: 'rgba(var(--bg-surface), 0.95)', border: '1px solid rgba(var(--accent-primary-rgb), 0.15)', borderLeft: '4px solid var(--accent-primary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Bell size={22} style={{ color: 'var(--accent-primary)' }} />
+                            </div>
+                            <div>
+                                <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Comunicaciones y Marketing Automatizado</h2>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Este correo se usará para enviarte tus reportes y para contactar automáticamente a clientes que tienen tiempo sin visitarte.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem', alignItems: 'start', marginTop: '0.5rem' }}>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 2fr) 1fr', gap: '2rem' }}>
+                            {/* SMTP Ajustes */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                                        <Server size={14} /> Servidor SMTP Host
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={smtpHost}
+                                        onChange={(e) => setSmtpHost(e.target.value)}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                        placeholder="ej. smtp.gmail.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                                        Puerto SMTP
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={smtpPort}
+                                        onChange={(e) => setSmtpPort(e.target.value)}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                        placeholder="465 o 587"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                                    <Mail size={14} /> Correo de Envío (User)
+                                </label>
+                                <input
+                                    type="email"
+                                    value={smtpUser}
+                                    onChange={(e) => setSmtpUser(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                    placeholder="ej. tu.nombre@gmail.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                                    <Key size={14} /> Key de Aplicación (Contraseña Especial)
+                                </label>
+                                <input
+                                    type="password"
+                                    value={smtpPass}
+                                    onChange={(e) => setSmtpPass(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none', letterSpacing: '2px', fontFamily: 'monospace' }}
+                                    placeholder="*************"
+                                />
+                                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem', paddingLeft: '0.25rem' }}>
+                                    Si usas Gmail, no uses tu contraseña personal. Ve a "Seguridad" {'>'} "Contraseñas de aplicaciones" y crea una nueva.
+                                </p>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '0.25rem' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                                        Nombre Remitente (Opcional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={smtpFromName}
+                                        onChange={(e) => setSmtpFromName(e.target.value)}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                        placeholder="Flow Barbería"
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.25rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        id="secureCheckbox"
+                                        checked={smtpSecure}
+                                        onChange={(e) => setSmtpSecure(e.target.checked)}
+                                        style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                                    />
+                                    <label htmlFor="secureCheckbox" style={{ fontSize: '0.75rem', color: 'var(--text-main)', cursor: 'pointer', userSelect: 'none' }}>
+                                        Usar SSL/TLS (Seguro)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '0.25rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleTestSMTP}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.6rem 1.25rem',
+                                        borderRadius: '8px',
+                                        border: '1px solid var(--accent-primary)',
+                                        background: 'transparent',
+                                        color: 'var(--accent-primary)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Server size={14} /> Probar Conexión SMTP
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Reportes Automatizados */}
+                        <div style={{ padding: '1.25rem', backgroundColor: 'var(--bg-input)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-color)' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <FileText size={16} style={{ color: 'var(--accent-primary)' }} />
+                                Reportes Automatizados
+                            </h3>
+                            
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                <input
+                                    type="checkbox"
+                                    id="reportEnabled"
+                                    checked={reportEnabled}
+                                    onChange={(e) => setReportEnabled(e.target.checked)}
+                                    style={{ marginTop: '3px', width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                                />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                    <label htmlFor="reportEnabled" style={{ fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer', userSelect: 'none', fontWeight: 500 }}>
+                                        Enviarme Reportes por Correo
+                                    </label>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Resumen de cortes, inventario e ingresos</span>
+                                </div>
+                            </div>
+
+                            <div style={{ opacity: reportEnabled ? 1 : 0.4, pointerEvents: reportEnabled ? 'auto' : 'none', transition: 'all 0.2s', marginTop: '0.5rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: reportPeriod === 'semanal' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                    <div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                            <Clock size={14} /> Frecuencia
+                                        </label>
+                                        <select 
+                                            value={reportPeriod} 
+                                            onChange={(e) => setReportPeriod(e.target.value)}
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontSize: '0.8rem', outline: 'none' }}
+                                        >
+                                            <option value="diario">Diaria</option>
+                                            <option value="semanal">Semanal</option>
+                                        </select>
+                                    </div>
+                                    
+                                    {reportPeriod === 'semanal' && (
+                                        <div>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                                Día
+                                            </label>
+                                            <select 
+                                                value={diaReporte} 
+                                                onChange={(e) => setDiaReporte(e.target.value)}
+                                                style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontSize: '0.8rem', outline: 'none' }}
+                                            >
+                                                {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(dia => (
+                                                    <option key={dia} value={dia}>{dia}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                            Hora
+                                        </label>
+                                        <input 
+                                            type="time" 
+                                            value={horaReporte}
+                                            onChange={(e) => setHoraReporte(e.target.value)}
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontSize: '0.8rem', outline: 'none' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                    <Users size={14} /> Enviar Reportes a (Administradores):
+                                </label>
+                                
+                                {!adminsLoaded ? (
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Cargando administradores...</p>
+                                ) : admins.length === 0 ? (
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay usuarios en la plataforma con el rol de Admin o Dueño para recibir reportes.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--bg-surface)' }}>
+                                        {admins.map(admin => {
+                                            const isSelected = emailsReporte.includes(admin.correo);
+                                            return (
+                                                <label key={admin.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            let emails = emailsReporte.split(',').map(em => em.trim()).filter(em => em);
+                                                            if (e.target.checked && !emails.includes(admin.correo)) {
+                                                                emails.push(admin.correo);
+                                                            } else if (!e.target.checked) {
+                                                                emails = emails.filter(em => em !== admin.correo);
+                                                            }
+                                                            setEmailsReporte(emails.join(', '));
+                                                        }}
+                                                        style={{ accentColor: 'var(--accent-primary)' }}
+                                                    />
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>{admin.nombre} <span style={{ color: 'var(--text-muted)' }}>({admin.correo})</span></span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                
+                                <input
+                                    type="text"
+                                    value={emailsReporte}
+                                    onChange={(e) => setEmailsReporte(e.target.value)}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontSize: '0.75rem', outline: 'none', marginTop: '0.75rem', opacity: 0.6 }}
+                                    placeholder="Correos seleccionados..."
+                                />
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '1rem' }}>
+                                    <button
+                                        type="button"
+                                        onClick={handleSendReportNow}
+                                        disabled={sendingTest}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            padding: '0.6rem 1.25rem',
+                                            borderRadius: '8px',
+                                            border: '1px solid var(--accent-primary)',
+                                            background: 'var(--accent-primary)',
+                                            color: '#fff',
+                                            fontSize: '0.8rem',
+                                            fontWeight: 600,
+                                            cursor: sendingTest ? 'wait' : 'pointer',
+                                            transition: 'all 0.2s',
+                                            opacity: sendingTest ? 0.7 : 1
+                                        }}
+                                    >
+                                        {sendingTest ? <div className="spinner" style={{ width: '14px', height: '14px' }}></div> : <Server size={14} />} 
+                                        {sendingTest ? 'Enviando...' : 'Enviar Ahora'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        {/* Fidelización Anti Abandono */}
+                        <div style={{ padding: '1.25rem', backgroundColor: 'var(--bg-input)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <MessageSquare size={18} style={{ color: 'var(--accent-primary)' }} />
+                                    Fidelización de Clientes (Anti-Abandono)
+                                </h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--text-main)', fontWeight: 600 }}>{fidelizacionActiva ? 'Activado' : 'Desactivado'}</label>
+                                    <div 
+                                        onClick={() => setFidelizacionActiva(!fidelizacionActiva)}
+                                        style={{ 
+                                            width: '40px', height: '22px', borderRadius: '11px', 
+                                            background: fidelizacionActiva ? 'var(--accent-primary)' : 'var(--bg-surface)',
+                                            border: `1px solid ${fidelizacionActiva ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                                            position: 'relative', cursor: 'pointer', transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        <div style={{
+                                            width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff',
+                                            position: 'absolute', top: '2px', left: fidelizacionActiva ? '20px' : '2px',
+                                            transition: 'all 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                        }}/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ opacity: fidelizacionActiva ? 1 : 0.4, pointerEvents: fidelizacionActiva ? 'auto' : 'none', transition: 'all 0.2s', display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) 2fr', gap: '1.5rem', marginTop: '0.5rem' }}>
+                                <div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                        <CalendarRange size={14} /> Días de Inactividad
+                                    </label>
+                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0 0 0.5rem 0' }}>
+                                        Enviar correo si el cliente no nos ha visitado en esta cantidad de días.
+                                    </p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={diasInactividad}
+                                            onChange={(e) => setDiasInactividad(e.target.value)}
+                                            style={{ width: '80px', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none' }}
+                                        />
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>Días</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                        Mensaje Personalizado
+                                    </label>
+                                    <textarea
+                                        value={mensajeFidelizacion}
+                                        onChange={(e) => setMensajeFidelizacion(e.target.value)}
+                                        rows={4}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none', resize: 'vertical' }}
+                                        placeholder="Ej: Hola {nombre_cliente}, te echamos de menos..."
+                                    />
+                                    <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                                        Variables disponibles: <code style={{ background: 'var(--bg-surface)', padding: '2px 4px', borderRadius: '4px' }}>{`{nombre_cliente}`}</code>, <code style={{ background: 'var(--bg-surface)', padding: '2px 4px', borderRadius: '4px' }}>{`{nombre_barberia}`}</code>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
 
                     <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end' }}>
                         <button
@@ -602,9 +1105,9 @@ export default function ConfiguracionPage() {
                             }}
                         >
                             {savingProfile ? (
-                                <><div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}></div> Guardando Cambios...</>
+                                <><div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}></div> Guardando Ajustes Globales...</>
                             ) : (
-                                <><Save size={20} /> Guardar Cambios de Perfil e Identidad</>
+                                <><Save size={20} /> Guardar Todos los Cambios</>
                             )}
                         </button>
                     </div>

@@ -44,8 +44,8 @@ router.get('/comisiones', verifyToken, requireTenant, requireRole(ROLES.ADMIN, R
             JOIN usuarios u ON b.id_usuario = u.id WHERE cp.barberia_id = ?
         `;
         const params = [req.barberia_id];
-        if (desde) { query += ' AND date(cp.fecha) >= ?'; params.push(desde); }
-        if (hasta) { query += ' AND date(cp.fecha) <= ?'; params.push(hasta); }
+        if (desde) { query += ' AND DATE(cp.fecha) >= ?'; params.push(desde); }
+        if (hasta) { query += ' AND DATE(cp.fecha) <= ?'; params.push(hasta); }
         query += ' GROUP BY b.id ORDER BY total_comision DESC';
 
         const comisiones = await dbQuery.all(query, params);

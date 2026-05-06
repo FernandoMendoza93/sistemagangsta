@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { Crown, Trophy, Star, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { clientesService } from '../services/api';
 import Icon from '../components/Icon';
@@ -143,7 +145,8 @@ export default function ClientesPage() {
         return <span className="cl-badge cl-badge-inactive">{days}d sin venir</span>;
     }
 
-    function getLoyaltyDisplay(puntos) {
+    function getLoyaltyDisplay(puntos_lealtad) {
+        const puntos = puntos_lealtad || 0;
         const maxPoints = 10;
         const filled = Math.min(puntos % maxPoints, maxPoints);
         const completedCards = Math.floor(puntos / maxPoints);
@@ -157,6 +160,36 @@ export default function ClientesPage() {
                     <span className="cl-loyalty-cards">{completedCards} tarjeta{completedCards > 1 ? 's' : ''}</span>
                 )}
             </div>
+        );
+    }
+
+    function getRankBadge(id_rol_lealtad, nivel_lealtad, color_hex) {
+        let finalColor = color_hex || '#e2725b';
+        let icon = <Star size={14} />;
+        
+        if (nivel_lealtad) {
+            const l = nivel_lealtad.toLowerCase();
+            if (l.includes('oro') || l.includes('platino')) icon = <Crown size={14} />;
+            else if (l.includes('plata')) icon = <Trophy size={14} />;
+        }
+        
+        return (
+            <span style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '4px', 
+                padding: '4px 10px', 
+                borderRadius: '12px', 
+                background: finalColor,
+                color: '#fff', 
+                fontSize: '0.8rem', 
+                fontWeight: 'bold', 
+                textShadow: '0 1px 2px rgba(0,0,0,0.4)',
+                boxShadow: `0 4px 10px ${finalColor}66`, 
+                border: '1px solid rgba(255,255,255,0.2)' 
+            }}>
+                {icon} {nivel_lealtad || 'Nivel General'}
+            </span>
         );
     }
 
@@ -181,9 +214,14 @@ export default function ClientesPage() {
                         {hasActiveFilters ? ' (filtrado)' : ''}
                     </p>
                 </div>
-                <button className="btn-primary-pro" onClick={openCreateModal}>
-                    <Icon name="plus-lg" /> Nuevo Cliente
-                </button>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <Link to="/panel/lealtad" className="btn-secondary-pro" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Settings size={16} /> Ver Reglas de Nivel
+                    </Link>
+                    <button className="btn-primary-pro" onClick={openCreateModal}>
+                        <Icon name="plus-lg" /> Nuevo Cliente
+                    </button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -301,7 +339,11 @@ export default function ClientesPage() {
                                 </div>
                                 <div className="cl-card-meta">
                                     <div className="cl-meta-item">
-                                        <span className="cl-meta-label">Lealtad</span>
+                                        <span className="cl-meta-label">Estatus</span>
+                                        {getRankBadge(cliente.nivel?.id, cliente.nivel?.nombre, cliente.nivel?.color_hex)}
+                                    </div>
+                                    <div className="cl-meta-item">
+                                        <span className="cl-meta-label">Sellos ({cliente.puntos_lealtad || 0})</span>
                                         {getLoyaltyDisplay(cliente.puntos_lealtad)}
                                     </div>
                                     <div className="cl-meta-item">

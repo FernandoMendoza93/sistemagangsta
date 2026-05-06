@@ -25,6 +25,7 @@ import ClaimPointPage from './pages/ClaimPointPage';
 import ScannerPage from './pages/ScannerPage';
 import RegisterPage from './pages/RegisterPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
+import PlanLealtadPage from './pages/PlanLealtadPage';
 import { Toaster } from 'sonner';
 import NotificationManager from './components/NotificationManager';
 import './index.css';
@@ -183,6 +184,9 @@ function AppRoutes() {
         } />
         <Route path="/panel/clientes" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><ClientesPage /></ProtectedRoute>
+        } />
+        <Route path="/panel/lealtad" element={
+          <ProtectedRoute allowedRoles={['Admin']}><PlanLealtadPage /></ProtectedRoute>
         } />
         <Route path="/panel/horarios" element={
           <ProtectedRoute allowedRoles={['Admin', 'Encargado']}><HorariosPage /></ProtectedRoute>

@@ -9,7 +9,7 @@ router.get('/', verifyToken, requireTenant, async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
 
         const barberos = await dbQuery.all(`
-            SELECT b.id, b.porcentaje_comision, b.estado, b.turno,
+            SELECT b.id, b.porcentaje_comision, b.estado, b.turno, b.telefono_whatsapp,
                    u.id as id_usuario, u.nombre, u.email
             FROM barberos b
             JOIN usuarios u ON b.id_usuario = u.id
@@ -30,7 +30,7 @@ router.get('/activos', verifyToken, requireTenant, async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
 
         const barberos = await dbQuery.all(`
-            SELECT b.id, b.porcentaje_comision, b.turno,
+            SELECT b.id, b.porcentaje_comision, b.turno, b.telefono_whatsapp,
                    u.nombre
             FROM barberos b
             JOIN usuarios u ON b.id_usuario = u.id
@@ -52,7 +52,7 @@ router.get('/:id', verifyToken, requireTenant, async (req, res) => {
         const { id } = req.params;
 
         const barbero = await dbQuery.get(`
-            SELECT b.id, b.porcentaje_comision, b.estado, b.turno,
+            SELECT b.id, b.porcentaje_comision, b.estado, b.turno, b.telefono_whatsapp,
                    u.id as id_usuario, u.nombre, u.email
             FROM barberos b
             JOIN usuarios u ON b.id_usuario = u.id
@@ -114,18 +114,29 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         }
 
         let query = `
-            SELECT cp.id, cp.monto, cp.tipo, cp.fecha, cp.pagado
+            SELECT 
+                cp.id, 
+                cp.monto, 
+                cp.tipo, 
+                cp.fecha, 
+                cp.pagado,
+                COALESCE(s.nombre_servicio, p.nombre, cp.tipo) as nombre
             FROM comisiones_pendientes cp
+            LEFT JOIN ventas_detalle vd ON cp.id_venta_detalle = vd.id
+            LEFT JOIN servicios s ON vd.id_servicio = s.id
+            LEFT JOIN productos p ON vd.id_producto = p.id
             WHERE cp.id_barbero = ? AND cp.barberia_id = ?
         `;
         const params = [id, req.barberia_id];
 
+        // Blindaje de fechas: usar DATE() para comparar solo la parte de fecha,
+        // evitando que la zona horaria de Railway (UTC) corte horas de México
         if (desde) {
-            query += ' AND cp.fecha >= ?';
+            query += ' AND DATE(cp.fecha) >= ?';
             params.push(desde);
         }
         if (hasta) {
-            query += ' AND cp.fecha <= ?';
+            query += ' AND DATE(cp.fecha) <= ?';
             params.push(hasta);
         }
 
@@ -137,13 +148,13 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
             WHERE id_barbero = ? AND barberia_id = ?
         `;
         const totalParams = [id, req.barberia_id];
-        
+
         if (desde) {
-            totalQuery += ' AND fecha >= ?';
+            totalQuery += ' AND DATE(fecha) >= ?';
             totalParams.push(desde);
         }
         if (hasta) {
-            totalQuery += ' AND fecha <= ?';
+            totalQuery += ' AND DATE(fecha) <= ?';
             totalParams.push(hasta);
         }
 
@@ -152,8 +163,31 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         query += ' ORDER BY cp.fecha DESC';
         const comisiones = await dbQuery.all(query, params);
 
+        // Resumen agrupado por semana (Lunes a Domingo)
+        let semanalQuery = `
+            SELECT
+                YEARWEEK(fecha, 1) as semana_id,
+                DATE(DATE_SUB(fecha, INTERVAL WEEKDAY(fecha) DAY)) as semana_inicio,
+                DATE(DATE_ADD(DATE_SUB(fecha, INTERVAL WEEKDAY(fecha) DAY), INTERVAL 6 DAY)) as semana_fin,
+                COUNT(*) as cantidad,
+                COALESCE(SUM(monto), 0) as total,
+                COALESCE(SUM(CASE WHEN pagado = 0 THEN monto ELSE 0 END), 0) as pendiente,
+                COALESCE(SUM(CASE WHEN pagado = 1 THEN monto ELSE 0 END), 0) as pagado_monto,
+                SUM(CASE WHEN tipo = 'Servicio' THEN 1 ELSE 0 END) as servicios,
+                SUM(CASE WHEN tipo = 'Incentivo Producto' THEN 1 ELSE 0 END) as productos
+            FROM comisiones_pendientes
+            WHERE id_barbero = ? AND barberia_id = ?
+        `;
+        const semanalParams = [id, req.barberia_id];
+        if (desde) { semanalQuery += ' AND DATE(fecha) >= ?'; semanalParams.push(desde); }
+        if (hasta) { semanalQuery += ' AND DATE(fecha) <= ?'; semanalParams.push(hasta); }
+        semanalQuery += ' GROUP BY semana_id, semana_inicio, semana_fin ORDER BY semana_id DESC';
+
+        const resumen_semanal = await dbQuery.all(semanalQuery, semanalParams);
+
         res.json({
             comisiones,
+            resumen_semanal,
             totales: {
                 pendiente: totales.pendiente || 0,
                 pagado: totales.pagado || 0
@@ -170,13 +204,25 @@ router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROL
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { notas } = req.body;
+        const { notas, desde, hasta } = req.body;
 
-        const pendiente = await dbQuery.get(`
+        let pendienteQuery = `
             SELECT SUM(monto) as total
             FROM comisiones_pendientes
             WHERE id_barbero = ? AND pagado = 0 AND barberia_id = ?
-        `, [id, req.barberia_id]);
+        `;
+        const pendienteParams = [id, req.barberia_id];
+
+        if (desde) {
+            pendienteQuery += ' AND DATE(fecha) >= ?';
+            pendienteParams.push(desde);
+        }
+        if (hasta) {
+            pendienteQuery += ' AND DATE(fecha) <= ?';
+            pendienteParams.push(hasta);
+        }
+
+        const pendiente = await dbQuery.get(pendienteQuery, pendienteParams);
 
         if (!pendiente.total || pendiente.total === 0) {
             return res.status(400).json({ error: 'No hay comisiones pendientes' });
@@ -187,11 +233,23 @@ router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROL
             VALUES (?, ?, ?, ?, ?)
         `, [id, pendiente.total, req.user.id, notas || '', req.barberia_id]);
 
-        await dbQuery.run(`
+        let updateQuery = `
             UPDATE comisiones_pendientes
             SET pagado = 1
             WHERE id_barbero = ? AND pagado = 0 AND barberia_id = ?
-        `, [id, req.barberia_id]);
+        `;
+        const updateParams = [id, req.barberia_id];
+
+        if (desde) {
+            updateQuery += ' AND DATE(fecha) >= ?';
+            updateParams.push(desde);
+        }
+        if (hasta) {
+            updateQuery += ' AND DATE(fecha) <= ?';
+            updateParams.push(hasta);
+        }
+
+        await dbQuery.run(updateQuery, updateParams);
 
         res.json({
             message: 'Comisiones pagadas',

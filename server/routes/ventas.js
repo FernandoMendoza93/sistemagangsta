@@ -198,7 +198,7 @@ router.get('/:id', verifyToken, requireTenant, async (req, res) => {
 router.post('/', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const { id_barbero, metodo_pago, notas, items } = req.body;
+        const { id_barbero, id_cliente, metodo_pago, notas, items } = req.body;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ error: 'La venta debe tener al menos un item' });
@@ -219,14 +219,41 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
             }
         }
 
-        let totalVenta = 0;
-        for (const item of items) {
-            totalVenta += item.precio_unitario * item.cantidad;
+        let descuento_rate = 0;
+        if (id_cliente) {
+            const rowCliente = await dbQuery.get('SELECT c.id_rol_lealtad, l.porcentaje_descuento FROM clientes c LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad WHERE c.id = ? AND c.barberia_id = ?', [id_cliente, req.barberia_id]);
+            if (rowCliente && rowCliente.porcentaje_descuento) {
+                descuento_rate = rowCliente.porcentaje_descuento / 100;
+            }
         }
+
+        let subtotalVenta = 0;
+        for (const item of items) {
+            subtotalVenta += item.precio_unitario * item.cantidad;
+        }
+        const totalVenta = subtotalVenta - (subtotalVenta * descuento_rate);
 
         const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
 
         const resultado = await dbQuery.transaction(async (tx) => {
+            let recompensaData = null;
+
+            if (id_cliente) {
+                // Sumar punto
+                await tx.run('UPDATE clientes SET puntos_lealtad = COALESCE(puntos_lealtad, 0) + 1, ultima_visita = CURRENT_TIMESTAMP WHERE id = ?', [id_cliente]);
+                
+                const clienteAct = await tx.get('SELECT c.puntos_lealtad, l.premio_descripcion, l.nombre_nivel FROM clientes c LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad WHERE c.id = ?', [id_cliente]);
+                
+                // Múltiplo de 10 como premio quemado genérico (10/10)
+                if (clienteAct && clienteAct.puntos_lealtad > 0 && clienteAct.puntos_lealtad % 10 === 0) {
+                    recompensaData = {
+                        alcanzada: true,
+                        nombre_premio: clienteAct.premio_descripcion || '¡Has llenado tu tarjeta de lealtad!',
+                        nuevo_nivel: clienteAct.nombre_nivel
+                    };
+                }
+            }
+
             const result = await tx.run(`
                 INSERT INTO ventas_cabecera (id_barbero, total_venta, metodo_pago, notas, estado, fecha, barberia_id)
                 VALUES (?, ?, ?, ?, 'completada', ?, ?)
@@ -278,13 +305,14 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
                 }
             }
 
-            return { ventaId, totalVenta };
+            return { ventaId, totalVenta, recompensaData };
         });
 
         res.status(201).json({
             message: 'Venta registrada exitosamente',
             id: resultado.ventaId,
-            total: resultado.totalVenta
+            total: resultado.totalVenta,
+            recompensa: resultado.recompensaData
         });
     } catch (error) {
         console.error('Error creando venta:', error);
@@ -406,10 +434,33 @@ router.post('/completar-cita', verifyToken, requireTenant, requireRole(ROLES.ADM
                 });
             }
 
-            // Calcular total
-            let totalVenta = 0;
+            let subtotalVenta = 0;
             for (const item of allItems) {
-                totalVenta += item.precio_unitario * item.cantidad;
+                subtotalVenta += item.precio_unitario * item.cantidad;
+            }
+
+            let descuento_rate = 0;
+            if (cita.id_cliente) {
+                const rowCliente = await tx.get('SELECT c.id_rol_lealtad, l.porcentaje_descuento FROM clientes c LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad WHERE c.id = ? AND c.barberia_id = ?', [cita.id_cliente, req.barberia_id]);
+                if (rowCliente && rowCliente.porcentaje_descuento) {
+                    descuento_rate = rowCliente.porcentaje_descuento / 100;
+                }
+            }
+            const totalVenta = subtotalVenta - (subtotalVenta * descuento_rate);
+
+            let recompensaData = null;
+            if (cita.id_cliente) {
+                await tx.run('UPDATE clientes SET puntos_lealtad = COALESCE(puntos_lealtad, 0) + 1, ultima_visita = CURRENT_TIMESTAMP WHERE id = ?', [cita.id_cliente]);
+                
+                const clienteAct = await tx.get('SELECT c.puntos_lealtad, l.premio_descripcion, l.nombre_nivel FROM clientes c LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad WHERE c.id = ?', [cita.id_cliente]);
+                
+                if (clienteAct && clienteAct.puntos_lealtad > 0 && clienteAct.puntos_lealtad % 10 === 0) {
+                    recompensaData = {
+                        alcanzada: true,
+                        nombre_premio: clienteAct.premio_descripcion || '¡Has llenado tu tarjeta de lealtad!',
+                        nuevo_nivel: clienteAct.nombre_nivel
+                    };
+                }
             }
 
             // 1. Crear venta cabecera
@@ -464,14 +515,15 @@ router.post('/completar-cita', verifyToken, requireTenant, requireRole(ROLES.ADM
             // 3. Marcar cita como Completada (último paso — transacción garantiza atomicidad)
             await tx.run("UPDATE citas SET estado = 'Completada' WHERE id = ? AND barberia_id = ?", [id_cita, req.barberia_id]);
 
-            return { ventaId, totalVenta };
+            return { ventaId, totalVenta, recompensaData };
         });
 
         console.log(`Cita #${id_cita} completada -> Venta #${resultado.ventaId} (Total: $${resultado.totalVenta})`);
         res.status(201).json({
             message: 'Servicio cerrado exitosamente',
             id_venta: resultado.ventaId,
-            total: resultado.totalVenta
+            total: resultado.totalVenta,
+            recompensa: resultado.recompensaData
         });
     } catch (error) {
         console.error('Error completando cita:', error);

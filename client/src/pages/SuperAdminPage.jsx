@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { superAdminService } from '../services/api';
-import { HardDrive, Server, DollarSign, Power, Activity, Shield, Users, Store } from 'lucide-react';
+import { HardDrive, Server, DollarSign, Power, Activity, Shield, Users, Store, Eye } from 'lucide-react';
 
 export default function SuperAdminPage() {
     const { token } = useAuth();
@@ -180,14 +180,27 @@ export default function SuperAdminPage() {
                                         </div>
                                     </td>
                                     <td className="p-4 sm:px-8 sm:py-5 border-b border-black/5 text-right">
-                                        {/* TACTILE 44px rule applied here using min-h-[44px] min-w-[44px] */}
-                                        <button
-                                            className={`inline-flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold border-none cursor-pointer transition-colors duration-200 ${barb.estado === 'Activo' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/15' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15'}`}
-                                            onClick={() => toggleBarberia(barb.id, barb.estado)}
-                                        >
-                                            <Power className="w-4 h-4 mr-1.5" />
-                                            {barb.estado === 'Activo' ? 'Revocar Acceso' : 'Restaurar'}
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            {/* Previsualizar Portal del Cliente */}
+                                            {barb.estado === 'Activo' && barb.slug && (
+                                                <button
+                                                    className="inline-flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold border-none cursor-pointer transition-colors duration-200 bg-blue-500/10 text-blue-500 hover:bg-blue-500/15"
+                                                    onClick={() => window.open(`/portal/${barb.slug}`, '_blank')}
+                                                    title={`Abrir portal de ${barb.nombre}`}
+                                                >
+                                                    <Eye className="w-4 h-4 mr-1.5" />
+                                                    Portal
+                                                </button>
+                                            )}
+                                            {/* Toggle Estado */}
+                                            <button
+                                                className={`inline-flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold border-none cursor-pointer transition-colors duration-200 ${barb.estado === 'Activo' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/15' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15'}`}
+                                                onClick={() => toggleBarberia(barb.id, barb.estado)}
+                                            >
+                                                <Power className="w-4 h-4 mr-1.5" />
+                                                {barb.estado === 'Activo' ? 'Revocar Acceso' : 'Restaurar'}
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
