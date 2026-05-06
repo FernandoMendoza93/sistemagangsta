@@ -469,12 +469,13 @@ router.post('/register-barberia', upload.single('logo'), async (req, res) => {
     }
 });
 
-// POST /api/auth/cambiar-password — Change password for authenticated user
+// POST /api/auth/cambiar-password — Change password for authenticated user (cliente or staff)
 router.post('/cambiar-password', verifyToken, async (req, res) => {
     try {
         const { passwordActual, passwordNueva } = req.body;
         const dbQuery = req.app.locals.dbQuery;
-        const userId = req.user.id; // from verifyToken
+        const userId = req.user.id;
+        const esCliente = req.user.rol === 'Cliente';
 
         if (!passwordActual || !passwordNueva) {
             return res.status(400).json({ error: 'Ambas contraseñas son requeridas' });
@@ -484,8 +485,10 @@ router.post('/cambiar-password', verifyToken, async (req, res) => {
             return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
         }
 
-        // Obtener el usuario actual
-        const user = await dbQuery.get('SELECT password_hash FROM usuarios WHERE id = ?', [userId]);
+        // Los clientes están en la tabla `clientes`, el staff en `usuarios`
+        const tabla = esCliente ? 'clientes' : 'usuarios';
+        const user = await dbQuery.get(`SELECT password_hash FROM ${tabla} WHERE id = ?`, [userId]);
+
         if (!user) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
@@ -498,7 +501,7 @@ router.post('/cambiar-password', verifyToken, async (req, res) => {
 
         // Hashear la nueva contraseña y actualizar
         const nuevoHash = await bcrypt.hash(passwordNueva, 10);
-        await dbQuery.run('UPDATE usuarios SET password_hash = ? WHERE id = ?', [nuevoHash, userId]);
+        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ? WHERE id = ?`, [nuevoHash, userId]);
 
         res.json({ message: 'Contraseña actualizada correctamente' });
     } catch (error) {

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { citasService, clientesService, publicService } from '../services/api';
 import { toast } from 'sonner';
-import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store, Settings } from 'lucide-react';
+import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store, Settings, Eye, EyeOff } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import heroImg from '../assets/hero-bg.jpg';
 import './ClientePortalPage.css';
@@ -32,6 +32,8 @@ export default function ClientePortalPage() {
     const [showAccountSheet, setShowAccountSheet] = useState(false);
     const [accountSheetView, setAccountSheetView] = useState('menu'); // 'menu' | 'password'
     const [passwordForm, setPasswordForm] = useState({ passwordActual: '', passwordNueva: '', confirmarPassword: '' });
+    const [showPass, setShowPass] = useState({ actual: false, nueva: false, confirmar: false });
+    const [slotsDisponibles, setSlotsDisponibles] = useState([]);
 
     useEffect(() => {
         if (slug) loadPublicConfig();
@@ -155,11 +157,24 @@ export default function ClientePortalPage() {
         setPasoModal(2);
     }
 
-    async function handleFechaChange(fecha) {
+    // Recalcular slots si cambia el servicio Y ya hay fecha seleccionada
+    useEffect(() => {
+        if (citaForm.id_servicio && citaForm.fecha && citaForm.id_barbero && pasoModal === 3) {
+            handleFechaChange(citaForm.fecha, citaForm.id_barbero, citaForm.id_servicio);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [citaForm.id_servicio]);
+
+    async function handleFechaChange(fecha, barberoId, servicioId) {
+        // Permitir llamada con params explícitos O leyendo del state
+        const idBarbero = barberoId ?? citaForm.id_barbero;
+        const idServicio = servicioId ?? citaForm.id_servicio;
+
         setCitaForm(prev => ({ ...prev, fecha, hora: '' }));
         setCitaExistenteEnFecha(null);
+        setSlotsDisponibles([]);
 
-        if (!fecha || !citaForm.id_barbero) return;
+        if (!fecha || !idBarbero) return;
 
         // Detectar si el cliente ya tiene una cita activa en esta fecha
         const citaEnFecha = citas.find(c => c.fecha === fecha && c.estado !== 'Cancelada');
@@ -169,12 +184,19 @@ export default function ClientePortalPage() {
         }
 
         try {
-            const res = await citasService.getDisponibilidad(fecha, citaForm.id_barbero);
-            setHorasOcupadas(res.data.ocupadas || []);
+            const res = await citasService.getDisponibilidad(fecha, idBarbero, idServicio);
+            if (res.data.slots) {
+                setSlotsDisponibles(res.data.slots);
+                setHorasOcupadas(res.data.ocupadas || []);
+            } else {
+                setHorasOcupadas(res.data.ocupadas || []);
+                setSlotsDisponibles([]);
+            }
             setHorarioLaboral(res.data.horario || null);
         } catch (error) {
             console.error('Error obteniendo disponibilidad:', error);
             setHorasOcupadas([]);
+            setSlotsDisponibles([]);
             setHorarioLaboral(null);
         }
     }
@@ -193,8 +215,14 @@ export default function ClientePortalPage() {
         }));
 
         try {
-            const res = await citasService.getDisponibilidad(cita.fecha, citaForm.id_barbero);
-            setHorasOcupadas(res.data.ocupadas || []);
+            const res = await citasService.getDisponibilidad(cita.fecha, citaForm.id_barbero, citaForm.id_servicio);
+            if (res.data.slots) {
+                setSlotsDisponibles(res.data.slots);
+                setHorasOcupadas(res.data.ocupadas || []);
+            } else {
+                setHorasOcupadas(res.data.ocupadas || []);
+                setSlotsDisponibles([]);
+            }
             setHorarioLaboral(res.data.horario || null);
         } catch (error) {
             console.error('Error obteniendo disponibilidad:', error);
@@ -329,7 +357,13 @@ export default function ClientePortalPage() {
         return slots;
     }
 
-    const horasDisponibles = generarSlots();
+    // Slots: usar los del backend si están disponibles, si no generar localmente
+    const horasDisponibles = slotsDisponibles.length > 0
+        ? slotsDisponibles.map(slot => ({ 
+            hora: typeof slot === 'string' ? slot : slot.inicio, 
+            ocupado: false 
+        }))
+        : generarSlots();
 
     if (loading) {
         return (
@@ -695,20 +729,38 @@ export default function ClientePortalPage() {
                                     ) : horasDisponibles.length === 0 ? (
                                         <p style={{ color: '#EF4444' }}>No hay horarios disponibles en esta fecha.</p>
                                     ) : (
-                                        <div className="time-grid">
-                                            {horasDisponibles.map(slot => (
-                                                <button
-                                                    key={slot.hora}
-                                                    type="button"
-                                                    className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
-                                                    onClick={() => !slot.ocupado && setCitaForm(prev => ({ ...prev, hora: slot.hora }))}
-                                                    disabled={slot.ocupado}
-                                                >
-                                                    <span className="time-text">{slot.hora}</span>
-                                                    {slot.ocupado && <span style={{ color: '#EF4444', fontSize: '0.72rem', display: 'block', marginTop: '2px' }}>Ocupado</span>}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <>
+                                            {/* Texto contextual de duración */}
+                                            <div style={{ marginBottom: '1rem', padding: '10px 14px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', borderLeft: '3px solid var(--accent-color, #E11D48)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main, #fff)', fontSize: '0.85rem', fontWeight: '500' }}>
+                                                    <Clock size={14} />
+                                                    <span>
+                                                        {servicios.find(s => s.id == citaForm.id_servicio)?.nombre_servicio} 
+                                                        {" · "}
+                                                        {servicios.find(s => s.id == citaForm.id_servicio)?.duracion_aprox} min
+                                                    </span>
+                                                </div>
+                                                <p style={{ color: 'var(--text-muted, #9ca3af)', fontSize: '0.72rem', marginTop: '4px', marginHeight: '1' }}>
+                                                    La cita termina aproximadamente {Math.floor(servicios.find(s => s.id == citaForm.id_servicio)?.duracion_aprox / 60)}h {servicios.find(s => s.id == citaForm.id_servicio)?.duracion_aprox % 60}m después de la hora de inicio.
+                                                </p>
+                                            </div>
+
+                                            <div className="time-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                                                {horasDisponibles.map(slot => (
+                                                    <button
+                                                        key={slot.hora}
+                                                        type="button"
+                                                        className={`time-chip ${citaForm.hora === slot.hora ? 'selected' : ''} ${slot.ocupado ? 'ocupado' : ''}`}
+                                                        onClick={() => !slot.ocupado && setCitaForm(prev => ({ ...prev, hora: slot.hora }))}
+                                                        disabled={slot.ocupado}
+                                                        style={{ padding: '10px 4px' }}
+                                                    >
+                                                        <span className="time-text" style={{ fontSize: '0.85rem' }}>{slot.hora}</span>
+                                                        {slot.ocupado && <span style={{ color: '#EF4444', fontSize: '0.6rem', display: 'block' }}>Ocupado</span>}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
                                     )}
                                 </div>
 
@@ -779,35 +831,53 @@ export default function ClientePortalPage() {
 
                                 <div className="form-group">
                                     <label className="form-label">Contraseña Actual</label>
-                                    <input 
-                                        type="password" 
-                                        className="form-control" 
-                                        required 
-                                        value={passwordForm.passwordActual}
-                                        onChange={e => setPasswordForm(prev => ({ ...prev, passwordActual: e.target.value }))}
-                                    />
+                                    <div style={{ position: 'relative' }}>
+                                        <input 
+                                            type={showPass.actual ? 'text' : 'password'}
+                                            className="form-control" 
+                                            required 
+                                            value={passwordForm.passwordActual}
+                                            onChange={e => setPasswordForm(prev => ({ ...prev, passwordActual: e.target.value }))}
+                                            style={{ paddingRight: '3rem' }}
+                                        />
+                                        <button type="button" onClick={() => setShowPass(p => ({...p, actual: !p.actual}))} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}>
+                                            {showPass.actual ? <EyeOff size={18}/> : <Eye size={18}/>}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Nueva Contraseña</label>
-                                    <input 
-                                        type="password" 
-                                        className="form-control" 
-                                        required 
-                                        minLength={6}
-                                        value={passwordForm.passwordNueva}
-                                        onChange={e => setPasswordForm(prev => ({ ...prev, passwordNueva: e.target.value }))}
-                                    />
+                                    <div style={{ position: 'relative' }}>
+                                        <input 
+                                            type={showPass.nueva ? 'text' : 'password'}
+                                            className="form-control" 
+                                            required 
+                                            minLength={6}
+                                            value={passwordForm.passwordNueva}
+                                            onChange={e => setPasswordForm(prev => ({ ...prev, passwordNueva: e.target.value }))}
+                                            style={{ paddingRight: '3rem' }}
+                                        />
+                                        <button type="button" onClick={() => setShowPass(p => ({...p, nueva: !p.nueva}))} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}>
+                                            {showPass.nueva ? <EyeOff size={18}/> : <Eye size={18}/>}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="form-group" style={{ marginBottom: '2rem' }}>
                                     <label className="form-label">Confirmar Nueva Contraseña</label>
-                                    <input 
-                                        type="password" 
-                                        className="form-control" 
-                                        required 
-                                        minLength={6}
-                                        value={passwordForm.confirmarPassword}
-                                        onChange={e => setPasswordForm(prev => ({ ...prev, confirmarPassword: e.target.value }))}
-                                    />
+                                    <div style={{ position: 'relative' }}>
+                                        <input 
+                                            type={showPass.confirmar ? 'text' : 'password'}
+                                            className="form-control" 
+                                            required 
+                                            minLength={6}
+                                            value={passwordForm.confirmarPassword}
+                                            onChange={e => setPasswordForm(prev => ({ ...prev, confirmarPassword: e.target.value }))}
+                                            style={{ paddingRight: '3rem' }}
+                                        />
+                                        <button type="button" onClick={() => setShowPass(p => ({...p, confirmar: !p.confirmar}))} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}>
+                                            {showPass.confirmar ? <EyeOff size={18}/> : <Eye size={18}/>}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '0.75rem' }}>

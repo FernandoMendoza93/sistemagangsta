@@ -10,8 +10,8 @@ export default function PersonalPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [form, setForm] = useState({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', telefono_whatsapp: '' });
-    const [editForm, setEditForm] = useState({ id: null, nombre: '', email: '', password: '', id_rol: 3, telefono_whatsapp: '' });
+    const [form, setForm] = useState({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', whatsapp: '' });
+    const [editForm, setEditForm] = useState({ id: null, nombre: '', email: '', password: '', id_rol: 3, whatsapp: '' });
 
     useEffect(() => { loadData(); }, []);
 
@@ -33,9 +33,13 @@ export default function PersonalPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await usuariosService.create({ ...form, esBarbero: form.id_rol === 3 });
+            const data = {
+                ...form,
+                whatsapp: form.id_rol === 3 ? form.whatsapp : null
+            };
+            await usuariosService.create(data);
             setShowModal(false);
-            setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', telefono_whatsapp: '' });
+            setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', whatsapp: '' });
             loadData();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Error al crear usuario');
@@ -49,7 +53,7 @@ export default function PersonalPage() {
             email: usuario.email,
             password: '',
             id_rol: usuario.id_rol,
-            telefono_whatsapp: usuario.telefono_whatsapp || ''
+            whatsapp: usuario.whatsapp || ''
         });
         setShowEditModal(true);
     };
@@ -61,7 +65,7 @@ export default function PersonalPage() {
                 nombre: editForm.nombre,
                 email: editForm.email,
                 id_rol: editForm.id_rol,
-                telefono_whatsapp: editForm.id_rol === 3 ? editForm.telefono_whatsapp : null
+                whatsapp: editForm.id_rol === 3 ? editForm.whatsapp : null
             };
             // Solo enviar password si se escribió una nueva
             if (editForm.password.trim()) {
@@ -69,7 +73,7 @@ export default function PersonalPage() {
             }
             await usuariosService.update(editForm.id, data);
             setShowEditModal(false);
-            setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3, telefono_whatsapp: '' });
+            setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3, whatsapp: '' });
             loadData();
             toast.success('Usuario actualizado correctamente');
         } catch (error) {
@@ -178,7 +182,7 @@ export default function PersonalPage() {
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label">WhatsApp de Contacto (Opcional)</label>
-                                            <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={form.telefono_whatsapp} onChange={e => setForm({ ...form, telefono_whatsapp: e.target.value })} />
+                                            <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} />
                                             <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
                                                 Si se deja vacío, se usará el de la barbería. (Incluye código de país).
                                             </small>
@@ -223,7 +227,7 @@ export default function PersonalPage() {
                                 {editForm.id_rol === 3 && (
                                     <div className="form-group">
                                         <label className="form-label">WhatsApp de Contacto (Opcional)</label>
-                                        <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={editForm.telefono_whatsapp} onChange={e => setEditForm({ ...editForm, telefono_whatsapp: e.target.value })} />
+                                        <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={editForm.whatsapp} onChange={e => setEditForm({ ...editForm, whatsapp: e.target.value })} />
                                         <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
                                             Si se deja vacío, se usará el de la barbería. (Incluye código de país).
                                         </small>

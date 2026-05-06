@@ -11,9 +11,10 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req
 
         const usuarios = await dbQuery.all(`
             SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
-                   r.nombre_rol as rol, u.id_rol
+                   r.nombre_rol as rol, u.id_rol, b.telefono_whatsapp as whatsapp
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
+            LEFT JOIN barberos b ON b.id_usuario = u.id
             WHERE u.barberia_id = ?
             ORDER BY u.id
         `, [req.barberia_id]);
@@ -62,9 +63,10 @@ router.get('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
 
         const usuario = await dbQuery.get(`
             SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
-                   r.nombre_rol as rol, r.id as id_rol
+                   r.nombre_rol as rol, r.id as id_rol, b.telefono_whatsapp as whatsapp
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
+            LEFT JOIN barberos b ON b.id_usuario = u.id
             WHERE u.id = ? AND u.barberia_id = ?
         `, [id, req.barberia_id]);
 
@@ -84,7 +86,8 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { nombre, email, id_rol, activo, password, telefono_whatsapp } = req.body;
+        const { nombre, email, id_rol, activo, password, whatsapp } = req.body;
+        const telefono_whatsapp = whatsapp; // Mapeo para consistencia con tu prompt
 
         if (password && password.trim()) {
             const passwordHash = await bcrypt.hash(password, 10);
@@ -111,7 +114,13 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (
                         VALUES (?, 0.50, 'Activo', 'Completo', ?, ?)
                     `, [id, req.barberia_id, telefono_whatsapp || null]);
                 } else {
-                    await dbQuery.run("UPDATE barberos SET estado = 'Activo', telefono_whatsapp = COALESCE(?, telefono_whatsapp) WHERE id = ?", [telefono_whatsapp, checkBarber.id]);
+                    // Actualización explícita del número
+                    await dbQuery.run(`
+                        UPDATE barberos 
+                        SET estado = 'Activo', 
+                            telefono_whatsapp = ? 
+                        WHERE id = ?
+                    `, [telefono_whatsapp || null, checkBarber.id]);
                 }
             } else {
                 // Soft-Delete: Inactivar perfil público si el nuevo rol ya no es Barbero

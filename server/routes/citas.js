@@ -136,10 +136,11 @@ router.post('/', verifyToken, async (req, res) => {
             }
         }
 
+        // Guardar duracion del servicio en la cita
         const result = await dbQuery.run(`
-            INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas, barberia_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [req.user.id, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id]);
+            INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas, barberia_id, duracion_minutos)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [req.user.id, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id, servicio.duracion_aprox]);
 
         // --- NOTIFICACIONES ---
         try {
@@ -293,9 +294,9 @@ router.post('/admin', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES
         }
 
         const result = await dbQuery.run(`
-            INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas, barberia_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [id_cliente, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id]);
+            INSERT INTO citas (id_cliente, id_servicio, id_barbero, fecha, hora, notas, barberia_id, duracion_minutos)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [id_cliente, id_servicio, id_barbero, fecha, hora, notas || null, req.barberia_id, servicio.duracion_aprox]);
 
         res.status(201).json({ message: 'Cita agendada exitosamente por el Staff', id: result.lastInsertRowid });
 
@@ -326,46 +327,90 @@ router.get('/diasDisponibles', verifyToken, requireTenant, async (req, res) => {
     }
 });
 
-// GET /api/citas/disponibilidad - Horas ocupadas por fecha y barbero
+// GET /api/citas/disponibilidad - Slot Engine
+// Query params: id_barbero (required), fecha (YYYY-MM-DD, required), id_servicio (optional)
 router.get('/disponibilidad', verifyToken, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const { fecha, id_barbero } = req.query;
+        const { fecha, id_barbero, id_servicio } = req.query;
 
-        if (!fecha) {
-            return res.status(400).json({ error: 'Fecha requerida' });
-        }
-        if (!id_barbero) {
-            return res.status(400).json({ error: 'id_barbero requerido' });
+        if (!fecha || !id_barbero) {
+            return res.status(400).json({ error: 'fecha e id_barbero son requeridos' });
         }
 
-        const dateObj = dayjs.tz(fecha, "America/Mexico_City");
+        // 1. Duración del servicio (default 30 min si no se especifica)
+        let duracionServicio = 30;
+        if (id_servicio) {
+            const svc = await dbQuery.get('SELECT duracion_aprox FROM servicios WHERE id = ?', [parseInt(id_servicio)]);
+            if (svc) duracionServicio = svc.duracion_aprox || 30;
+        }
+        console.log(`[SlotEngine] barbero=${id_barbero} fecha=${fecha} servicio=${id_servicio} duracion=${duracionServicio}min`);
+
+        // 2. Horario del barbero ese día
+        const dateObj = dayjs.tz(fecha, 'America/Mexico_City');
         const dayOfWeek = dateObj.day();
-        const horarioLaboral = await getHorarioFromDB(dbQuery, id_barbero, dayOfWeek, req.barberia_id);
+        // barberia_id viene de requireTenant (admin) o del JWT (cliente)
+        const barberia_id = req.barberia_id || req.user?.barberia_id;
+        const horarioLaboral = await getHorarioFromDB(dbQuery, parseInt(id_barbero), dayOfWeek, barberia_id);
 
         if (!horarioLaboral) {
-            // Barbero no trabaja ese día
-            return res.json({ horario: null, ocupadas: [] });
+            return res.json({ horario: null, slots: [], ocupadas: [] });
         }
 
-        const citasOcupadas = await dbQuery.all(`
-            SELECT c.hora as inicio, s.duracion_aprox
+        // 3. Citas existentes ese día
+        const citasExistentes = await dbQuery.all(`
+            SELECT hora, COALESCE(duracion_minutos, duracion_aprox, 30) as duracion_minutos
             FROM citas c
-            JOIN servicios s ON c.id_servicio = s.id
-            WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada' AND c.barberia_id = ?
-        `, [id_barbero, fecha, req.barberia_id]);
+            LEFT JOIN servicios s ON c.id_servicio = s.id
+            WHERE c.id_barbero = ? AND c.fecha = ? AND c.estado != 'Cancelada'
+        `, [parseInt(id_barbero), fecha]);
 
-        const intervalosOcupados = citasOcupadas.map(c => ({
-            inicio: c.inicio,
-            fin: addMinutes(c.inicio, c.duracion_aprox + 15)
+        // 4. Generar todos los slots cada 30 min entre apertura y cierre
+        function timeToMins(t) {
+            const [h, m] = t.split(':').map(Number);
+            return h * 60 + m;
+        }
+        function minsToTime(m) {
+            return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        }
+
+        const aperturaMins = timeToMins(horarioLaboral.apertura);
+        const cierreMins = timeToMins(horarioLaboral.cierre);
+        
+        // Grid de 15 minutos para máxima flexibilidad (estándar de industria)
+        const slotSize = 15; 
+        
+        const allSlots = [];
+        for (let t = aperturaMins; t + duracionServicio <= cierreMins; t += slotSize) {
+            allSlots.push({
+                inicio: minsToTime(t)
+                // El fin no se envía, se maneja visualmente como texto arriba del grid
+            });
+        }
+
+        // 5. Filtrar slots que colisionan con citas existentes
+        const freeSlots = allSlots.filter(slot => {
+            const slotInicio = timeToMins(slot.inicio);
+            const slotFin = slotInicio + duracionServicio;
+            return !citasExistentes.some(cita => {
+                const citaInicio = timeToMins(cita.hora);
+                const citaFin = citaInicio + (cita.duracion_minutos || 30);
+                return slotInicio < citaFin && slotFin > citaInicio;
+            });
+        });
+
+        const ocupadas = citasExistentes.map(c => ({
+            inicio: c.hora,
+            fin: addMinutes(c.hora, c.duracion_minutos || 30)
         }));
 
         res.json({
             horario: horarioLaboral,
-            ocupadas: intervalosOcupados
+            slots: freeSlots, // Ahora envía objetos {inicio, fin}
+            ocupadas
         });
     } catch (error) {
-        console.error('Error obteniendo disponibilidad:', error);
+        console.error('Error en slot engine:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });
