@@ -28,6 +28,7 @@ import ConfiguracionPage from './pages/ConfiguracionPage';
 import PlanLealtadPage from './pages/PlanLealtadPage';
 import { Toaster } from 'sonner';
 import NotificationManager from './components/NotificationManager';
+import LandingPagePortal from './pages/portal/LandingPagePortal';
 import './index.css';
 
 // ============================================
@@ -110,7 +111,9 @@ function AppRoutes() {
     
     if (!user || user.rol !== 'Cliente') {
         if (location.pathname.startsWith('/portal/')) {
-            const matchedSlug = location.pathname.split('/')[2];
+            const pathParts = location.pathname.split('/');
+            const matchedSlug = pathParts[2];
+            // Si el usuario no está logueado y trata de entrar al panel, mandarlo a la landing de esa barbería
             return <Navigate to={`/portal/${matchedSlug}`} replace />;
         }
         return <Navigate to="/mi-perfil" replace />;
@@ -138,11 +141,18 @@ function AppRoutes() {
       <Route path="/registrar" element={user ? <Navigate to={getRedirectPath()} replace /> : <RegisterPage />} />
 
       {/* ====== CLIENT PORTAL (no sidebar) ====== */}
-      {/* Ruta dinámica por slug de barbería */}
-      <Route path="/portal/:slug" element={<ClienteLoginPage />} />
-      <Route path="/portal/:slug/panel" element={
+      {/* Nueva Landing Page por Barbería */}
+      <Route path="/portal/:slug" element={<LandingPagePortal />} />
+      
+      {/* Rutas de Acceso (Login/Registro) */}
+      <Route path="/portal/:slug/acceso" element={<ClienteLoginPage />} />
+      <Route path="/portal/:slug/registro" element={<ClienteLoginPage />} /> {/* Reutilizando Login que maneja ambos */}
+
+      {/* Panel del Cliente */}
+      <Route path="/portal/:slug/portal" element={
         <ClienteProtectedRoute><ClientePortalPage /></ClienteProtectedRoute>
       } />
+      
       <Route path="/portal/:slug/sello/:token" element={<ClaimPointPage />} />
       {/* Compatibilidad legada — redirige si el usuario ya tiene slug guardado */}
       <Route path="/mi-perfil" element={<ClienteLoginPage />} />

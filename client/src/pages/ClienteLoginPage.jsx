@@ -60,7 +60,7 @@ export default function ClienteLoginPage() {
 
     // Si ya está logueado como cliente, ir al portal de su barbería
     if (user && user.rol === 'Cliente') {
-        return <Navigate to={`/portal/${slug}/panel`} replace />;
+        return <Navigate to={`/portal/${slug}/portal`} replace />;
     }
 
     function formatPhone(value) {
@@ -89,7 +89,7 @@ export default function ClienteLoginPage() {
                 password,
                 slug
             );
-            navigate(`/portal/${slug}/panel`);
+            navigate(`/portal/${slug}/portal`);
         } catch (err) {
             const data = err.response?.data;
             if (data?.needsRegistration) {

@@ -27,6 +27,13 @@ export default function ConfiguracionPage() {
     const [loyaltyFile, setLoyaltyFile] = useState(null);
     const [loyaltyPreview, setLoyaltyPreview] = useState(null);
 
+    // Landing Page Portal
+    const [landingTitulo, setLandingTitulo] = useState('Bienvenido a nuestra barbería');
+    const [landingDescripcion, setLandingDescripcion] = useState('Agenda tu cita, acumula puntos y accede a beneficios exclusivos.');
+    const [landingImagenFile, setLandingImagenFile] = useState(null);
+    const [landingImagenPreview, setLandingImagenPreview] = useState(null);
+    const [savingLanding, setSavingLanding] = useState(false);
+
     // Ajustes SMTP
     const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
     const [smtpPort, setSmtpPort] = useState(465);
@@ -81,6 +88,12 @@ export default function ConfiguracionPage() {
                 setTheme(data.theme || 'default');
                 setLogoPreview(data.logo_url || null);
                 setLoyaltyPreview(data.loyalty_card_image_url || null);
+                
+                // Cargar datos de la landing
+                setLandingTitulo(data.landing_titulo || 'Bienvenido a nuestra barbería');
+                setLandingDescripcion(data.landing_descripcion || 'Agenda tu cita, acumula puntos y accede a beneficios exclusivos.');
+                setLandingImagenPreview(data.landing_imagen_fondo || null);
+
                 if (data.bg_main) applyTheme(data, data.id);
             }
 
@@ -367,6 +380,50 @@ export default function ConfiguracionPage() {
         if (file) {
             setLoyaltyFile(file);
             setLoyaltyPreview(URL.createObjectURL(file));
+        }
+    }
+
+    function handleLandingImagenChange(e) {
+        const file = e.target.files[0];
+        if (file) {
+            setLandingImagenFile(file);
+            setLandingImagenPreview(URL.createObjectURL(file));
+        }
+    }
+
+    async function handleSaveLanding(e) {
+        e.preventDefault();
+        setSavingLanding(true);
+        const loadingToast = toast.loading('Guardando configuración de la landing...');
+        try {
+            const formData = new FormData();
+            formData.append('landing_titulo', landingTitulo);
+            formData.append('landing_descripcion', landingDescripcion);
+            if (landingImagenFile) {
+                formData.append('landing_imagen', landingImagenFile);
+            } else if (landingImagenPreview) {
+                formData.append('landing_imagen_fondo', landingImagenPreview);
+            }
+
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/configuracion/landing', {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al guardar landing');
+
+            toast.success('¡Landing Page actualizada!', { id: loadingToast });
+            setLandingImagenFile(null);
+        } catch (err) {
+            console.error('Error:', err);
+            toast.error(err.message || 'Error al guardar', { id: loadingToast });
+        } finally {
+            setSavingLanding(false);
         }
     }
 
@@ -1107,9 +1164,132 @@ export default function ConfiguracionPage() {
                             {savingProfile ? (
                                 <><div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}></div> Guardando Ajustes Globales...</>
                             ) : (
-                                <><Save size={20} /> Guardar Todos los Cambios</>
+                                <><Save size={20} /> Guardar Perfil y Temas</>
                             )}
                         </button>
+                    </div>
+                </div>
+
+                {/* ══════════════ LANDING PAGE PERSONALIZABLE ══════════════ */}
+                <div style={{ ...cardStyle, gridColumn: '1 / -1', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Sparkles size={22} style={{ color: 'var(--accent-primary)' }} />
+                        </div>
+                        <div>
+                            <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-main)', fontSize: '1.1rem' }}>Landing Page del Portal</h2>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Lo primero que verán tus clientes al escanear el QR</p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', marginTop: '0.5rem' }}>
+                        {/* Formulario Landing */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Título de Bienvenida</label>
+                                <input
+                                    type="text"
+                                    value={landingTitulo}
+                                    onChange={(e) => setLandingTitulo(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 700, outline: 'none' }}
+                                    placeholder="Ej. Bienvenido a The Gangsta"
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Descripción / Subtítulo</label>
+                                <textarea
+                                    value={landingDescripcion}
+                                    onChange={(e) => setLandingDescripcion(e.target.value)}
+                                    rows={3}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.875rem', outline: 'none', resize: 'none', lineHeight: '1.5' }}
+                                    placeholder="Ej. Agenda tu cita en segundos y obtén beneficios exclusivos..."
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Imagen de Fondo (Impacto Visual)</label>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <label style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '1rem', background: 'var(--bg-input)', border: '2px dashed var(--border-color)', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                        <Upload size={18} style={{ color: 'var(--accent-primary)' }} />
+                                        <div style={{ textAlign: 'left' }}>
+                                            <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>Subir Nueva Imagen</span>
+                                            <span style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)' }}>Recomendado: 1080x1920 (Vertical)</span>
+                                        </div>
+                                        <input type="file" accept="image/*" onChange={handleLandingImagenChange} style={{ display: 'none' }} />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '1rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveLanding}
+                                    disabled={savingLanding}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.875rem 2rem',
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        background: 'var(--accent-primary)',
+                                        color: '#fff',
+                                        fontWeight: 700,
+                                        fontSize: '0.9rem',
+                                        cursor: savingLanding ? 'wait' : 'pointer',
+                                        opacity: savingLanding ? 0.7 : 1,
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 4px 15px rgba(var(--accent-primary-rgb), 0.3)'
+                                    }}
+                                >
+                                    {savingLanding ? (
+                                        <><div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}></div> Guardando...</>
+                                    ) : (
+                                        <><Save size={18} /> Guardar Landing</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Preview en tiempo real (Celular) */}
+                        <div style={{ position: 'relative' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Preview en Vivo</div>
+                            <div style={{
+                                width: '300px',
+                                height: '540px',
+                                margin: '0 auto',
+                                borderRadius: '32px',
+                                border: '8px solid #222',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                background: landingImagenPreview ? `url(${landingImagenPreview})` : '#1a1a1a',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
+                            }}>
+                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1 }}></div>
+                                <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '1.5rem', textAlign: 'center', color: '#fff' }}>
+                                    {logoPreview && (
+                                        <img src={logoPreview} alt="Logo" style={{ width: '50px', height: '50px', borderRadius: '50%', marginBottom: '0.5rem', border: '2px solid rgba(255,255,255,0.2)' }} />
+                                    )}
+                                    <div style={{ fontSize: '0.6rem', fontWeight: 600, opacity: 0.8, marginBottom: '0.5rem', letterSpacing: '1px' }}>{nombre.toUpperCase() || 'MI BARBERÍA'}</div>
+                                    <div style={{ fontSize: '1.4rem', fontWeight: 800, lineHeight: 1.1, marginBottom: '0.5rem' }}>{landingTitulo}</div>
+                                    <div style={{ fontSize: '0.75rem', opacity: 0.7, lineHeight: 1.4, marginBottom: '1.5rem' }}>{landingDescripcion}</div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', marginBottom: '1.5rem', textAlign: 'left' }}>
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.6rem', opacity: 0.6 }}>
+                                                <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem' }}>{i}</div>
+                                                <span>Paso {i} del proceso</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ width: '100%', height: '40px', borderRadius: '10px', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>Comenzar</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

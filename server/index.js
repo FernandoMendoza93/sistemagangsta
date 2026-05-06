@@ -170,6 +170,7 @@ const horariosRoutes = (await import('./routes/horarios.js')).default;
 const notificacionesRoutes = (await import('./routes/notificaciones.js')).default;
 const escanerRoutes = (await import('./routes/escaner.js')).default;
 const settingsRoutes = (await import('./routes/settings.js')).default;
+const configuracionRoutes = (await import('./routes/configuracion.js')).default;
 
 // Servir archivos subidos (como Logos) de forma estática
 app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
@@ -193,6 +194,7 @@ app.use('/api/horarios', horariosRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
 app.use('/api/escaner', escanerRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/configuracion', configuracionRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {

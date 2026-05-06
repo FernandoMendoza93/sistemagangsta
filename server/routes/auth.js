@@ -344,7 +344,8 @@ router.get('/barberia-info/:slug', async (req, res) => {
         const dbQuery = req.app.locals.dbQuery;
 
         const barberia = await dbQuery.get(
-            `SELECT b.nombre, b.logo_url, b.color_acento, b.activo
+            `SELECT b.id, b.nombre, b.logo_url, b.color_acento, b.activo, b.telefono_whatsapp,
+                    b.landing_titulo, b.landing_descripcion, b.landing_imagen_fondo
              FROM barberias b
              WHERE b.slug = ?`,
             [slug]
@@ -359,8 +360,13 @@ router.get('/barberia-info/:slug', async (req, res) => {
         }
 
         res.json({
+            id: barberia.id,
             nombre: barberia.nombre,
             logo_url: barberia.logo_url,
+            telefono: barberia.telefono_whatsapp,
+            landing_titulo: barberia.landing_titulo,
+            landing_descripcion: barberia.landing_descripcion,
+            landing_imagen_fondo: barberia.landing_imagen_fondo,
             tema: {
                 bg_main: barberia.bg_main,
                 bg_surface: barberia.bg_surface,
