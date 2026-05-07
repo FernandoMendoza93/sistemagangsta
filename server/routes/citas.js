@@ -399,6 +399,24 @@ router.get('/disponibilidad', verifyToken, async (req, res) => {
             });
         });
 
+        // Solo filtrar slots pasados si la fecha solicitada es HOY en México
+        const ahoraMexico = new Date().toLocaleTimeString('en-GB', {
+            timeZone: 'America/Mexico_City',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const hoyMexico = new Date().toLocaleDateString('en-CA', {
+            timeZone: 'America/Mexico_City'
+        });
+
+        const slotsFinales = freeSlots.filter(slot => {
+            if (fecha === hoyMexico) {
+                return slot.inicio > ahoraMexico;
+            }
+            return true;
+        });
+
         const ocupadas = citasExistentes.map(c => ({
             inicio: c.hora,
             fin: addMinutes(c.hora, c.duracion_minutos || 30)
@@ -406,7 +424,7 @@ router.get('/disponibilidad', verifyToken, async (req, res) => {
 
         res.json({
             horario: horarioLaboral,
-            slots: freeSlots, // Ahora envía objetos {inicio, fin}
+            slots: slotsFinales,
             ocupadas
         });
     } catch (error) {
@@ -447,7 +465,7 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
         }
 
         if (fecha) {
-            conditions.push("DATE(CONVERT_TZ(c.fecha, '+00:00', '-05:00')) = ?");
+            conditions.push("DATE(c.fecha) = ?");
             params.push(fecha);
         }
 
