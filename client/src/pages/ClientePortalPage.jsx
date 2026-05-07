@@ -606,7 +606,7 @@ export default function ClientePortalPage() {
                                 <div className="barbero-social">
                                     {barbero.instagram && (
                                         <a 
-                                            href={`https://instagram.com/${barbero.instagram.replace('@', '')}`} 
+                                            href={`https://www.instagram.com/${barbero.instagram.replace('@', '').trim()}/`} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
                                             className="social-btn instagram"
