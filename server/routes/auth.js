@@ -348,7 +348,9 @@ router.get('/barberia-info/:slug', async (req, res) => {
 
         const barberia = await dbQuery.get(
             `SELECT b.id, b.nombre, b.logo_url, b.color_acento, b.activo, b.telefono_whatsapp,
-                    b.landing_titulo, b.landing_descripcion, b.landing_imagen_fondo
+                    b.landing_titulo, b.landing_descripcion, b.landing_imagen_fondo,
+                    b.bg_main, b.bg_surface, b.accent_primary, b.accent_secondary,
+                    b.text_main, b.text_muted, b.clase_glass
              FROM barberias b
              WHERE b.slug = ?`,
             [slug]
