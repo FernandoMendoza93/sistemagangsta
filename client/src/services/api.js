@@ -58,13 +58,13 @@ export const usuariosService = {
     create: (data) => {
         const isFormData = data instanceof FormData;
         return api.post('/usuarios', data, {
-            headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
+            headers: isFormData ? { 'Content-Type': undefined } : { 'Content-Type': 'application/json' }
         });
     },
     update: (id, data) => {
         const isFormData = data instanceof FormData;
         return api.put(`/usuarios/${id}`, data, {
-            headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
+            headers: isFormData ? { 'Content-Type': undefined } : { 'Content-Type': 'application/json' }
         });
     },
     delete: (id) => api.delete(`/usuarios/${id}`),
