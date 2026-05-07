@@ -10,8 +10,11 @@ export default function PersonalPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [form, setForm] = useState({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', whatsapp: '' });
-    const [editForm, setEditForm] = useState({ id: null, nombre: '', email: '', password: '', id_rol: 3, whatsapp: '' });
+    const [form, setForm] = useState({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', whatsapp: '', instagram: '' });
+    const [editForm, setEditForm] = useState({ id: null, nombre: '', email: '', password: '', id_rol: 3, whatsapp: '', instagram: '', foto_url: '' });
+    const [fotoFile, setFotoFile] = useState(null);
+    const [fotoPreview, setFotoPreview] = useState(null);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => { loadData(); }, []);
 
@@ -35,11 +38,12 @@ export default function PersonalPage() {
         try {
             const data = {
                 ...form,
-                whatsapp: form.id_rol === 3 ? form.whatsapp : null
+                whatsapp: form.id_rol === 3 ? form.whatsapp : null,
+                instagram: form.id_rol === 3 ? form.instagram : null
             };
             await usuariosService.create(data);
             setShowModal(false);
-            setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', whatsapp: '' });
+            setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', whatsapp: '', instagram: '' });
             loadData();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Error al crear usuario');
@@ -53,31 +57,61 @@ export default function PersonalPage() {
             email: usuario.email,
             password: '',
             id_rol: usuario.id_rol,
-            whatsapp: usuario.whatsapp || ''
+            whatsapp: usuario.whatsapp || '',
+            instagram: usuario.instagram || '',
+            foto_url: usuario.foto_url || ''
         });
+        setFotoPreview(usuario.foto_url || null);
+        setFotoFile(null);
         setShowEditModal(true);
     };
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
         try {
-            const data = {
-                nombre: editForm.nombre,
-                email: editForm.email,
-                id_rol: editForm.id_rol,
-                whatsapp: editForm.id_rol === 3 ? editForm.whatsapp : null
-            };
-            // Solo enviar password si se escribió una nueva
-            if (editForm.password.trim()) {
-                data.password = editForm.password;
+            const formData = new FormData();
+            formData.append('nombre', editForm.nombre);
+            formData.append('email', editForm.email);
+            formData.append('id_rol', editForm.id_rol);
+            
+            if (editForm.id_rol === 3) {
+                formData.append('whatsapp', editForm.whatsapp || '');
+                formData.append('instagram', editForm.instagram || '');
+                if (editForm.foto_url) {
+                    formData.append('foto_url', editForm.foto_url);
+                }
             }
-            await usuariosService.update(editForm.id, data);
+
+            if (editForm.password.trim()) {
+                formData.append('password', editForm.password);
+            }
+
+            if (fotoFile) {
+                formData.append('foto', fotoFile);
+            }
+
+            await usuariosService.update(editForm.id, formData);
+            
             setShowEditModal(false);
-            setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3, whatsapp: '' });
+            setEditForm({ id: null, nombre: '', email: '', password: '', id_rol: 3, whatsapp: '', instagram: '', foto_url: '' });
+            setFotoFile(null);
+            setFotoPreview(null);
             loadData();
             toast.success('Usuario actualizado correctamente');
         } catch (error) {
+            console.error('Error:', error);
             toast.error(error.response?.data?.error || 'Error al actualizar usuario');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleFotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFotoFile(file);
+            setFotoPreview(URL.createObjectURL(file));
         }
     };
 
@@ -183,9 +217,10 @@ export default function PersonalPage() {
                                         <div className="form-group">
                                             <label className="form-label">WhatsApp de Contacto (Opcional)</label>
                                             <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} />
-                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
-                                                Si se deja vacío, se usará el de la barbería. (Incluye código de país).
-                                            </small>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Instagram (sin @)</label>
+                                            <input type="text" className="form-input" placeholder="ej: flow_barber" value={form.instagram} onChange={e => setForm({ ...form, instagram: e.target.value })} />
                                         </div>
                                     </>
                                 )}
@@ -225,13 +260,29 @@ export default function PersonalPage() {
                                     </select>
                                 </div>
                                 {editForm.id_rol === 3 && (
-                                    <div className="form-group">
-                                        <label className="form-label">WhatsApp de Contacto (Opcional)</label>
-                                        <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={editForm.whatsapp} onChange={e => setEditForm({ ...editForm, whatsapp: e.target.value })} />
-                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
-                                            Si se deja vacío, se usará el de la barbería. (Incluye código de país).
-                                        </small>
-                                    </div>
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">WhatsApp de Contacto (Opcional)</label>
+                                            <input type="tel" className="form-input" placeholder="Ej: 529511234567" value={editForm.whatsapp} onChange={e => setEditForm({ ...editForm, whatsapp: e.target.value })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Instagram (sin @)</label>
+                                            <input type="text" className="form-input" placeholder="ej: flow_barber" value={editForm.instagram} onChange={e => setEditForm({ ...editForm, instagram: e.target.value })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Foto del Barbero</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                {fotoPreview ? (
+                                                    <img src={fotoPreview} alt="Preview" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+                                                ) : (
+                                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                                        {editForm.nombre?.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                                <input type="file" accept="image/*" onChange={handleFotoChange} style={{ fontSize: '0.8rem' }} />
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
                                 <div className="form-group">
                                     <label className="form-label">Nueva Contraseña</label>
@@ -248,8 +299,10 @@ export default function PersonalPage() {
                                 </div>
                             </div>
                             <div className="custom-modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Guardar Cambios</button>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)} disabled={saving}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" disabled={saving}>
+                                    {saving ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
                             </div>
                         </form>
                     </div>

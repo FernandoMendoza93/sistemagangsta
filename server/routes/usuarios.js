@@ -1,8 +1,29 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 const router = express.Router();
+
+// Configuración de Cloudinary para fotos de barberos
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET 
+});
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'flow_barber_staff',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+        public_id: (req, file) => `barber_${req.params.id}_${Date.now()}`
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // GET /api/usuarios - Listar usuarios del tenant (Solo Admin)
 router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req, res) => {
@@ -11,7 +32,8 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req
 
         const usuarios = await dbQuery.all(`
             SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
-                   r.nombre_rol as rol, u.id_rol, b.telefono_whatsapp as whatsapp
+                   r.nombre_rol as rol, u.id_rol, b.telefono_whatsapp as whatsapp,
+                   b.instagram, b.foto_url
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberos b ON b.id_usuario = u.id
@@ -63,7 +85,8 @@ router.get('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
 
         const usuario = await dbQuery.get(`
             SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
-                   r.nombre_rol as rol, r.id as id_rol, b.telefono_whatsapp as whatsapp
+                   r.nombre_rol as rol, r.id as id_rol, b.telefono_whatsapp as whatsapp,
+                   b.instagram, b.foto_url
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberos b ON b.id_usuario = u.id
@@ -82,12 +105,17 @@ router.get('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.EN
 });
 
 // PUT /api/usuarios/:id - Actualizar usuario (Solo Admin, verificado por tenant)
-router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req, res) => {
+router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), upload.single('foto'), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { nombre, email, id_rol, activo, password, whatsapp } = req.body;
+        const { nombre, email, id_rol, activo, password, whatsapp, instagram } = req.body;
         const telefono_whatsapp = whatsapp; // Mapeo para consistencia con tu prompt
+        
+        let foto_url = req.body.foto_url; // Si mandan la URL actual
+        if (req.file) {
+            foto_url = req.file.path; // URL de Cloudinary
+        }
 
         if (password && password.trim()) {
             const passwordHash = await bcrypt.hash(password, 10);
@@ -110,17 +138,19 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (
             if (roleInfo && roleInfo.nombre_rol === 'Barbero') {
                 if (!checkBarber) {
                     await dbQuery.run(`
-                        INSERT INTO barberos (id_usuario, porcentaje_comision, estado, turno, barberia_id, telefono_whatsapp)
-                        VALUES (?, 0.50, 'Activo', 'Completo', ?, ?)
-                    `, [id, req.barberia_id, telefono_whatsapp || null]);
+                        INSERT INTO barberos (id_usuario, porcentaje_comision, estado, turno, barberia_id, telefono_whatsapp, instagram, foto_url)
+                        VALUES (?, 0.50, 'Activo', 'Completo', ?, ?, ?, ?)
+                    `, [id, req.barberia_id, telefono_whatsapp || null, instagram || null, foto_url || null]);
                 } else {
-                    // Actualización explícita del número
+                    // Actualización explícita del perfil del barbero
                     await dbQuery.run(`
                         UPDATE barberos 
                         SET estado = 'Activo', 
-                            telefono_whatsapp = ? 
+                            telefono_whatsapp = ?,
+                            instagram = ?,
+                            foto_url = ?
                         WHERE id = ?
-                    `, [telefono_whatsapp || null, checkBarber.id]);
+                    `, [telefono_whatsapp || null, instagram || null, foto_url || null, checkBarber.id]);
                 }
             } else {
                 // Soft-Delete: Inactivar perfil público si el nuevo rol ya no es Barbero
@@ -130,7 +160,7 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (
             }
         }
 
-        res.json({ message: 'Usuario actualizado' });
+        res.json({ message: 'Usuario actualizado', foto_url });
     } catch (error) {
         console.error('Error actualizando usuario:', error);
         res.status(500).json({ error: 'Error en el servidor' });

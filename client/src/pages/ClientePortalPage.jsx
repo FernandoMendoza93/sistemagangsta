@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { citasService, clientesService, publicService } from '../services/api';
 import { toast } from 'sonner';
-import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store, Settings, Eye, EyeOff } from 'lucide-react';
+import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store, Settings, Eye, EyeOff, Instagram } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import heroImg from '../assets/hero-bg.jpg';
 import './ClientePortalPage.css';
@@ -34,6 +34,7 @@ export default function ClientePortalPage() {
     const [passwordForm, setPasswordForm] = useState({ passwordActual: '', passwordNueva: '', confirmarPassword: '' });
     const [showPass, setShowPass] = useState({ actual: false, nueva: false, confirmar: false });
     const [slotsDisponibles, setSlotsDisponibles] = useState([]);
+    const [equipo, setEquipo] = useState([]);
 
     useEffect(() => {
         if (slug) loadPublicConfig();
@@ -69,6 +70,15 @@ export default function ClientePortalPage() {
             source.close();
         };
     }, []);
+
+    useEffect(() => {
+        if (slug) {
+            fetch(`/api/auth/barberia-info/${slug}/equipo`)
+                .then(r => r.json())
+                .then(data => setEquipo(data))
+                .catch(err => console.error('Error cargando equipo:', err));
+        }
+    }, [slug]);
 
     async function loadPublicConfig() {
         try {
@@ -567,6 +577,59 @@ export default function ClientePortalPage() {
                             </button>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* ========= SECCIÓN: NUESTRO EQUIPO ========= */}
+            {equipo.length > 0 && (
+                <div className="equipo-section">
+                    <h2 className="section-title">
+                        <User size={20} color="var(--text-main)" /> Nuestro Equipo
+                    </h2>
+                    <div className="equipo-carousel">
+                        {equipo.map(barbero => (
+                            <div key={barbero.id} className="equipo-card">
+                                <div className="barbero-info">
+                                    {barbero.foto_url ? (
+                                        <img 
+                                            src={barbero.foto_url} 
+                                            alt={barbero.nombre} 
+                                            className="barbero-foto"
+                                        />
+                                    ) : (
+                                        <div className="barbero-avatar-fallback">
+                                            {barbero.nombre?.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <h3 className="barbero-nombre-equipo">{barbero.nombre}</h3>
+                                </div>
+                                <div className="barbero-social">
+                                    {barbero.instagram && (
+                                        <a 
+                                            href={`https://instagram.com/${barbero.instagram.replace('@', '')}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="social-btn instagram"
+                                            title="Ver Instagram"
+                                        >
+                                            <Instagram size={18} />
+                                        </a>
+                                    )}
+                                    {barbero.telefono_whatsapp && (
+                                        <a 
+                                            href={`https://wa.me/${barbero.telefono_whatsapp}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="social-btn whatsapp"
+                                            title="Enviar WhatsApp"
+                                        >
+                                            <MessageCircle size={18} />
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 

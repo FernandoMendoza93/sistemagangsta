@@ -148,8 +148,11 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/register — Staff registration (admin creates users within their barberia)
 router.post('/register', async (req, res) => {
     try {
-        const { nombre, email, password, id_rol, esBarbero, turno, telefono_whatsapp } = req.body;
+        const { nombre, email, password, id_rol, esBarbero, turno, telefono_whatsapp, whatsapp, instagram } = req.body;
         const dbQuery = req.app.locals.dbQuery;
+        
+        // Alias para consistencia con el frontend
+        const finalWhatsapp = whatsapp || telefono_whatsapp;
 
         if (!nombre || !email || !password || !id_rol) {
             return res.status(400).json({ error: 'Todos los campos son requeridos' });
@@ -180,8 +183,8 @@ router.post('/register', async (req, res) => {
         const userId = result.lastInsertRowid;
 
         if (esBarbero || id_rol === 3) {
-            await dbQuery.run('INSERT INTO barberos (id_usuario, turno, barberia_id, telefono_whatsapp) VALUES (?, ?, ?, ?)',
-                [userId, turno || 'Completo', barberia_id, telefono_whatsapp || null]);
+            await dbQuery.run('INSERT INTO barberos (id_usuario, turno, barberia_id, telefono_whatsapp, instagram) VALUES (?, ?, ?, ?, ?)',
+                [userId, turno || 'Completo', barberia_id, finalWhatsapp || null, instagram || null]);
         }
 
         res.status(201).json({ message: 'Usuario creado exitosamente', userId });
@@ -381,6 +384,34 @@ router.get('/barberia-info/:slug', async (req, res) => {
     } catch (error) {
         console.error('Error obteniendo info de barbería:', error);
         res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// GET /api/auth/barberia-info/:slug/equipo — Public endpoint to fetch barbers of a barberia
+router.get('/barberia-info/:slug/equipo', async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const dbQuery = req.app.locals.dbQuery;
+
+        const equipo = await dbQuery.all(`
+            SELECT 
+                b.id,
+                u.nombre,
+                b.foto_url,
+                b.instagram,
+                b.telefono_whatsapp
+            FROM barberos b
+            JOIN usuarios u ON b.id_usuario = u.id
+            JOIN barberias ba ON b.barberia_id = ba.id
+            WHERE ba.slug = ? 
+            AND b.estado = 'Activo'
+            AND u.activo = 1
+        `, [slug]);
+
+        res.json(equipo);
+    } catch (error) {
+        console.error('Error obteniendo equipo:', error);
+        res.status(500).json({ error: 'Error obteniendo equipo' });
     }
 });
 
