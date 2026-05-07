@@ -21,8 +21,6 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401 || error.response?.status === 403) {
-            // No redirigir si estamos en una página de login — el 401 ahí
-            // significa credenciales incorrectas, no sesión expirada
             const path = window.location.pathname;
             const pathParts = path.split('/');
             const isPortalLogin = pathParts[1] === 'portal' && pathParts[2] && !pathParts[3];
@@ -32,7 +30,6 @@ api.interceptors.response.use(
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
 
-                // Si el cliente estaba en el portal, regresarlo a su login
                 if (pathParts[1] === 'portal' && pathParts[2]) {
                     window.location.href = `/portal/${pathParts[2]}`;
                 } else if (path.startsWith('/mi-perfil')) {
@@ -58,8 +55,18 @@ export const authService = {
 export const usuariosService = {
     getAll: () => api.get('/usuarios'),
     getById: (id) => api.get(`/usuarios/${id}`),
-    create: (data) => api.post('/usuarios', data),
-    update: (id, data) => api.put(`/usuarios/${id}`, data),
+    create: (data) => {
+        const isFormData = data instanceof FormData;
+        return api.post('/usuarios', data, {
+            headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
+        });
+    },
+    update: (id, data) => {
+        const isFormData = data instanceof FormData;
+        return api.put(`/usuarios/${id}`, data, {
+            headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
+        });
+    },
     delete: (id) => api.delete(`/usuarios/${id}`),
     getRoles: () => api.get('/usuarios/roles/all')
 };
