@@ -25,6 +25,50 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
+// POST /api/usuarios - Crear usuario (Solo Admin)
+router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), upload.single('foto'), async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        const { nombre, email, password, id_rol, whatsapp, instagram, turno } = req.body;
+        const telefono_whatsapp = whatsapp;
+
+        if (!nombre || !email || !password || !id_rol) {
+            return res.status(400).json({ error: 'Nombre, email, password e id_rol son requeridos' });
+        }
+
+        const existingUser = await dbQuery.get('SELECT id FROM usuarios WHERE email = ?', [email]);
+        if (existingUser) {
+            return res.status(400).json({ error: 'El email ya esta registrado' });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+        let foto_url = null;
+        if (req.file) {
+            foto_url = req.file.path;
+        }
+
+        const result = await dbQuery.run(`
+            INSERT INTO usuarios (nombre, email, password_hash, id_rol, barberia_id, activo)
+            VALUES (?, ?, ?, ?, ?, 1)
+        `, [nombre, email, passwordHash, id_rol, req.barberia_id]);
+
+        const userId = result.lastInsertRowid;
+
+        const roleInfo = await dbQuery.get('SELECT nombre_rol FROM roles WHERE id = ?', [id_rol]);
+        if (roleInfo && roleInfo.nombre_rol === 'Barbero') {
+            await dbQuery.run(`
+                INSERT INTO barberos (id_usuario, turno, barberia_id, telefono_whatsapp, instagram, foto_url, estado, porcentaje_comision)
+                VALUES (?, ?, ?, ?, ?, ?, 'Activo', 0.50)
+            `, [userId, turno || 'Completo', req.barberia_id, telefono_whatsapp || null, instagram || null, foto_url]);
+        }
+
+        res.status(201).json({ message: 'Usuario creado exitosamente', userId, foto_url });
+    } catch (error) {
+        console.error('Error creando usuario:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // GET /api/usuarios - Listar usuarios del tenant (Solo Admin)
 router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req, res) => {
     try {

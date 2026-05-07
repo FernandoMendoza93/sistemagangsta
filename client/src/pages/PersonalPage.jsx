@@ -35,18 +35,38 @@ export default function PersonalPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
         try {
-            const data = {
-                ...form,
-                whatsapp: form.id_rol === 3 ? form.whatsapp : null,
-                instagram: form.id_rol === 3 ? form.instagram : null
-            };
-            await usuariosService.create(data);
+            const formData = new FormData();
+            formData.append('nombre', form.nombre);
+            formData.append('email', form.email);
+            formData.append('password', form.password);
+            formData.append('id_rol', form.id_rol);
+            
+            if (Number(form.id_rol) === 3) {
+                formData.append('esBarbero', true);
+                formData.append('turno', form.turno || 'Completo');
+                formData.append('whatsapp', form.whatsapp || '');
+                formData.append('instagram', form.instagram || '');
+            }
+
+            if (fotoFile) {
+                formData.append('foto', fotoFile);
+            }
+
+            await usuariosService.create(formData);
+            
             setShowModal(false);
             setForm({ nombre: '', email: '', password: '', id_rol: 3, turno: 'Completo', whatsapp: '', instagram: '' });
+            setFotoFile(null);
+            setFotoPreview(null);
             loadData();
+            toast.success('Usuario creado correctamente');
         } catch (error) {
+            console.error('Error:', error);
             toast.error(error.response?.data?.error || 'Error al crear usuario');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -75,7 +95,7 @@ export default function PersonalPage() {
             formData.append('email', editForm.email);
             formData.append('id_rol', editForm.id_rol);
             
-            if (editForm.id_rol === 3) {
+            if (Number(editForm.id_rol) === 3) {
                 formData.append('whatsapp', editForm.whatsapp || '');
                 formData.append('instagram', editForm.instagram || '');
                 if (editForm.foto_url) {
@@ -90,6 +110,11 @@ export default function PersonalPage() {
             if (fotoFile) {
                 formData.append('foto', fotoFile);
             }
+
+            console.log('DEBUG: Enviando FormData (Edit):', {
+                id_rol: editForm.id_rol,
+                foto: fotoFile ? fotoFile.name : 'No file'
+            });
 
             await usuariosService.update(editForm.id, formData);
             
@@ -186,6 +211,23 @@ export default function PersonalPage() {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="custom-modal-body">
+                                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--bg-input)', padding: '1.5rem', borderRadius: '16px', border: '1px dashed var(--border-color)' }}>
+                                    <label className="form-label" style={{ marginBottom: '1rem' }}>Foto de Perfil</label>
+                                    <div style={{ position: 'relative', width: '100px', height: '100px' }}>
+                                        {fotoPreview ? (
+                                            <img src={fotoPreview} alt="Preview" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--accent-primary)' }} />
+                                        ) : (
+                                            <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '2rem', fontWeight: 'bold', border: '2px dashed var(--border-color)' }}>
+                                                {form.nombre?.charAt(0).toUpperCase() || '?'}
+                                            </div>
+                                        )}
+                                        <label htmlFor="foto-new" style={{ position: 'absolute', bottom: '0', right: '0', background: 'var(--accent-primary)', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', border: '2px solid var(--bg-surface)' }}>
+                                            <Icon name="plus" size={16} color="white" />
+                                            <input type="file" id="foto-new" accept="image/*" onChange={handleFotoChange} style={{ display: 'none' }} />
+                                        </label>
+                                    </div>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>Click en el + para subir foto</p>
+                                </div>
                                 <div className="form-group">
                                     <label className="form-label">Nombre</label>
                                     <input className="form-input" required value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
