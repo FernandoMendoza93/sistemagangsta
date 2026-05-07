@@ -113,9 +113,13 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), upload.
         const telefono_whatsapp = whatsapp; // Mapeo para consistencia con tu prompt
         
         let foto_url = req.body.foto_url; // Si mandan la URL actual
+        console.log('DEBUG: Foto URL de body:', req.body.foto_url);
+        console.log('DEBUG: File recibido:', req.file ? req.file.path : 'Ninguno');
+
         if (req.file) {
             foto_url = req.file.path; // URL de Cloudinary
         }
+        console.log('DEBUG: Foto URL final a guardar:', foto_url);
 
         if (password && password.trim()) {
             const passwordHash = await bcrypt.hash(password, 10);
@@ -143,6 +147,7 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), upload.
                     `, [id, req.barberia_id, telefono_whatsapp || null, instagram || null, foto_url || null]);
                 } else {
                     // Actualización explícita del perfil del barbero
+                    console.log('DEBUG: Actualizando perfil de barbero con foto:', foto_url || 'NULL');
                     await dbQuery.run(`
                         UPDATE barberos 
                         SET estado = 'Activo', 
