@@ -274,15 +274,15 @@ export default function RegisterPage() {
                             </div>
                             <div className="payment-detail">
                                 <span className="payment-detail-label">Banco</span>
-                                <span className="payment-detail-value">BBVA</span>
+                                <span className="payment-detail-value">Santander</span>
                             </div>
                             <div className="payment-detail">
                                 <span className="payment-detail-label">CLABE</span>
-                                <span className="payment-detail-value">0123 4567 8901 234567</span>
+                                <span className="payment-detail-value">014610140268173701</span>
                             </div>
                             <div className="payment-detail">
                                 <span className="payment-detail-label">Titular</span>
-                                <span className="payment-detail-value">Fernando Mendoza</span>
+                                <span className="payment-detail-value">Angel Fernando Mendoza Martinez</span>
                             </div>
 
                             <div className="payment-note">
@@ -291,7 +291,7 @@ export default function RegisterPage() {
                             </div>
 
                             <a
-                                href={`https://wa.me/529511955349?text=${encodeURIComponent(`Hola Fernando! Acabo de registrar mi barberia "${formData.nombre}" en Flow. Adjunto mi comprobante de pago por el plan ${formData.plan} (${precio}). Mi correo: ${formData.email}`)}`}
+                                href={`https://wa.me/529511955349?text=${encodeURIComponent(`Hola! Acabo de registrar mi barberia "${formData.nombre}" en Flow. Adjunto mi comprobante de pago por el plan ${formData.plan} (${precio}). Mi correo: ${formData.email}`)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn-whatsapp-pay"

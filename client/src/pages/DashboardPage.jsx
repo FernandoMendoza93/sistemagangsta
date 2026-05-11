@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ventasService, productosService, citasService } from '../services/api';
+import { ventasService, productosService, citasService, notificacionesService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
 import { motion } from 'framer-motion';
+import { Shield } from 'lucide-react'; // Importamos Shield para el icono del banner
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -28,6 +29,7 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [citaSeleccionada, setCitaSeleccionada] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [alertaVencimiento, setAlertaVencimiento] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -36,12 +38,13 @@ export default function DashboardPage() {
     const loadData = async () => {
         try {
             const fechaHoy = getLocalDate();
-            const [resumenRes, alertasRes, ventasRes, citasRes, semanaRes] = await Promise.all([
+            const [resumenRes, alertasRes, ventasRes, citasRes, semanaRes, notifRes] = await Promise.all([
                 ventasService.getResumenHoy(),
                 isEncargado() ? productosService.getAlertas() : Promise.resolve({ data: [] }),
                 ventasService.getAll({ fecha: fechaHoy }),
                 citasService.getAll ? citasService.getAll(fechaHoy) : Promise.resolve({ data: [] }),
-                ventasService.getResumenSemana()
+                ventasService.getResumenSemana(),
+                notificacionesService.getAll()
             ]);
 
             setResumen(resumenRes.data);
@@ -53,6 +56,14 @@ export default function DashboardPage() {
             setCitasHoy(pendingCitas);
 
             setChartData(semanaRes.data || []);
+
+            // Buscar notificaciones de vencimiento no leídas
+            const notificaciones = notifRes.data.notificaciones || [];
+            const alertaVenc = notificaciones.find(n => 
+                (n.tipo === 'vencimiento_proximo' || n.tipo === 'suscripcion_vencida') && n.leido === 0
+            );
+            setAlertaVencimiento(alertaVenc);
+
         } catch (error) {
             console.error('Error cargando dashboard:', error);
         } finally {
@@ -85,6 +96,35 @@ export default function DashboardPage() {
             animate="show"
             variants={containerVariants}
         >
+            {alertaVencimiento && (
+                <div className={`p-4 mb-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${alertaVencimiento.tipo === 'suscripcion_vencida' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-orange-50 border border-orange-200 text-orange-700'}`}>
+                    <span className="text-sm font-bold flex items-center gap-2">
+                        <Shield className={`w-5 h-5 ${alertaVencimiento.tipo === 'suscripcion_vencida' ? 'text-red-500' : 'text-orange-500'}`} /> 
+                        {alertaVencimiento.mensaje}
+                    </span>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <button 
+                            onClick={() => window.open('https://wa.me/?text=Hola! Quiero reportar el pago de mi suscripción.', '_blank')}
+                            className={`flex-1 sm:flex-initial text-xs px-4 py-2 rounded-lg font-bold transition-colors ${alertaVencimiento.tipo === 'suscripcion_vencida' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'}`}
+                        >
+                            Realizar Pago
+                        </button>
+                        <button 
+                            onClick={async () => {
+                                try {
+                                    await notificacionesService.marcarLeida(alertaVencimiento.id);
+                                    setAlertaVencimiento(null);
+                                } catch (err) {
+                                    console.error('Error al marcar notificación como leída:', err);
+                                }
+                            }}
+                            className={`flex-1 sm:flex-initial text-xs px-4 py-2 rounded-lg font-bold transition-colors ${alertaVencimiento.tipo === 'suscripcion_vencida' ? 'bg-red-100 hover:bg-red-200 text-red-700' : 'bg-orange-100 hover:bg-orange-200 text-orange-700'}`}
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            )}
             <motion.div className="page-header dashboard-header-glow" variants={itemVariants}>
                 <div>
                     <h1 className="page-title" style={{ fontWeight: 800, letterSpacing: '-0.5px' }}>

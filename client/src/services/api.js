@@ -188,7 +188,9 @@ export const horariosService = {
 export const superAdminService = {
     getMetrics: () => api.get('/superadmin/metrics'),
     getBarberias: () => api.get('/superadmin/barberias'),
-    updateEstadoBarberia: (id, estado) => api.put(`/superadmin/barberias/${id}/estado`, { estado })
+    updateEstadoBarberia: (id, estado) => api.put(`/superadmin/barberias/${id}/estado`, { estado }),
+    verificarAlertas: () => api.get('/superadmin/alertas/verificar'),
+    renovarBarberia: (id, meses) => api.put(`/superadmin/barberias/${id}/renovar`, { meses })
 };
 
 // Configuración de la Barbería

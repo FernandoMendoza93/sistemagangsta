@@ -152,4 +152,119 @@ router.put('/barberias/:id/estado', async (req, res) => {
     }
 });
 
+// GET /api/superadmin/alertas/verificar
+router.get('/alertas/verificar', async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        
+        // 1. Obtener todas las barberías activas
+        const barberias = await dbQuery.all(`
+            SELECT id, nombre, plan, fecha_vencimiento, alerta_enviada
+            FROM barberias 
+            WHERE activo = 1
+        `, []);
+
+        const hoy = new Date();
+        const proximas = [];
+        const vencidas = [];
+
+        for (const barberia of barberias) {
+            const vencimiento = new Date(barberia.fecha_vencimiento);
+            const diffTime = vencimiento - hoy;
+            const diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            // Alerta 7 días antes
+            if (diasRestantes <= 7 && diasRestantes > 0 && !barberia.alerta_enviada) {
+                await dbQuery.run(`
+                    INSERT INTO notificaciones 
+                    (barberia_id, mensaje, tipo, leido)
+                    VALUES (?, ?, 'vencimiento_proximo', 0)
+                `, [
+                    barberia.id,
+                    `Tu suscripción vence en ${diasRestantes} día${diasRestantes > 1 ? 's' : ''}. Realiza tu pago para continuar sin interrupciones.`
+                ]);
+
+                await dbQuery.run(
+                    'UPDATE barberias SET alerta_enviada = 1 WHERE id = ?',
+                    [barberia.id]
+                );
+            }
+
+            // Alerta si ya venció
+            if (diasRestantes <= 0) {
+                // Evitar duplicar notificaciones de vencimiento no leídas
+                const existe = await dbQuery.get(`
+                    SELECT id FROM notificaciones 
+                    WHERE barberia_id = ? AND tipo = 'suscripcion_vencida' AND leido = 0
+                `, [barberia.id]);
+
+                if (!existe) {
+                    await dbQuery.run(`
+                        INSERT INTO notificaciones 
+                        (barberia_id, mensaje, tipo, leido)
+                        VALUES (?, ?, 'suscripcion_vencida', 0)
+                    `, [
+                        barberia.id,
+                        `Tu suscripción ha vencido. Contacta a soporte para reactivar tu cuenta.`
+                    ]);
+                }
+            }
+
+            if (diasRestantes <= 7 && diasRestantes > 0) {
+                proximas.push(barberia);
+            } else if (diasRestantes <= 0) {
+                vencidas.push(barberia);
+            }
+        }
+
+        res.json({
+            total: barberias.length,
+            proximas_a_vencer: proximas,
+            vencidas: vencidas
+        });
+
+    } catch (error) {
+        console.error('Error verificando alertas superadmin:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// PUT /api/superadmin/barberias/:id/renovar
+router.put('/barberias/:id/renovar', async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        const { id } = req.params;
+        const { meses } = req.body;
+
+        if (!meses || isNaN(meses)) {
+            return res.status(400).json({ error: 'Número de meses inválido' });
+        }
+
+        const barberia = await dbQuery.get('SELECT fecha_vencimiento FROM barberias WHERE id = ?', [id]);
+        if (!barberia) {
+            return res.status(404).json({ error: 'Barbería no encontrada' });
+        }
+
+        // Calcular nueva fecha desde hoy o desde vencimiento actual (lo que sea mayor)
+        const base = new Date(Math.max(new Date(), new Date(barberia.fecha_vencimiento)));
+        base.setMonth(base.getMonth() + parseInt(meses));
+        
+        // Formatear para MySQL (YYYY-MM-DD HH:mm:ss)
+        const baseStr = base.toISOString().slice(0, 19).replace('T', ' ');
+
+        await dbQuery.run(`
+            UPDATE barberias 
+            SET fecha_vencimiento = ?,
+                alerta_enviada = 0
+            WHERE id = ?
+        `, [baseStr, id]);
+
+        res.json({ message: 'Suscripción renovada exitosamente', nueva_fecha: baseStr });
+
+    } catch (error) {
+        console.error('Error renovando barbería:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 export default router;
