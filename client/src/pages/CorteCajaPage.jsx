@@ -281,7 +281,7 @@ export default function CorteCajaPage() {
 
             <div className="corte-historial-pro">
                 <h2><Icon name="history" size={20} color="var(--accent-primary)" /> Historial de Turnos Recientes</h2>
-                <div className="table-container-glass">
+                <div className="table-responsive table-container-glass">
                     <table className="table-glass-pro">
                         <thead>
                             <tr>

@@ -94,7 +94,7 @@ export default function ReportesPage() {
                 {/* Comisiones por Barbero */}
                 <div style={cardStyle}>
                     <h2 style={{ margin: 0, marginBottom: '1rem', color: 'var(--text-main)', fontWeight: 700, fontSize: '1.1rem' }}>💎 Comisiones por Barbero</h2>
-                    <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                    <div className="table-responsive" style={{ borderRadius: '14px', border: '1px solid var(--border-color)' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                             <thead>
                                 <tr>
@@ -121,7 +121,7 @@ export default function ReportesPage() {
                 {/* Servicios Populares */}
                 <div style={cardStyle}>
                     <h2 style={{ margin: 0, marginBottom: '1rem', color: 'var(--text-main)', fontWeight: 700, fontSize: '1.1rem' }}>✂️ Servicios Más Vendidos</h2>
-                    <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                    <div className="table-responsive" style={{ borderRadius: '14px', border: '1px solid var(--border-color)' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                             <thead>
                                 <tr>

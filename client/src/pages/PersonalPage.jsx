@@ -79,7 +79,10 @@ export default function PersonalPage() {
             id_rol: usuario.id_rol,
             whatsapp: usuario.whatsapp || '',
             instagram: usuario.instagram || '',
-            foto_url: usuario.foto_url || ''
+            foto_url: usuario.foto_url || '',
+            porcentaje_comision: usuario.porcentaje_comision 
+                ? (usuario.porcentaje_comision * 100).toFixed(0) 
+                : 50
         });
         setFotoPreview(usuario.foto_url || null);
         setFotoFile(null);
@@ -167,7 +170,7 @@ export default function PersonalPage() {
             </div>
 
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' }}>
-                <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                <div className="table-responsive" style={{ borderRadius: '14px', border: '1px solid var(--border-color)' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                         <thead>
                             <tr>
@@ -203,7 +206,7 @@ export default function PersonalPage() {
 
             {/* Modal Nuevo Usuario */}
             {showModal && createPortal(
-                <div className="custom-modal-overlay" onClick={() => setShowModal(false)}>
+                <div className="custom-modal-overlay">
                     <div className="custom-modal" onClick={e => e.stopPropagation()}>
                         <div className="custom-modal-header">
                             <h3 className="custom-modal-title">Nuevo Usuario</h3>
@@ -279,7 +282,7 @@ export default function PersonalPage() {
 
             {/* Modal Editar Usuario */}
             {showEditModal && createPortal(
-                <div className="custom-modal-overlay" onClick={() => setShowEditModal(false)}>
+                <div className="custom-modal-overlay">
                     <div className="custom-modal" onClick={e => e.stopPropagation()}>
                         <div className="custom-modal-header">
                             <h3 className="custom-modal-title">Editar Usuario</h3>
@@ -310,6 +313,26 @@ export default function PersonalPage() {
                                         <div className="form-group">
                                             <label className="form-label">Instagram (sin @)</label>
                                             <input type="text" className="form-input" placeholder="ej: flow_barber" value={editForm.instagram} onChange={e => setEditForm({ ...editForm, instagram: e.target.value })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Comisión del Barbero</label>
+                                            <div className="comision-input-wrap">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="100"
+                                                    value={editForm.porcentaje_comision || 50}
+                                                    onChange={e => setEditForm({
+                                                        ...editForm, 
+                                                        porcentaje_comision: e.target.value
+                                                    })}
+                                                    placeholder="50"
+                                                />
+                                                <span className="comision-suffix">%</span>
+                                            </div>
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+                                                Porcentaje de cada venta que recibe el barbero
+                                            </small>
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label">Foto del Barbero</label>

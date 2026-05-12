@@ -84,7 +84,7 @@ export default function ScannerPage() {
                     <ArrowLeft size={24} />
                     <span>Volver</span>
                 </button>
-                <h2>Escáner The Gangsta</h2>
+                <h2>Escaner de lealtad</h2>
                 <button className="btn-logout-icon" onClick={() => { logout(); navigate('/login'); }}>
                     <LogOut size={24} />
                 </button>
@@ -96,7 +96,7 @@ export default function ScannerPage() {
                         <div className="scanner-instructions">
                             <QrCode size={48} color="var(--accent-primary)" style={{ marginBottom: '1rem' }} />
                             <h3>Escanear Membresía</h3>
-                            <p>Apunta la cámara al teléfono del cliente para leer su Wallet The Gangsta.</p>
+                            <p>Apunta la cámara al teléfono del cliente para leer su Wallet </p>
                         </div>
 
                         <div className="camera-wrapper">

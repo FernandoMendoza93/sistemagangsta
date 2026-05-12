@@ -377,7 +377,7 @@ export default function ComisionesPage() {
                                         Historial de Pagos Realizados
                                     </h3>
                                     
-                                    <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.1)' }}>
+                                    <div className="table-responsive" style={{ borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.1)' }}>
                                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                                             <thead>
                                                 <tr>

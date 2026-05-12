@@ -77,7 +77,7 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req
         const usuarios = await dbQuery.all(`
             SELECT u.id, u.nombre, u.email, u.activo, u.fecha_creacion,
                    r.nombre_rol as rol, u.id_rol, b.telefono_whatsapp as whatsapp,
-                   b.instagram, b.foto_url
+                   b.instagram, b.foto_url, b.porcentaje_comision
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id
             LEFT JOIN barberos b ON b.id_usuario = u.id
@@ -153,7 +153,7 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), upload.
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { nombre, email, id_rol, activo, password, whatsapp, instagram } = req.body;
+        const { nombre, email, id_rol, activo, password, whatsapp, instagram, porcentaje_comision } = req.body;
         const telefono_whatsapp = whatsapp; // Mapeo para consistencia con tu prompt
         
         let foto_url = req.body.foto_url; // Si mandan la URL actual
@@ -197,9 +197,10 @@ router.put('/:id', verifyToken, requireTenant, requireRole(ROLES.ADMIN), upload.
                         SET estado = 'Activo', 
                             telefono_whatsapp = ?,
                             instagram = ?,
-                            foto_url = ?
+                            foto_url = ?,
+                            porcentaje_comision = ?
                         WHERE id = ?
-                    `, [telefono_whatsapp || null, instagram || null, foto_url || null, checkBarber.id]);
+                    `, [telefono_whatsapp || null, instagram || null, foto_url || null, porcentaje_comision ? parseFloat(porcentaje_comision) / 100 : 0.50, checkBarber.id]);
                 }
             } else {
                 // Soft-Delete: Inactivar perfil público si el nuevo rol ya no es Barbero

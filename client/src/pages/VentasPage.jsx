@@ -132,7 +132,7 @@ export default function VentasPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                             <h2 style={{ margin: 0, color: 'var(--text-main)', fontWeight: 700, fontSize: '1.1rem' }}>Lista de Ventas</h2>
                         </div>
-                        <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                        <div className="table-responsive" style={{ borderRadius: '14px', border: '1px solid var(--border-color)' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                                 <thead>
                                     <tr>

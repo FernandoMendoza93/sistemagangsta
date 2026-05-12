@@ -77,7 +77,7 @@ export default function ServiciosPage() {
             </div>
 
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 8px 32px var(--shadow-color)' }}>
-                <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                <div className="table-responsive" style={{ borderRadius: '14px', border: '1px solid var(--border-color)' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--bg-surface)' }}>
                         <thead>
                             <tr>
