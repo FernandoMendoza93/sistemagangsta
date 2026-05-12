@@ -287,10 +287,30 @@ router.get('/:id/historial-pagos', verifyToken, requireTenant, async (req, res) 
             ORDER BY cp.fecha_pago DESC
         `, [id, req.barberia_id]);
 
-        res.json(pagos);
+// PUT /api/barberos/:id/comision
+router.put('/:id/comision', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req, res) => {
+    try {
+        const { porcentaje_comision } = req.body;
+        const { id } = req.params;
+
+        if (!porcentaje_comision || porcentaje_comision < 0.01 || porcentaje_comision > 1) {
+            return res.status(400).json({ error: 'Porcentaje inválido' });
+        }
+
+        const dbQuery = req.app.locals.dbQuery;
+        await dbQuery.run(`
+            UPDATE barberos 
+            SET porcentaje_comision = ?
+            WHERE id = ? AND barberia_id = ?
+        `, [porcentaje_comision, id, req.barberia_id]);
+
+        res.json({ 
+            message: 'Comisión actualizada',
+            porcentaje_comision 
+        });
     } catch (error) {
-        console.error('Error obteniendo historial de pagos:', error);
-        res.status(500).json({ error: 'Error en el servidor' });
+        console.error('Error al actualizar comisión:', error);
+        res.status(500).json({ error: 'Error al actualizar comisión' });
     }
 });
 

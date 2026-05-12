@@ -13,6 +13,8 @@ export default function ComisionesPage() {
     const [expandedWeeks, setExpandedWeeks] = useState(new Set());
     const [semanasDesglosadas, setSemanasDesglosadas] = useState({}); // { semanaId: [ {fecha, items, subtotal} ] }
     const [loadingDesglose, setLoadingDesglose] = useState(null); // ID de la semana cargando
+    const [editandoComision, setEditandoComision] = useState(null);
+    const [nuevoValor, setNuevoValor] = useState('');
 
     useEffect(() => { loadBarberos(); }, []);
 
@@ -101,6 +103,34 @@ export default function ComisionesPage() {
         setExpandedWeeks(prev => new Set(prev).add(semanaId));
     };
 
+    const handleEditarComision = (barbero) => {
+        setEditandoComision(barbero.id);
+        setNuevoValor((barbero.porcentaje_comision * 100).toFixed(0));
+    };
+
+    const handleGuardarComision = async (barbero) => {
+        if (!nuevoValor || nuevoValor < 1 || nuevoValor > 100) return;
+        
+        try {
+            await barberosService.updateComision(barbero.id, parseFloat(nuevoValor) / 100);
+            
+            setBarberos(prev => prev.map(b => 
+                b.id === barbero.id 
+                    ? { ...b, porcentaje_comision: parseFloat(nuevoValor) / 100 }
+                    : b
+            ));
+            
+            if (selectedBarbero && selectedBarbero.id === barbero.id) {
+                setSelectedBarbero(prev => ({ ...prev, porcentaje_comision: parseFloat(nuevoValor) / 100 }));
+            }
+            
+            setEditandoComision(null);
+            toast.success('Comisión actualizada');
+        } catch (error) {
+            toast.error('Error al actualizar comisión');
+        }
+    };
+
     const cargarDesgloseSemana = async (semana) => {
         if (!selectedBarbero) return;
         
@@ -184,9 +214,32 @@ export default function ComisionesPage() {
                             }}
                         >
                             <strong style={{ color: 'var(--text-main)' }}>{b.nombre}</strong>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                Comisión: {(b.porcentaje_comision * 100).toFixed(0)}%
-                            </div>
+                            {editandoComision === b.id ? (
+                                <div className="comision-edit-inline" onClick={e => e.stopPropagation()} style={{ marginTop: '0.25rem' }}>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        value={nuevoValor}
+                                        onChange={e => setNuevoValor(e.target.value)}
+                                        autoFocus
+                                    />
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
+                                    <button onClick={() => handleGuardarComision(b)}>✓</button>
+                                    <button onClick={() => setEditandoComision(null)}>✕</button>
+                                </div>
+                            ) : (
+                                <div className="comision-display" style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                    <span>Comisión: {(b.porcentaje_comision * 100).toFixed(0)}%</span>
+                                    <button 
+                                        className="comision-edit-btn"
+                                        onClick={(e) => { e.stopPropagation(); handleEditarComision(b); }}
+                                        title="Editar comisión"
+                                    >
+                                        ✏️
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

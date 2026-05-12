@@ -135,3 +135,61 @@
     font-weight: 700;
     font-size: 15px;
 }
+
+/* ===== COMISION INLINE EDIT ===== */
+.comision-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.comision-edit-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.4;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+}
+
+.comision-edit-btn:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.08);
+}
+
+.comision-edit-inline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.comision-edit-inline input {
+    width: 52px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--accent-primary);
+    border-radius: 6px;
+    color: #fff;
+    padding: 2px 6px;
+    font-size: 13px;
+    outline: none;
+    text-align: center;
+}
+
+.comision-edit-inline button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.comision-edit-inline button:first-of-type {
+    color: #4ade80;
+}
+
+.comision-edit-inline button:last-of-type {
+    color: #f87171;
+}
