@@ -1,5 +1,5 @@
-import express from 'express';
-import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
+const express = require('express');
+const { verifyToken, requireRole, requireTenant, ROLES } = require('../middleware/auth.js');
 
 const router = express.Router();
 
@@ -314,4 +314,4 @@ router.put('/:id/comision', verifyToken, requireTenant, requireRole(ROLES.ADMIN)
     }
 });
 
-export default router;
+module.exports = router;
