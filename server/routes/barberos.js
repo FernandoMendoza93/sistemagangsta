@@ -1,5 +1,5 @@
-const express = require('express');
-const { verifyToken, requireRole, requireTenant, ROLES } = require('../middleware/auth.js');
+import express from 'express';
+import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -287,6 +287,13 @@ router.get('/:id/historial-pagos', verifyToken, requireTenant, async (req, res) 
             ORDER BY cp.fecha_pago DESC
         `, [id, req.barberia_id]);
 
+        res.json(pagos);
+    } catch (error) {
+        console.error('Error obteniendo historial de pagos:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // PUT /api/barberos/:id/comision
 router.put('/:id/comision', verifyToken, requireTenant, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
@@ -314,4 +321,4 @@ router.put('/:id/comision', verifyToken, requireTenant, requireRole(ROLES.ADMIN)
     }
 });
 
-module.exports = router;
+export default router;
