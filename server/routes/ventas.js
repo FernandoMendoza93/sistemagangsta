@@ -9,8 +9,6 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault("America/Mexico_City");
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mi_secreto_super_seguro_2024';
-
 const router = express.Router();
 
 // GET /api/ventas - Listar ventas del día (solo completadas) — filtrado por tenant

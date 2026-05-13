@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createServer } from 'http';
@@ -21,6 +23,33 @@ initSocket(server);
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Security Hardening
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false // Desactivar CSP para no romper el frontend
+}));
+
+// Rate limiters
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: 'Demasiadas solicitudes, intenta más tarde' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Demasiados intentos de login, espera 15 minutos' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.use('/api/', generalLimiter);
+app.use('/api/auth/login', loginLimiter);
+
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 // Conexión a MySQL

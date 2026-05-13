@@ -11,7 +11,6 @@ dayjs.extend(timezone);
 dayjs.tz.setDefault("America/Mexico_City");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'mi_secreto_super_seguro_2024';
 
 // SSE Clients Registry (key: cliente_id, value: response object)
 const sseClients = new Map();

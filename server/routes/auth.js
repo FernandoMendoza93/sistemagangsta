@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { body, validationResult } from 'express-validator';
 import multer from 'multer';
 import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
@@ -55,10 +56,19 @@ router.get('/mi-barberia', verifyToken, async (req, res) => {
 });
 
 // POST /api/auth/login — Staff login
-router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const dbQuery = req.app.locals.dbQuery;
+router.post('/login',
+    [
+        body('email').isEmail().normalizeEmail(),
+        body('password').isLength({ min: 6 }).trim()
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: 'Datos inválidos' });
+        }
+        try {
+            const { email, password } = req.body;
+            const dbQuery = req.app.locals.dbQuery;
 
         if (!email || !password) {
             return res.status(400).json({ error: 'Email y contrasena son requeridos' });

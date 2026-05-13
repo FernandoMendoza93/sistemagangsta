@@ -41,6 +41,8 @@
 | 004 | **SQL Case Sensitivity** | Usar `LOWER(columna) IN ('valor')` o `LIKE` para evitar fallos por mayúsculas en roles de la BD. |
 | 005 | **Migraciones en Railway** | Si la BD de producción ya existe, `schema.mysql.sql` NO crea tablas nuevas automáticamente. **No existe script de migración automática.** Toda tabla nueva debe ejecutarse con SQL manual en Railway. |
 | 006 | **Dual Theme Binding** | La tabla `barberias` tiene dos mecanismos de vinculación de tema: `theme` (nombre texto) y `tema_id` (FK relacional). Ambos coexisten. El endpoint público usa `theme` + string matching; el privado usa `tema_id` + JOIN por FK. |
+| 007 | **ESM vs CommonJS Strictness** | El proyecto es 100% ESM (`type: "module"`). Nunca usar `require` o `module.exports` en rutas o archivos del servidor. Node 20 fallará en `export` si se interpreta como CommonJS. |
+| 008 | **Cierre de Llaves en Rutas** | Al agregar endpoints al final de un archivo (como en `barberos.js`), asegurar que los anteriores estén cerrados con `});` y no queden abiertos, lo que causa errores de sintaxis en el `export`. |
 
 ---
 

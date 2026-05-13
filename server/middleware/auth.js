@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'barberia-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET no está configurado');
 
 // Middleware para verificar token JWT
 export const verifyToken = (req, res, next) => {
