@@ -23,7 +23,20 @@ const storage = new CloudinaryStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Solo se permiten imágenes JPG, PNG o WebP'), false);
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: { fileSize: 2 * 1024 * 1024 } // 2MB máximo
+});
 
 // POST /api/usuarios - Crear usuario (Solo Admin)
 router.post('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN), upload.single('foto'), async (req, res) => {
