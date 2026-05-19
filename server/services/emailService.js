@@ -5,6 +5,7 @@ const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST || 'smtp.gmail.com',
     port: process.env.MAIL_PORT || 587,
     secure: false, // true for 465, false for other ports
+    family: 4, // forzar IPv4 — Railway no soporta IPv6 saliente
     auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
@@ -38,6 +39,7 @@ export const sendNewAppointmentEmail = async ({ to, cliente, fecha, hora, servic
                         host: settings.smtp_host,
                         port: settings.smtp_port,
                         secure: settings.smtp_secure === 1,
+                        family: 4, // forzar IPv4 — Railway no soporta IPv6 saliente
                         auth: {
                             user: settings.smtp_user,
                             pass: decryptedPass
@@ -125,6 +127,7 @@ async function createDynamicTransporter(dbQuery, barberia_id) {
         host: settings.smtp_host,
         port: settings.smtp_port,
         secure: settings.smtp_secure === 1,
+        family: 4, // forzar IPv4 — Railway no soporta IPv6 saliente
         auth: {
             user: settings.smtp_user,
             pass: decryptedPass
