@@ -1002,13 +1002,13 @@ export default function ConfiguracionPage() {
                                 </div>
 
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                    <Users size={14} /> Enviar Reportes a (Administradores):
+                                    <Users size={14} /> Enviar Reportes a (Personal de la Barbería):
                                 </label>
                                 
                                 {!adminsLoaded ? (
-                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Cargando administradores...</p>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Cargando personal...</p>
                                 ) : admins.length === 0 ? (
-                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay usuarios en la plataforma con el rol de Admin o Dueño para recibir reportes.</p>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay personal registrado en la plataforma para recibir reportes.</p>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--bg-surface)' }}>
                                         {admins.map(admin => {

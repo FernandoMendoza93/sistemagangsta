@@ -121,7 +121,6 @@ router.get('/staff-admin', verifyToken, requireTenant, requireRole(ROLES.ADMIN, 
             FROM usuarios u
             LEFT JOIN roles r ON u.id_rol = r.id
             WHERE u.barberia_id = ? 
-            AND (LOWER(r.nombre_rol) LIKE '%admin%' OR LOWER(r.nombre_rol) LIKE '%encargado%')
             AND u.activo = 1
         `, [req.barberia_id]);
         
