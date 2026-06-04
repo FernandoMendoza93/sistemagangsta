@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
@@ -188,14 +189,18 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
             }
         }
 
+        const plainPin = `FLW-${Math.floor(1000 + Math.random() * 9000)}`;
+        const pinHash = await bcrypt.hash(plainPin, 10);
+
         const result = await dbQuery.run(`
-            INSERT INTO clientes (nombre, telefono, notas, barberia_id)
-            VALUES (?, ?, ?, ?)
-        `, [nombre, telefonoLimpio, notas || null, req.barberia_id]);
+            INSERT INTO clientes (nombre, telefono, notas, barberia_id, password_hash)
+            VALUES (?, ?, ?, ?, ?)
+        `, [nombre, telefonoLimpio, notas || null, req.barberia_id, pinHash]);
 
         res.status(201).json({
             message: 'Cliente registrado',
-            id: result.lastInsertRowid
+            id: result.lastInsertRowid,
+            pin: plainPin
         });
     } catch (error) {
         console.error('Error creando cliente:', error);

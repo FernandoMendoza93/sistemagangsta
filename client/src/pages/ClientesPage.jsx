@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { Crown, Trophy, Star, Settings } from 'lucide-react';
+import { Crown, Trophy, Star, Settings, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { clientesService } from '../services/api';
@@ -27,6 +27,9 @@ export default function ClientesPage() {
     const [showStampModal, setShowStampModal] = useState(false);
     const [stampTarget, setStampTarget] = useState(null);
     const [stampLoading, setStampLoading] = useState(false);
+
+    const [showHandoffModal, setShowHandoffModal] = useState(false);
+    const [handoffData, setHandoffData] = useState(null);
 
     useEffect(() => {
         loadClientes();
@@ -95,11 +98,17 @@ export default function ClientesPage() {
             if (editingClient) {
                 await clientesService.update(editingClient.id, formData);
                 toast.success('Cliente actualizado');
+                setShowModal(false);
             } else {
-                await clientesService.create(formData);
-                toast.success('Cliente registrado');
+                const res = await clientesService.create(formData);
+                setShowModal(false);
+                if (res.data && res.data.pin) {
+                    setHandoffData({ nombre: formData.nombre, pin: res.data.pin });
+                    setShowHandoffModal(true);
+                } else {
+                    toast.success('Cliente registrado');
+                }
             }
-            setShowModal(false);
             loadClientes();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Error al guardar');
@@ -522,6 +531,51 @@ export default function ClientesPage() {
                 onConfirm={confirmDelete}
                 onCancel={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
             />
+
+            {/* Modal Handoff PIN */}
+            {showHandoffModal && handoffData && createPortal(
+                <div className="modal-overlay-pro" style={{ zIndex: 9999 }}>
+                    <div className="modal-content-pro" style={{ textAlign: 'center', padding: '2.5rem 2rem', maxWidth: '400px', border: '1px solid rgba(226, 114, 91, 0.3)', boxShadow: '0 0 30px rgba(0,0,0,0.8), 0 0 15px rgba(226, 114, 91, 0.2)' }}>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #4caf50, #2e7d32)', margin: '0 auto 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 8px 16px rgba(76, 175, 80, 0.3)' }}>
+                            <Icon name="check-lg" />
+                        </div>
+                        <h2 style={{ fontSize: '1.4rem', marginBottom: '0.5rem', color: 'var(--text-main)', fontWeight: 600 }}>¡Cliente Registrado!</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                            La cuenta de <strong style={{color: 'var(--text-main)'}}>{handoffData.nombre}</strong> está lista para usarse.
+                        </p>
+                        
+                        <div style={{ background: '#1a1d24', border: '2px dashed rgba(226, 114, 91, 0.5)', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem' }}>PIN de Acceso Temporal</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--accent-primary)', letterSpacing: '3px', textShadow: '0 0 10px rgba(226, 114, 91, 0.3)' }}>
+                                {handoffData.pin}
+                            </div>
+                            <button 
+                                onClick={() => { navigator.clipboard.writeText(handoffData.pin); toast.success('PIN Copiado'); }}
+                                style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '6px 16px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.85rem', transition: 'all 0.2s' }}
+                                onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
+                                onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                            >
+                                <Copy size={14} /> Copiar PIN
+                            </button>
+                        </div>
+
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '2rem', textAlign: 'center' }}>
+                            👉 Proporciona esta clave al cliente. <strong>Por seguridad, no se volverá a mostrar.</strong> Él podrá cambiarla por una privada desde su portal.
+                        </div>
+
+                        <button 
+                            type="button" 
+                            className="btn-primary-pro" 
+                            style={{ width: '100%', background: 'linear-gradient(135deg, #e2725b, #b94e3a)', border: 'none' }}
+                            onClick={() => setShowHandoffModal(false)}
+                        >
+                            Cerrar y Continuar
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
 
             {/* Modal Sello Manual */}
             {showStampModal && stampTarget && createPortal(
