@@ -209,7 +209,7 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
 });
 
 // POST /api/clientes/:id/reset-pin - Resetear PIN temporal
-router.post('/:id/reset-pin', verifyToken, requireTenant, requireRole([ROLES.ADMIN, ROLES.ENCARGADO]), async (req, res) => {
+router.post('/:id/reset-pin', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
