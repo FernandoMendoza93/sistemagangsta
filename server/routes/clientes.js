@@ -208,6 +208,31 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
     }
 });
 
+// POST /api/clientes/:id/reset-pin - Resetear PIN temporal
+router.post('/:id/reset-pin', verifyToken, requireTenant, requireRole([ROLES.ADMIN, ROLES.ENCARGADO]), async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        const { id } = req.params;
+
+        const plainPin = `FLW-${Math.floor(1000 + Math.random() * 9000)}`;
+        const pinHash = await bcrypt.hash(plainPin, 10);
+
+        await dbQuery.run(`
+            UPDATE clientes
+            SET password_hash = ?
+            WHERE id = ? AND barberia_id = ?
+        `, [pinHash, id, req.barberia_id]);
+
+        res.json({
+            message: 'PIN reseteado exitosamente',
+            pin: plainPin
+        });
+    } catch (error) {
+        console.error('Error reseteando PIN:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
 // PUT /api/clientes/:id - Actualizar cliente
 router.put('/:id', verifyToken, requireTenant, async (req, res) => {
     try {

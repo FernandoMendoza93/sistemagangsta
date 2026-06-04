@@ -148,6 +148,7 @@ export const clientesService = {
     create: (data) => api.post('/clientes', data),
     update: (id, data) => api.put(`/clientes/${id}`, data),
     delete: (id) => api.delete(`/clientes/${id}`),
+    resetPin: (id) => api.post(`/clientes/${id}/reset-pin`),
     getWalletStatus: () => api.get('/clientes/wallet/status')
 };
 

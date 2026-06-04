@@ -30,6 +30,7 @@ export default function ClientesPage() {
 
     const [showHandoffModal, setShowHandoffModal] = useState(false);
     const [handoffData, setHandoffData] = useState(null);
+    const [isResettingPin, setIsResettingPin] = useState(false);
 
     useEffect(() => {
         loadClientes();
@@ -112,6 +113,27 @@ export default function ClientesPage() {
             loadClientes();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Error al guardar');
+        }
+    }
+
+    async function handleResetPin() {
+        if (!editingClient) return;
+        const confirmMsg = `¿Estás seguro que deseas sobreescribir la contraseña de ${editingClient.nombre}?\n\nSu antigua contraseña dejará de funcionar permanentemente.`;
+        if (!window.confirm(confirmMsg)) return;
+
+        setIsResettingPin(true);
+        try {
+            const res = await clientesService.resetPin(editingClient.id);
+            setShowModal(false); 
+            
+            setHandoffData({ nombre: editingClient.nombre, pin: res.data.pin });
+            setShowHandoffModal(true);
+            
+            toast.success('PIN reseteado exitosamente');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Error al resetear PIN');
+        } finally {
+            setIsResettingPin(false);
         }
     }
 
@@ -505,6 +527,25 @@ export default function ClientesPage() {
                                         rows="3"
                                     />
                                 </div>
+                                
+                                {editingClient && (
+                                    <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(226, 114, 91, 0.05)', borderRadius: '8px', border: '1px dashed rgba(226, 114, 91, 0.3)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>Recuperación de Cuenta</div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Genera un nuevo PIN si el cliente lo olvidó.</div>
+                                            </div>
+                                            <button 
+                                                type="button" 
+                                                onClick={handleResetPin}
+                                                disabled={isResettingPin}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--accent-primary)', color: 'white', padding: '8px 14px', borderRadius: '6px', fontSize: '0.85rem', border: 'none', cursor: 'pointer', opacity: isResettingPin ? 0.7 : 1, transition: 'all 0.2s' }}
+                                            >
+                                                🔑 {isResettingPin ? 'Generando...' : 'Resetear PIN'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="modal-actions-pro">
                                 <button type="button" className="btn-secondary-pro" onClick={() => setShowModal(false)}>
