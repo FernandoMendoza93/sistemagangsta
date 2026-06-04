@@ -237,9 +237,18 @@ app.get('/api/health', (req, res) => {
 
 // Servir frontend estático en producción
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(join(__dirname, '../client/dist')));
+    app.use(express.static(join(__dirname, '../client/dist'), {
+        setHeaders: (res, path) => {
+            if (path.includes('/assets/')) {
+                res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            }
+        }
+    }));
 
     app.get('*', (req, res) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.sendFile(join(__dirname, '../client/dist/index.html'));
     });
 }

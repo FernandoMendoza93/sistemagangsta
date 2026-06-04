@@ -471,12 +471,13 @@ export default function ConfiguracionPage() {
 
                     {portalUrl ? (
                         <div ref={qrRef} style={{ display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '16px', border: '2px solid var(--border-color)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', display: 'inline-block' }}>
+                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '16px', border: '2px solid var(--border-color)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', display: 'inline-block', colorScheme: 'light' }}>
                                 <QRCode
                                     value={portalUrl}
                                     size={200}
                                     fgColor="#1a1a1a"
                                     bgColor="#ffffff"
+                                    renderAs="svg"
                                 />
                             </div>
                         </div>

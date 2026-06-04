@@ -16,15 +16,17 @@ router.get('/', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { q } = req.query;
+        const mxNow = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
 
         let query = `
-            SELECT c.id, c.nombre, c.telefono, c.puntos_lealtad, c.ultima_visita, c.fecha_registro, c.notas, c.activo,
-                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex
+            SELECT c.id, c.nombre, c.telefono, c.ultima_visita, c.fecha_registro, c.notas, c.activo,
+                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex,
+                   (SELECT COUNT(*) FROM visitas_lealtad v WHERE v.id_cliente = c.id AND v.barberia_id = c.barberia_id AND DATE(v.fecha) >= DATE_SUB(?, INTERVAL 120 DAY)) as puntos_lealtad
             FROM clientes c
             LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad
             WHERE c.activo = 1 AND c.barberia_id = ?
         `;
-        const params = [req.barberia_id];
+        const params = [mxNow, req.barberia_id];
 
         if (q) {
             query += ` AND (c.nombre LIKE ? OR c.telefono LIKE ?)`;
@@ -67,11 +69,13 @@ router.get('/inactivos', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
         const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+        const mxDate = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
 
         const rows = await dbQuery.all(`
-            SELECT c.id, c.nombre, c.telefono, c.puntos_lealtad, c.ultima_visita, c.fecha_registro, c.notas,
+            SELECT c.id, c.nombre, c.telefono, c.ultima_visita, c.fecha_registro, c.notas,
                    DATEDIFF(?, c.ultima_visita) as dias_sin_visita,
-                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex
+                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex,
+                   (SELECT COUNT(*) FROM visitas_lealtad v WHERE v.id_cliente = c.id AND v.barberia_id = c.barberia_id AND DATE(v.fecha) >= DATE_SUB(?, INTERVAL 120 DAY)) as puntos_lealtad
             FROM clientes c
             LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad
             WHERE c.activo = 1
@@ -79,7 +83,7 @@ router.get('/inactivos', verifyToken, requireTenant, async (req, res) => {
               AND DATEDIFF(?, c.ultima_visita) > 30
               AND c.barberia_id = ?
             ORDER BY c.ultima_visita ASC
-        `, [mxDateTime, mxDateTime, req.barberia_id]);
+        `, [mxDateTime, mxDate, mxDateTime, req.barberia_id]);
 
         const clientes = rows.map(c => ({
             id: c.id,
@@ -112,14 +116,16 @@ router.get('/:id', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
+        const mxDate = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD");
 
         const row = await dbQuery.get(`
-            SELECT c.id, c.nombre, c.telefono, c.puntos_lealtad, c.ultima_visita, c.fecha_registro, c.notas, c.activo,
-                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex
+            SELECT c.id, c.nombre, c.telefono, c.ultima_visita, c.fecha_registro, c.notas, c.activo,
+                   c.id_rol_lealtad, l.nombre_nivel as nivel_lealtad, l.porcentaje_descuento, l.dias_max_frecuencia, l.premio_descripcion, l.color_hex,
+                   (SELECT COUNT(*) FROM visitas_lealtad v WHERE v.id_cliente = c.id AND v.barberia_id = c.barberia_id AND DATE(v.fecha) >= DATE_SUB(?, INTERVAL 120 DAY)) as puntos_lealtad
             FROM clientes c
             LEFT JOIN barberia_lealtad_niveles l ON c.id_rol_lealtad = l.id_rol_lealtad
             WHERE c.id = ? AND c.barberia_id = ?
-        `, [id, req.barberia_id]);
+        `, [mxDate, id, req.barberia_id]);
 
         if (!row) {
             return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -162,10 +168,30 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
             return res.status(400).json({ error: 'El nombre es requerido' });
         }
 
+        let telefonoLimpio = null;
+        if (telefono) {
+            telefonoLimpio = telefono.replace(/\D/g, ''); // Deja solo los números
+            if (telefonoLimpio.length > 0) {
+                // Verificar si ya existe un cliente activo con el mismo teléfono
+                const existingClient = await dbQuery.get(
+                    'SELECT id, nombre FROM clientes WHERE telefono = ? AND barberia_id = ? AND activo = 1',
+                    [telefonoLimpio, req.barberia_id]
+                );
+                
+                if (existingClient) {
+                    return res.status(400).json({ 
+                        error: `Ya existe un cliente registrado con este número de teléfono: ${existingClient.nombre}` 
+                    });
+                }
+            } else {
+                telefonoLimpio = null;
+            }
+        }
+
         const result = await dbQuery.run(`
             INSERT INTO clientes (nombre, telefono, notas, barberia_id)
             VALUES (?, ?, ?, ?)
-        `, [nombre, telefono || null, notas || null, req.barberia_id]);
+        `, [nombre, telefonoLimpio, notas || null, req.barberia_id]);
 
         res.status(201).json({
             message: 'Cliente registrado',

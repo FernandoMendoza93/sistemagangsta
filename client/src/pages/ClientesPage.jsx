@@ -24,6 +24,10 @@ export default function ClientesPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
 
+    const [showStampModal, setShowStampModal] = useState(false);
+    const [stampTarget, setStampTarget] = useState(null);
+    const [stampLoading, setStampLoading] = useState(false);
+
     useEffect(() => {
         loadClientes();
     }, []);
@@ -118,6 +122,34 @@ export default function ClientesPage() {
         }
         setShowDeleteConfirm(false);
         setDeleteTarget(null);
+    }
+
+    function openStampModal(cliente) {
+        setStampTarget(cliente);
+        setShowStampModal(true);
+    }
+
+    async function handleAddStamp() {
+        if (!stampTarget) return;
+        setStampLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/loyalty/manual-stamp/${stampTarget.id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al agregar sello');
+            
+            toast.success(data.message || 'Sello agregado exitosamente');
+            setShowStampModal(false);
+            setStampTarget(null);
+            loadClientes();
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setStampLoading(false);
+        }
     }
 
     function sendWhatsApp(cliente) {
@@ -352,6 +384,16 @@ export default function ClientesPage() {
                                     </div>
                                 </div>
                                 <div className="cl-card-actions">
+                                    {(user?.rol === 'Admin' || user?.rol === 'Encargado') && (
+                                        <button
+                                            className="cl-action"
+                                            style={{ backgroundColor: 'rgba(226, 114, 91, 0.1)', color: '#e2725b', border: '1px solid rgba(226, 114, 91, 0.2)' }}
+                                            onClick={() => openStampModal(cliente)}
+                                            title="Otorgar Sello Manual"
+                                        >
+                                            <Star size={16} />
+                                        </button>
+                                    )}
                                     <button
                                         className="cl-action cl-action-edit"
                                         onClick={() => openEditModal(cliente)}
@@ -480,6 +522,49 @@ export default function ClientesPage() {
                 onConfirm={confirmDelete}
                 onCancel={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
             />
+
+            {/* Modal Sello Manual */}
+            {showStampModal && stampTarget && createPortal(
+                <div className="modal-overlay-pro" style={{ zIndex: 9999 }}>
+                    <div className="modal-content-pro" style={{ textAlign: 'center', padding: '2.5rem 2rem', maxWidth: '400px' }}>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #e2725b, #b94e3a)', margin: '0 auto 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 8px 16px rgba(226, 114, 91, 0.3)' }}>
+                            <Star size={32} fill="white" />
+                        </div>
+                        <h2 style={{ fontSize: '1.4rem', marginBottom: '0.75rem', color: 'var(--text-main)', fontWeight: 600 }}>Sello de Lealtad</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                            Estás a punto de otorgarle un sello a <strong style={{color: 'var(--text-main)'}}>{stampTarget.nombre}</strong>.
+                            <br/>Actualmente tiene <strong style={{color: 'var(--accent-primary)'}}>{stampTarget.puntos_lealtad || 0}</strong> sello(s).
+                        </p>
+                        
+                        <div style={{ background: 'rgba(255, 171, 0, 0.1)', border: '1px solid rgba(255, 171, 0, 0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '2rem', fontSize: '0.85rem', color: '#ffb300', textAlign: 'left', display: 'flex', gap: '10px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                            <span>Esta acción ignorará la regla de 1 sello por día. El cliente será notificado.</span>
+                        </div>
+
+                        <div className="modal-actions-pro" style={{ justifyContent: 'center', gap: '1rem', marginTop: 0 }}>
+                            <button 
+                                type="button" 
+                                className="btn-secondary-pro" 
+                                onClick={() => setShowStampModal(false)}
+                                disabled={stampLoading}
+                                style={{ flex: 1 }}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="button" 
+                                className="btn-primary-pro" 
+                                style={{ background: 'linear-gradient(135deg, #e2725b, #b94e3a)', flex: 1, border: 'none' }}
+                                onClick={handleAddStamp}
+                                disabled={stampLoading}
+                            >
+                                {stampLoading ? 'Enviando...' : 'Otorgar Sello'}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

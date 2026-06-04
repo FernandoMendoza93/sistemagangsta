@@ -157,5 +157,47 @@ router.post('/scan', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.
         res.status(500).json({ error: 'Error en el servidor al procesar QR' });
     }
 });
+// POST /api/loyalty/manual-stamp/:clienteId - Agregar sello manualmente (Solo Admins)
+router.post('/manual-stamp/:clienteId', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCARGADO), async (req, res) => {
+    try {
+        const dbQuery = req.app.locals.dbQuery;
+        const { notifyClient } = req.app.locals;
+        const { clienteId } = req.params;
+
+        const mxDateTime = dayjs().tz("America/Mexico_City").format("YYYY-MM-DD HH:mm:ss");
+
+        // Verify client exists
+        const cliente = await dbQuery.get('SELECT id, nombre FROM clientes WHERE id = ? AND barberia_id = ? AND activo = 1', [clienteId, req.barberia_id]);
+
+        if (!cliente) {
+            return res.status(404).json({ error: 'Cliente no encontrado' });
+        }
+
+        // Insert directly without anti-spam check
+        await dbQuery.run(`
+            INSERT INTO visitas_lealtad (id_cliente, barberia_id, id_barbero, fecha)
+            VALUES (?, ?, ?, ?)
+        `, [clienteId, req.barberia_id, req.user.id, mxDateTime]);
+
+        // Update last visit
+        await dbQuery.run(`
+            UPDATE clientes SET ultima_visita = ? WHERE id = ? AND barberia_id = ?
+        `, [mxDateTime, clienteId, req.barberia_id]);
+
+        // Notify client
+        if (notifyClient) {
+            notifyClient(clienteId, { type: 'STAMP_ADDED', message: '¡Has recibido un sello manual de lealtad!', timestamp: mxDateTime });
+        }
+
+        res.json({
+            success: true,
+            message: 'Sello manual agregado exitosamente'
+        });
+
+    } catch (error) {
+        console.error('Error inyectando sello manual:', error);
+        res.status(500).json({ error: 'Error en el servidor al agregar sello' });
+    }
+});
 
 export default router;

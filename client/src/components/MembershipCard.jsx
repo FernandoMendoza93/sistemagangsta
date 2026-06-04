@@ -90,7 +90,7 @@ export default function MembershipCard({ clientName, rank, puntos_lealtad = 0, u
                             <p>Muestra este código al barbero al terminar tu servicio.</p>
                         </div>
 
-                        <div className="qr-wrapper">
+                        <div className="qr-wrapper" style={{ backgroundColor: 'white', padding: '16px', colorScheme: 'light', borderRadius: '12px' }}>
                             {qrToken ? (
                                 <QRCode
                                     value={qrToken}
@@ -98,6 +98,7 @@ export default function MembershipCard({ clientName, rank, puntos_lealtad = 0, u
                                     bgColor="#ffffff"
                                     fgColor="#1a1a2e"
                                     level="H"
+                                    renderAs="svg"
                                 />
                             ) : (
                                 <div className="qr-placeholder">Cargando...</div>

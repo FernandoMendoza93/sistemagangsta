@@ -460,7 +460,7 @@ export default function ClientePortalPage() {
 
                 {/* QR Section */}
                 <div className="wallet-qr-section">
-                    <div className="wallet-qr-wrapper">
+                    <div className="wallet-qr-wrapper" style={{ backgroundColor: 'white', padding: '16px', colorScheme: 'light', borderRadius: '12px' }}>
                         {wallet?.qr_token ? (
                             <QRCode
                                 value={wallet.qr_token}
@@ -468,6 +468,7 @@ export default function ClientePortalPage() {
                                 bgColor="#ffffff"
                                 fgColor="#1a1a2e"
                                 level="H"
+                                renderAs="svg"
                             />
                         ) : (
                             <div className="wallet-qr-placeholder">Cargando...</div>
