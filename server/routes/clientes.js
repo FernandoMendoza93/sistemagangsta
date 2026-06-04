@@ -1,6 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { verifyToken, requireRole, requireTenant, ROLES } from '../middleware/auth.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
