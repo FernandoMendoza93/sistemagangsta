@@ -196,7 +196,7 @@ router.get('/:id', verifyToken, requireTenant, async (req, res) => {
 router.post('/', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
-        const { id_barbero, id_cliente, metodo_pago, notas, items } = req.body;
+        const { id_barbero, id_cliente, metodo_pago, notas, items, id_cita } = req.body;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ error: 'La venta debe tener al menos un item' });
@@ -301,6 +301,10 @@ router.post('/', verifyToken, requireTenant, async (req, res) => {
                         `, [id_barbero, detalleId, comisionProducto, req.barberia_id]);
                     }
                 }
+            }
+
+            if (id_cita) {
+                await tx.run('UPDATE citas SET estado = ? WHERE id = ? AND barberia_id = ?', ['Completada', id_cita, req.barberia_id]);
             }
 
             return { ventaId, totalVenta, recompensaData };

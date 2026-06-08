@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { serviciosService, productosService, barberosService, ventasService, clientesService } from '../services/api';
+import { serviciosService, productosService, barberosService, ventasService, clientesService, citasService } from '../services/api';
+import dayjs from 'dayjs';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
 
@@ -19,10 +20,37 @@ export default function POSPage() {
     const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
     const [tab, setTab] = useState('servicios');
     const [showRewardModal, setShowRewardModal] = useState(null);
+    const [citasPendientes, setCitasPendientes] = useState([]);
+    const [selectedCitaId, setSelectedCitaId] = useState('');
 
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        const fetchCitasPendientes = async () => {
+            if (!barberoId) {
+                setCitasPendientes([]);
+                setSelectedCitaId('');
+                return;
+            }
+            try {
+                const hoy = dayjs().format('YYYY-MM-DD');
+                const res = await citasService.getAll(hoy, 'Pendiente');
+                const citasBarbero = res.data.filter(c => c.id_barbero.toString() === barberoId.toString());
+                setCitasPendientes(citasBarbero);
+                
+                if (citasBarbero.length === 1) {
+                    setSelectedCitaId(citasBarbero[0].id.toString());
+                } else {
+                    setSelectedCitaId('');
+                }
+            } catch (error) {
+                console.error('Error buscando citas pendientes:', error);
+            }
+        };
+        fetchCitasPendientes();
+    }, [barberoId]);
 
     const loadData = async () => {
         try {
@@ -126,7 +154,8 @@ export default function POSPage() {
                 id_barbero: barberoId || null,
                 id_cliente: clienteId || null,
                 metodo_pago: metodoPago,
-                items
+                items,
+                id_cita: selectedCitaId || null
             });
 
             if (res.data.recompensa?.alcanzada) {
@@ -140,6 +169,8 @@ export default function POSPage() {
             }
 
             setCart([]);
+            setCitasPendientes([]);
+            setSelectedCitaId('');
 
         } catch (error) {
             setMessage({ type: 'error', text: error.response?.data?.error || 'Error al registrar venta' });
@@ -314,6 +345,31 @@ export default function POSPage() {
                                 <option value="Transferencia">Transferencia</option>
                             </select>
                         </div>
+
+                        {citasPendientes.length > 0 && (
+                            <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #F59E0B', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#F59E0B', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                                    <Icon name="alert-triangle" size={18} />
+                                    <span>¡Cita Pendiente Detectada!</span>
+                                </div>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.5rem 0' }}>
+                                    Este barbero tiene cita(s) agendada(s) hoy. ¿Quieres enlazar el cobro para cerrarla automáticamente en la agenda?
+                                </p>
+                                <select 
+                                    className="form-select form-select-sm" 
+                                    style={{ background: 'var(--bg-surface)' }}
+                                    value={selectedCitaId} 
+                                    onChange={(e) => setSelectedCitaId(e.target.value)}
+                                >
+                                    <option value="">No enlazar a ninguna cita</option>
+                                    {citasPendientes.map(c => (
+                                        <option key={c.id} value={c.id}>
+                                            Cita a las {dayjs(c.fecha_hora).format('hh:mm A')} - {c.cliente_nombre || 'Sin nombre'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         <div className="cart-total" style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '1rem', paddingBottom: '0.5rem' }}>
                             <span>Subtotal:</span>

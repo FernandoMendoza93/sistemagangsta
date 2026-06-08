@@ -13,6 +13,7 @@ const __dirname = dirname(__filename);
 
 // Inicializar Express e HTTP Server
 const app = express();
+app.set('trust proxy', 1); // Confiar en el balanceador de carga de Railway
 const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 process.env.TZ = 'America/Mexico_City'; // Enforcement de zona horaria
