@@ -298,8 +298,8 @@ export default function ComisionesPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {semanasPendientes.map((semana) => {
                                             const options = { weekday: 'short', day: 'numeric', month: 'short' };
-                                            const startStr = new Date(semana.semana_inicio).toLocaleDateString('es-MX', options);
-                                            const endStr = new Date(semana.semana_fin).toLocaleDateString('es-MX', options);
+                                            const startStr = new Date(`${semana.semana_inicio}T12:00:00`).toLocaleDateString('es-MX', options);
+                                            const endStr = new Date(`${semana.semana_fin}T12:00:00`).toLocaleDateString('es-MX', options);
                                             const isPayingThis = payingWeek === semana.semana_id;
 
                                             return (
