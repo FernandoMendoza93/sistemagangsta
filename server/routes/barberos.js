@@ -139,7 +139,7 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
                 params.push(desde);
             }
             if (hasta) {
-                query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-05:00')) <= ?";
+                query += " AND DATE(CONVERT_TZ(cp.fecha, '+00:00', '-06:00')) <= ?";
                 params.push(hasta);
             }
         }
@@ -154,11 +154,11 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         const totalParams = [id, req.barberia_id];
 
         if (desde) {
-            totalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?";
+            totalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) >= ?";
             totalParams.push(desde);
         }
         if (hasta) {
-            totalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?";
+            totalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) <= ?";
             totalParams.push(hasta);
         }
 
@@ -167,12 +167,12 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
         query += ' ORDER BY cp.fecha DESC';
         const comisiones = await dbQuery.all(query, params);
 
-        // Resumen agrupado por semana (Lunes a Domingo)
+        // Resumen agrupado por semana (Domingo a Sábado)
         let semanalQuery = `
             SELECT
-                YEARWEEK(fecha, 1) as semana_id,
-                DATE(DATE_SUB(fecha, INTERVAL WEEKDAY(fecha) DAY)) as semana_inicio,
-                DATE(DATE_ADD(DATE_SUB(fecha, INTERVAL WEEKDAY(fecha) DAY), INTERVAL 6 DAY)) as semana_fin,
+                YEARWEEK(CONVERT_TZ(fecha, '+00:00', '-06:00'), 0) as semana_id,
+                DATE(DATE_SUB(CONVERT_TZ(fecha, '+00:00', '-06:00'), INTERVAL DAYOFWEEK(CONVERT_TZ(fecha, '+00:00', '-06:00')) - 1 DAY)) as semana_inicio,
+                DATE(DATE_ADD(CONVERT_TZ(fecha, '+00:00', '-06:00'), INTERVAL 7 - DAYOFWEEK(CONVERT_TZ(fecha, '+00:00', '-06:00')) DAY)) as semana_fin,
                 COUNT(*) as cantidad,
                 COALESCE(SUM(monto), 0) as total,
                 COALESCE(SUM(CASE WHEN pagado = 0 THEN monto ELSE 0 END), 0) as pendiente,
@@ -183,8 +183,8 @@ router.get('/:id/comisiones', verifyToken, requireTenant, async (req, res) => {
             WHERE id_barbero = ? AND barberia_id = ?
         `;
         const semanalParams = [id, req.barberia_id];
-        if (desde) { semanalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?"; semanalParams.push(desde); }
-        if (hasta) { semanalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?"; semanalParams.push(hasta); }
+        if (desde) { semanalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) >= ?"; semanalParams.push(desde); }
+        if (hasta) { semanalQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) <= ?"; semanalParams.push(hasta); }
         semanalQuery += ' GROUP BY semana_id, semana_inicio, semana_fin ORDER BY semana_id DESC';
 
         const resumen_semanal = await dbQuery.all(semanalQuery, semanalParams);
@@ -218,11 +218,11 @@ router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROL
         const pendienteParams = [id, req.barberia_id];
 
         if (desde) {
-            pendienteQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?";
+            pendienteQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) >= ?";
             pendienteParams.push(desde);
         }
         if (hasta) {
-            pendienteQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?";
+            pendienteQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) <= ?";
             pendienteParams.push(hasta);
         }
 
@@ -245,11 +245,11 @@ router.post('/:id/pagar-comisiones', verifyToken, requireTenant, requireRole(ROL
         const updateParams = [id, req.barberia_id];
 
         if (desde) {
-            updateQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) >= ?";
+            updateQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) >= ?";
             updateParams.push(desde);
         }
         if (hasta) {
-            updateQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) <= ?";
+            updateQuery += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-06:00')) <= ?";
             updateParams.push(hasta);
         }
 
