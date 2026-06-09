@@ -864,6 +864,159 @@ body {
   font-size: 1.5rem;
 }
 
+/* Global Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--overlay-bg, rgba(0, 0, 0, 0.75));
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.modal-content {
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px var(--shadow-color, rgba(0, 0, 0, 0.5));
+  color: var(--text-main, #fff);
+  position: relative;
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* POS isolated modal styles to prevent Client Portal CSS leakage */
+.pos-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--overlay-bg, rgba(0, 0, 0, 0.75));
+  backdrop-filter: blur(4px);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: row !important; /* Prevents column bottom sheet alignment */
+  z-index: 9999;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.pos-modal-content {
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 100%;
+  box-shadow: 0 10px 30px var(--shadow-color, rgba(0, 0, 0, 0.5));
+  color: var(--text-main, #fff);
+  position: relative;
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sidebar Offset Compensation for modals on desktop/tablets */
+@media (min-width: 1195px) {
+  .pos-modal-overlay,
+  .modal-overlay,
+  .confirm-modal-overlay,
+  .custom-modal-overlay {
+    left: 280px !important;
+  }
+}
+
+@media (max-width: 1194px) {
+  .pos-modal-overlay,
+  .modal-overlay,
+  .confirm-modal-overlay,
+  .custom-modal-overlay {
+    left: 0 !important;
+  }
+}
+
+/* Payment Confirmation Modal */
+.payment-confirm-modal {
+  max-width: 380px !important; /* Ajuste para que mantenga el tamaño ideal */
+}
+
+.payment-confirm-total {
+  font-size: 1.1rem;
+  color: var(--text-muted, rgba(255,255,255,0.6));
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.payment-confirm-total strong {
+  color: var(--accent-primary, #6366f1);
+  font-size: 1.4rem;
+}
+
+.payment-confirm-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.payment-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border-radius: 14px;
+  border: 2px solid var(--border-color, rgba(255,255,255,0.08));
+  background: var(--bg-input, rgba(255,255,255,0.03));
+  color: var(--text-muted, rgba(255,255,255,0.6));
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-option:hover {
+  border-color: var(--primary, rgba(255,255,255,0.2));
+  background: var(--bg-hover, rgba(255,255,255,0.06));
+}
+
+.payment-option.selected {
+  border-color: var(--accent-primary, #4f46e5);
+  background: rgba(var(--accent-primary-rgb), 0.15);
+  color: var(--text-main, #fff);
+  box-shadow: 0 0 12px rgba(var(--accent-primary-rgb), 0.2);
+}
+
+.payment-icon {
+  font-size: 1.8rem;
+}
+
 /* =============================================
    ALERTAS DE STOCK - PROFESSIONAL
    ============================================= */

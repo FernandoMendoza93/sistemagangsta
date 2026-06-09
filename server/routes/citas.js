@@ -443,7 +443,7 @@ router.get('/', verifyToken, requireTenant, requireRole(ROLES.ADMIN, ROLES.ENCAR
             SELECT c.id, c.fecha, c.hora, c.estado, c.notas, c.fecha_creacion,
                    cl.nombre as cliente_nombre, cl.telefono as cliente_telefono,
                    s.nombre_servicio, s.precio, s.duracion_aprox,
-                   u.nombre as barbero_nombre
+                   u.nombre as barbero_nombre, c.id_barbero
             FROM citas c
             JOIN clientes cl ON c.id_cliente = cl.id
             LEFT JOIN servicios s ON c.id_servicio = s.id

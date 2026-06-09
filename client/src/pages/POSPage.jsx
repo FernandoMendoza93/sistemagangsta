@@ -20,6 +20,7 @@ export default function POSPage() {
     const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
     const [tab, setTab] = useState('servicios');
     const [showRewardModal, setShowRewardModal] = useState(null);
+    const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
     const [citasPendientes, setCitasPendientes] = useState([]);
     const [selectedCitaId, setSelectedCitaId] = useState('');
 
@@ -37,7 +38,7 @@ export default function POSPage() {
             try {
                 const hoy = dayjs().format('YYYY-MM-DD');
                 const res = await citasService.getAll(hoy, 'Pendiente');
-                const citasBarbero = res.data.filter(c => c.id_barbero.toString() === barberoId.toString());
+                const citasBarbero = res.data.filter(c => c.id_barbero && c.id_barbero.toString() === barberoId.toString());
                 setCitasPendientes(citasBarbero);
                 
                 if (citasBarbero.length === 1) {
@@ -364,7 +365,7 @@ export default function POSPage() {
                                     <option value="">No enlazar a ninguna cita</option>
                                     {citasPendientes.map(c => (
                                         <option key={c.id} value={c.id}>
-                                            Cita a las {dayjs(c.fecha_hora).format('hh:mm A')} - {c.cliente_nombre || 'Sin nombre'}
+                                            Cita a las {dayjs(`2000-01-01T${c.hora}`).format('hh:mm A')} - {c.cliente_nombre || 'Sin nombre'}
                                         </option>
                                     ))}
                                 </select>
@@ -388,7 +389,7 @@ export default function POSPage() {
 
                         <button
                             className="btn btn-primary btn-block btn-lg"
-                            onClick={handleVenta}
+                            onClick={() => setShowPaymentConfirm(true)}
                             disabled={processing || cart.length === 0}
                         >
                             {processing ? 'Procesando...' : (
@@ -409,8 +410,8 @@ export default function POSPage() {
             {mainContent}
 
             {showRewardModal && (
-                <div className="modal-overlay" style={{ zIndex: 9999 }}>
-                    <div className="modal-content" style={{ textAlign: 'center', maxWidth: '400px', background: 'var(--bg-surface)', padding: '2rem', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+                <div className="pos-modal-overlay">
+                    <div className="pos-modal-content" style={{ textAlign: 'center', maxWidth: '400px', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '8px', background: 'linear-gradient(90deg, #F59E0B, #EF4444)' }}></div>
                         <div style={{ width: '80px', height: '80px', margin: '0 auto 1.5rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Icon name="gift" size={40} color="#F59E0B" />
@@ -433,6 +434,66 @@ export default function POSPage() {
                         >
                             Entendido, Cobrar Siguiente
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {showPaymentConfirm && (
+                <div className="pos-modal-overlay"> 
+                    <div className="pos-modal-content payment-confirm-modal" onClick={e => e.stopPropagation()}>
+                        <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'var(--text-main)' }}>¿Confirmas el método de pago?</h3>
+                        <p className="payment-confirm-total">
+                            Total a cobrar: <strong>${getTotal().toFixed(2)}</strong>
+                        </p>
+                        
+                        <div className="payment-confirm-options">
+                            <button
+                                type="button"
+                                className={`payment-option ${metodoPago === 'Efectivo' ? 'selected' : ''}`}
+                                onClick={() => setMetodoPago('Efectivo')}
+                            >
+                                <span className="payment-icon">💵</span>
+                                <span>Efectivo</span>
+                            </button>
+                            
+                            <button
+                                type="button"
+                                className={`payment-option ${metodoPago === 'Tarjeta' ? 'selected' : ''}`}
+                                onClick={() => setMetodoPago('Tarjeta')}
+                            >
+                                <span className="payment-icon">💳</span>
+                                <span>Tarjeta</span>
+                            </button>
+                            
+                            <button
+                                type="button"
+                                className={`payment-option ${metodoPago === 'Transferencia' ? 'selected' : ''}`}
+                                onClick={() => setMetodoPago('Transferencia')}
+                            >
+                                <span className="payment-icon">📱</span>
+                                <span>Transferencia</span>
+                            </button>
+                        </div>
+
+                        <div className="modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => setShowPaymentConfirm(false)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    setShowPaymentConfirm(false);
+                                    handleVenta();
+                                }}
+                            >
+                                Confirmar y Cobrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
