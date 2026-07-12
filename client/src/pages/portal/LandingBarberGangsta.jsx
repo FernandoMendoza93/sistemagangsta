@@ -319,9 +319,31 @@ export default function LandingBarberGangsta() {
                         </div>
                         <div className="g-footer-map">
                             <div className="g-map-placeholder">
-                                <MapPin size={40} color="var(--g-gold)" />
-                                <h3>GANGSTA BARBER</h3>
-                                <button className="g-btn-outline-gold" onClick={() => window.open('https://maps.app.goo.gl/nyLwxSooa6qoXdQs8')}>ABRIR EN MAPAS</button>
+                                <iframe 
+                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3814.2885973748286!2d-96.697418!3d17.058319!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85c721c000000001%3A0x1234567890abcdef!2sOrqu%C3%ADdeas%20122%2C%20Antiguo%20Aeropuerto%2C%2071245%20Santa%20Luc%C3%ADa%20del%20Camino%2C%20Oax.!5e0!3m2!1ses!2smx!4v1700000000000!5m2!1ses!2smx" 
+                                    className="g-map-iframe"
+                                    allowFullScreen="" 
+                                    loading="lazy" 
+                                    referrerPolicy="no-referrer-when-downgrade">
+                                </iframe>
+                                <div className="g-map-overlay-content">
+                                    <div className="g-animated-pin-container">
+                                        <motion.div
+                                            animate={{ y: [0, -20, 0] }}
+                                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                                            className="g-pin-icon"
+                                        >
+                                            <MapPin size={56} color="var(--g-gold)" />
+                                        </motion.div>
+                                        <motion.div 
+                                            className="g-pin-shadow"
+                                            animate={{ scale: [1, 0.5, 1], opacity: [0.6, 0.2, 0.6] }}
+                                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                                        ></motion.div>
+                                    </div>
+                                    <h3 style={{ letterSpacing: '4px', marginTop: '10px' }}>GANGSTA BARBER</h3>
+                                    <button className="g-btn-outline-gold" onClick={() => window.open('https://maps.app.goo.gl/nyLwxSooa6qoXdQs8')}>ABRIR EN MAPAS</button>
+                                </div>
                             </div>
                         </div>
                     </div>
