@@ -29,6 +29,7 @@ import PlanLealtadPage from './pages/PlanLealtadPage';
 import { Toaster } from 'sonner';
 import NotificationManager from './components/NotificationManager';
 import LandingPagePortal from './pages/portal/LandingPagePortal';
+import LandingBarberGangsta from './pages/portal/LandingBarberGangsta';
 import './index.css';
 
 // ============================================
@@ -142,6 +143,7 @@ function AppRoutes() {
 
       {/* ====== CLIENT PORTAL (no sidebar) ====== */}
       {/* Nueva Landing Page por Barbería */}
+      <Route path="/portal/the-gangsta" element={<LandingBarberGangsta />} />
       <Route path="/portal/:slug" element={<LandingPagePortal />} />
       
       {/* Rutas de Acceso (Login/Registro) */}

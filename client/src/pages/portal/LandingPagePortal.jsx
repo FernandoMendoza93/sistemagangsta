@@ -2,7 +2,28 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { motion } from 'framer-motion';
 import './LandingPagePortal.css';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+        opacity: 1, 
+        transition: { 
+            staggerChildren: 0.15,
+            delayChildren: 0.1
+        } 
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+        opacity: 1, 
+        y: 0,
+        transition: { type: 'spring', stiffness: 300, damping: 24 }
+    }
+};
 
 export default function LandingPagePortal() {
     const { slug } = useParams();
@@ -55,64 +76,73 @@ export default function LandingPagePortal() {
                 <div className="landing-portal-overlay"></div>
             </div>
 
-            {/* Contenido Principal */}
-            <div className="landing-portal-content">
+            {/* Contenido Principal Animado */}
+            <motion.div 
+                className="landing-portal-content"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 <div className="landing-portal-top">
-                    <div className="landing-logo-wrapper">
+                    <motion.div variants={itemVariants} className="landing-logo-wrapper">
                         {barberia.logo_url ? (
                             <img src={barberia.logo_url} alt={barberia.nombre} />
                         ) : (
                             <span style={{ fontSize: '32px' }}>✂️</span>
                         )}
-                    </div>
+                    </motion.div>
                     
-                    <p className="landing-brand-tag">{barberia.nombre}</p>
+                    <motion.p variants={itemVariants} className="landing-brand-tag">
+                        {barberia.nombre}
+                    </motion.p>
                     
-                    <h1 className="landing-headline">
+                    <motion.h1 variants={itemVariants} className="landing-headline">
                         {barberia.landing_titulo?.includes(',') 
                             ? <>{barberia.landing_titulo.split(',')[0]},<br /><span>{barberia.landing_titulo.split(',')[1]}</span></>
-                            : barberia.landing_titulo || <>Tu barbería,<br /><span>tu experiencia</span></>
+                            : barberia.landing_titulo || <>Bienvenido a nuestra<br /><span>barbería</span></>
                         }
-                    </h1>
+                    </motion.h1>
                     
-                    <p className="landing-subtext">
-                        {barberia.landing_descripcion || 'Agenda tu cita, acumula puntos y accede a beneficios exclusivos.'}
-                    </p>
+                    <motion.p variants={itemVariants} className="landing-subtext">
+                        {barberia.landing_descripcion || 'Agenda tu cita, acumula puntos y accede a beneficios exclusivos. Si eres cliente nuevo regístrate, si ya tienes cuenta inicia sesión.'}
+                    </motion.p>
                 </div>
 
                 {/* Pasos con Glassmorphism */}
                 <div className="landing-steps">
-                    <div className="landing-step">
+                    <motion.div variants={itemVariants} className="landing-step glass-card" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <div className="landing-step-num">1</div>
                         <div className="landing-step-info">
                             <span className="landing-step-title">Escanea el código QR</span>
                             <span className="landing-step-desc">El que te dio tu barbero al terminar</span>
                         </div>
-                    </div>
-                    <div className="landing-step">
+                    </motion.div>
+                    <motion.div variants={itemVariants} className="landing-step glass-card" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <div className="landing-step-num">2</div>
                         <div className="landing-step-info">
                             <span className="landing-step-title">Regístrate gratis</span>
                             <span className="landing-step-desc">Solo tu teléfono y una contraseña</span>
                         </div>
-                    </div>
-                    <div className="landing-step">
+                    </motion.div>
+                    <motion.div variants={itemVariants} className="landing-step glass-card" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <div className="landing-step-num">3</div>
                         <div className="landing-step-info">
                             <span className="landing-step-title">Acumula puntos</span>
                             <span className="landing-step-desc">Cada corte te acerca a tu recompensa</span>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
 
                 {/* Botones Anclados al Fondo */}
-                <div className="landing-portal-bottom">
-                    <button 
-                        className="btn-landing-primary"
+                <motion.div variants={itemVariants} className="landing-portal-bottom">
+                    <motion.button 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="btn-landing-primary pulse-btn"
                         onClick={() => navigate(`/portal/${slug}/registro`)}
                     >
                         Comenzar <span>→</span>
-                    </button>
+                    </motion.button>
                     
                     <button 
                         className="btn-landing-secondary"
@@ -120,8 +150,8 @@ export default function LandingPagePortal() {
                     >
                         Ya tengo cuenta — Iniciar sesión
                     </button>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
         </div>
     );
 }

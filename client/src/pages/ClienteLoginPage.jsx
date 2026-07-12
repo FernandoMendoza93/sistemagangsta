@@ -3,8 +3,55 @@ import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { publicService } from '../services/api';
-import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle, Store } from 'lucide-react';
+import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle, Store, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './ClienteLoginPage.css';
+
+const PremiumTooltip = ({ text, visible, top, left, bottom, right, pointer = 'down' }) => (
+    <AnimatePresence>
+        {visible && (
+            <motion.div
+                initial={{ opacity: 0, y: pointer === 'down' ? -5 : 5, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                    position: 'absolute',
+                    top, left, bottom, right,
+                    background: 'rgba(20, 20, 25, 0.75)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#e2e8f0',
+                    padding: '8px 14px',
+                    borderRadius: '12px',
+                    fontSize: '12.5px',
+                    fontWeight: '500',
+                    letterSpacing: '0.2px',
+                    boxShadow: '0 10px 40px -10px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05) inset',
+                    zIndex: 20,
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}
+            >
+                {/* Indicador pulsante premium */}
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px' }}>
+                    <motion.div
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', backgroundColor: 'var(--accent-primary, #6366f1)' }}
+                    />
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary, #6366f1)', boxShadow: '0 0 8px var(--accent-primary, #6366f1)' }} />
+                </div>
+                
+                <span style={{ opacity: 0.9 }}>{text}</span>
+            </motion.div>
+        )}
+    </AnimatePresence>
+);
 
 
 export default function ClienteLoginPage() {
@@ -21,6 +68,8 @@ export default function ClienteLoginPage() {
     const [barberia, setBarberia] = useState(null);
     const [barberiaLoading, setBarberiaLoading] = useState(true);
     const [barberiaError, setBarberiaError] = useState(null);
+    const [showTour, setShowTour] = useState(() => !localStorage.getItem('tourCompleted'));
+    const [focusedField, setFocusedField] = useState(null);
 
     const { loginCliente, user } = useAuth();
     const { applyTheme, resetTheme } = useTheme();
@@ -70,10 +119,15 @@ export default function ClienteLoginPage() {
         return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
     }
 
-    async function handleSubmit(e) {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+
+        if (showTour) {
+            setShowTour(false);
+            localStorage.setItem('tourCompleted', 'true');
+        }
 
         const digits = telefono.replace(/\D/g, '');
         if (digits.length < 10) {
@@ -184,9 +238,9 @@ export default function ClienteLoginPage() {
                 {/* Welcome */}
                 <div className="cliente-login-welcome">
                     {activeTab === 'login' ? (
-                        <p>Ingresa para ver tus puntos y citas</p>
+                        <p>¿Ya tienes cuenta? Ingresa para ver tus citas y puntos de lealtad.</p>
                     ) : (
-                        <p>Regístrate para activar tu tarjeta de lealtad</p>
+                        <p>Crea tu cuenta rápido y gratis para activar tu tarjeta de lealtad.</p>
                     )}
                 </div>
 
@@ -210,34 +264,55 @@ export default function ClienteLoginPage() {
                                 value={nombre}
                                 onChange={(e) => setNombre(e.target.value)}
                                 required={activeTab === 'register'}
+                                onFocus={() => setFocusedField('nombre')}
+                                onBlur={() => setFocusedField('null')}
+                            />
+                            <PremiumTooltip 
+                                text="Empieza por escribir tu nombre" 
+                                visible={showTour && focusedField !== 'nombre' && !nombre} 
+                                top="-38px" left="12px" 
                             />
                         </div>
                     )}
 
                     <div className="cliente-input-group">
                         <div className="cliente-input-icon"><Phone size={20} strokeWidth={1.5} /></div>
-                        <input
-                            type="tel"
-                            className="cliente-input"
-                            placeholder="Teléfono (10 dígitos)"
-                            value={telefono}
-                            onChange={(e) => setTelefono(formatPhone(e.target.value))}
-                            required
-                            inputMode="numeric"
-                        />
+                            <input
+                                type="tel"
+                                className="cliente-input"
+                                placeholder="Teléfono (10 dígitos)"
+                                value={telefono}
+                                onChange={(e) => setTelefono(formatPhone(e.target.value))}
+                                required
+                                inputMode="numeric"
+                                onFocus={() => setFocusedField('telefono')}
+                                onBlur={() => setFocusedField(null)}
+                            />
+                            <PremiumTooltip 
+                                text="Tu número celular a 10 dígitos" 
+                                visible={showTour && focusedField !== 'telefono' && !telefono && (activeTab === 'login' || (activeTab === 'register' && nombre))} 
+                                top="-38px" left="12px" 
+                            />
                     </div>
 
                     <div className="cliente-input-group">
                         <div className="cliente-input-icon"><Lock size={20} strokeWidth={1.5} /></div>
-                        <input
-                            type={showPassword ? 'text' : 'password'}
-                            className="cliente-input"
-                            placeholder={activeTab === 'register' ? 'Crea una contraseña' : 'Tu contraseña'}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            minLength={4}
-                        />
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                className="cliente-input"
+                                placeholder={activeTab === 'register' ? 'Crea una contraseña fácil de recordar' : 'Tu contraseña'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                minLength={4}
+                                onFocus={() => setFocusedField('password')}
+                                onBlur={() => setFocusedField(null)}
+                            />
+                            <PremiumTooltip 
+                                text={activeTab === 'register' ? "Crea una contraseña segura" : "Ingresa tu contraseña"} 
+                                visible={showTour && focusedField !== 'password' && !password && telefono.length >= 10} 
+                                top="-38px" left="12px" 
+                            />
                         <button
                             type="button"
                             className="password-toggle"
@@ -249,8 +324,8 @@ export default function ClienteLoginPage() {
                     </div>
 
                     {activeTab === 'login' && (
-                        <p className="login-hint">
-                            Si eres cliente antiguo, ingresa tu número y crea una contraseña nueva en este espacio.
+                        <p className="login-hint" style={{ fontWeight: '500', color: 'var(--accent-primary)', textAlign: 'center', fontSize: '0.9rem' }}>
+                            💡 ¿No tienes cuenta? Toca en "Registrarme" arriba.
                         </p>
                     )}
 
@@ -258,14 +333,27 @@ export default function ClienteLoginPage() {
                         type="submit"
                         className="cliente-submit-btn"
                         disabled={loading}
-                        style={{ background: `linear-gradient(135deg, ${acento}, ${acento}cc)` }}
+                        style={{ background: `linear-gradient(135deg, var(--accent-primary), rgba(var(--accent-primary-rgb), 0.8))`, position: 'relative' }}
                     >
                         {loading ? (
                             <div className="cliente-spinner"></div>
                         ) : (
                             activeTab === 'login' ? 'Entrar al Portal' : 'Crear Mi Cuenta'
                         )}
+                        <PremiumTooltip 
+                            text="Toca aquí para continuar" 
+                            visible={showTour && password.length >= 4 && telefono.length >= 10} 
+                            top="110%" left="50%" right={undefined} bottom={undefined}
+                            pointer="up"
+                        />
                     </button>
+                    {showTour && (
+                        <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                            <button type="button" onClick={() => setShowTour(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', textDecoration: 'underline', fontSize: '12px' }}>
+                                Ocultar guías
+                            </button>
+                        </div>
+                    )}
                 </form>
             </div>
         </div>

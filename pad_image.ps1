@@ -1,0 +1,13 @@
+Add-Type -AssemblyName System.Drawing
+$img = [System.Drawing.Image]::FromFile("D:\PC Budgie\Documents\DOCUMENTOS RANDOM\WhatsApp_Image_2026-07-12_at_1.05.43_AM-removebg-preview.png")
+$size = [math]::Max($img.Width, $img.Height)
+$bmp = New-Object System.Drawing.Bitmap($size, $size)
+$g = [System.Drawing.Graphics]::FromImage($bmp)
+$g.Clear([System.Drawing.Color]::Transparent)
+$x = [math]::Floor(($size - $img.Width) / 2)
+$y = [math]::Floor(($size - $img.Height) / 2)
+$g.DrawImage($img, $x, $y, $img.Width, $img.Height)
+$bmp.Save("d:\PC Budgie\Documents\desarrollo personal\barbería\appclaudebarber\client\public\robot-favicon-square.png", [System.Drawing.Imaging.ImageFormat]::Png)
+$g.Dispose()
+$bmp.Dispose()
+$img.Dispose()
