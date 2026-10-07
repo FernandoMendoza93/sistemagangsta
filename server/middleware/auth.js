@@ -4,7 +4,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET no está configurado');
 
 // Middleware para verificar token JWT
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
 
@@ -14,6 +14,19 @@ export const verifyToken = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Validación de cambio de contraseña
+        const dbQuery = req.app.locals.dbQuery;
+        if (dbQuery && decoded.id && decoded.rol) {
+            const tabla = decoded.rol === 'Cliente' ? 'clientes' : 'usuarios';
+            const row = await dbQuery.get(`SELECT UNIX_TIMESTAMP(password_changed_at) AS pca FROM ${tabla} WHERE id = ?`, [decoded.id]);
+            if (row && row.pca) {
+                if (decoded.iat < (row.pca - 5)) {
+                    return res.status(401).json({ error: 'Sesión inválida, vuelve a iniciar sesión' });
+                }
+            }
+        }
+
         req.user = decoded;
         // Inject barberia_id for tenant isolation
         req.barberia_id = decoded.barberia_id || null;

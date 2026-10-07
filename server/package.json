@@ -25,6 +25,7 @@
         "multer-storage-cloudinary": "^4.0.0",
         "mysql2": "^3.16.3",
         "nodemailer": "^8.0.4",
+        "resend": "^6.32.1",
         "sistemagangsta-root": "file:..",
         "socket.io": "^4.8.3",
         "xlsx": "^0.18.5"

@@ -26,6 +26,8 @@ import ScannerPage from './pages/ScannerPage';
 import RegisterPage from './pages/RegisterPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
 import PlanLealtadPage from './pages/PlanLealtadPage';
+import RecuperarPasswordPage from './pages/RecuperarPasswordPage';
+import RestablecerPasswordPage from './pages/RestablecerPasswordPage';
 import { Toaster } from 'sonner';
 import NotificationManager from './components/NotificationManager';
 import LandingPagePortal from './pages/portal/LandingPagePortal';
@@ -140,15 +142,19 @@ function AppRoutes() {
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />} />
       <Route path="/login" element={user ? <Navigate to={getRedirectPath()} replace /> : <LoginPage />} />
       <Route path="/registrar" element={user ? <Navigate to={getRedirectPath()} replace /> : <RegisterPage />} />
+      <Route path="/recuperar-password" element={user ? <Navigate to={getRedirectPath()} replace /> : <RecuperarPasswordPage />} />
+      <Route path="/restablecer-password" element={user ? <Navigate to={getRedirectPath()} replace /> : <RestablecerPasswordPage />} />
 
       {/* ====== CLIENT PORTAL (no sidebar) ====== */}
       {/* Nueva Landing Page por Barbería */}
       <Route path="/portal/the-gangsta" element={<LandingBarberGangsta />} />
       <Route path="/portal/:slug" element={<LandingPagePortal />} />
       
-      {/* Rutas de Acceso (Login/Registro) */}
+      {/* Rutas de Acceso (Login/Registro/Recuperar) */}
       <Route path="/portal/:slug/acceso" element={<ClienteLoginPage />} />
       <Route path="/portal/:slug/registro" element={<ClienteLoginPage />} /> {/* Reutilizando Login que maneja ambos */}
+      <Route path="/portal/:slug/recuperar-password" element={<RecuperarPasswordPage />} />
+      <Route path="/portal/:slug/restablecer-password" element={<RestablecerPasswordPage />} />
 
       {/* Panel del Cliente */}
       <Route path="/portal/:slug/portal" element={

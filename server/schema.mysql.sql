@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     nombre VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    password_changed_at DATETIME NULL,
     id_rol INT NOT NULL,
     barberia_id INT,
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -193,14 +194,17 @@ CREATE TABLE IF NOT EXISTS clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     telefono VARCHAR(20),
+    email VARCHAR(255) NULL,
     password_hash VARCHAR(255),
+    password_changed_at DATETIME NULL,
     puntos_lealtad INT DEFAULT 0,
     ultima_visita DATETIME,
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
     notas TEXT,
     activo TINYINT(1) DEFAULT 1,
     barberia_id INT,
-    FOREIGN KEY (barberia_id) REFERENCES barberias(id)
+    FOREIGN KEY (barberia_id) REFERENCES barberias(id),
+    UNIQUE KEY uq_cliente_barberia_email (barberia_id, email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO clientes (id, nombre, telefono, password_hash, puntos_lealtad, ultima_visita, fecha_registro, notas, activo, barberia_id) VALUES 
@@ -566,3 +570,19 @@ CREATE INDEX idx_ventas_barberia ON ventas_cabecera(barberia_id);
 CREATE INDEX idx_servicios_barberia ON servicios(barberia_id);
 CREATE INDEX idx_productos_barberia ON productos(barberia_id);
 CREATE INDEX idx_horarios_barbero ON horarios_barberos(id_barbero, dia_semana, barberia_id);
+
+-- =============================================
+-- 14. TABLA DE RECUPERACIÓN DE CONTRASEÑA
+-- =============================================
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    owner_id INT NOT NULL,
+    tipo ENUM('usuario','cliente') NOT NULL,
+    barberia_id INT NULL,
+    token_hash CHAR(64) NOT NULL,
+    expira_en DATETIME NOT NULL,
+    usado TINYINT(1) DEFAULT 0,
+    creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_token_hash (token_hash),
+    INDEX idx_owner (tipo, owner_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
