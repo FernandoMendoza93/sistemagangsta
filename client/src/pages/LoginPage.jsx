@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Scissors, Mail, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import './LoginPage.css';
@@ -96,6 +96,12 @@ export default function LoginPage() {
                             >
                                 {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                             </button>
+                        </div>
+
+                        <div style={{ textAlign: 'right', marginBottom: '1rem', marginTop: '-0.5rem' }}>
+                            <Link to="/recuperar-password" style={{ fontSize: '0.8rem', color: '#FF6B4A', textDecoration: 'none', fontWeight: 'bold' }}>
+                                ¿Olvidaste tu contraseña?
+                            </Link>
                         </div>
 
                         {/* Submit Button */}

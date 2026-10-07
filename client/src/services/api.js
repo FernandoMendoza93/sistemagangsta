@@ -154,8 +154,8 @@ export const clientesService = {
 
 // Auth del Cliente (por teléfono)
 export const clienteAuthService = {
-    login: (telefono, nombre, password, slug) =>
-        api.post('/auth/cliente', { telefono, nombre, password, barberia_slug: slug })
+    login: (telefono, nombre, password, slug, email) =>
+        api.post('/auth/cliente', { telefono, nombre, password, barberia_slug: slug, email })
 };
 
 // Citas

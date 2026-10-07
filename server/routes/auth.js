@@ -7,7 +7,10 @@ import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import dayjs from 'dayjs';
+import crypto from 'crypto';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { JWT_SECRET, verifyToken } from '../middleware/auth.js';
+import { enviarCorreoRecuperacion } from '../services/emailService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,6 +39,19 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter, limits: { fileSize: 2 * 1024 * 1024 } });
 
 const router = express.Router();
+
+const olvidePasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
+    message: { error: 'Demasiadas peticiones, intenta más tarde.' }
+});
+
+const restablecerPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Demasiadas peticiones, intenta más tarde.' }
+});
 
 // GET /api/auth/mi-barberia — Returns the calling admin's own barberia info (slug, logo, color)
 router.get('/mi-barberia', verifyToken, async (req, res) => {
@@ -256,13 +272,16 @@ router.get('/me', async (req, res) => {
 // POST /api/auth/cliente — Client login/registration
 router.post('/cliente', async (req, res) => {
     try {
-        const { telefono, nombre, password, barberia_slug } = req.body;
+        const { telefono, nombre, password, barberia_slug, email } = req.body;
         const dbQuery = req.app.locals.dbQuery;
         const db = req.app.locals.db;
 
         if (!telefono || telefono.replace(/\D/g, '').length < 10) {
             return res.status(400).json({ error: 'Telefono a 10 digitos es requerido' });
         }
+
+        // Normalize email if provided
+        const normalizedEmail = email ? email.trim().toLowerCase() : null;
 
         // Determine barberia_id from slug or default to 1
         let barberia_id = 1;
@@ -300,13 +319,54 @@ router.post('/cliente', async (req, res) => {
             }
 
             const passwordHash = await bcrypt.hash(password, 10);
-            const result = await dbQuery.run(`
-                INSERT INTO clientes (nombre, telefono, password_hash, barberia_id)
-                VALUES (?, ?, ?, ?)
-            `, [nombre.trim(), telefonoLimpio, passwordHash, barberia_id]);
+            let result;
+            let emailWarning = null;
+
+            if (normalizedEmail) {
+                // Try to insert with email, but don't fail if duplicate
+                try {
+                    result = await dbQuery.run(`
+                        INSERT INTO clientes (nombre, telefono, email, password_hash, barberia_id)
+                        VALUES (?, ?, ?, ?, ?)
+                    `, [nombre.trim(), telefonoLimpio, normalizedEmail, passwordHash, barberia_id]);
+                } catch (e) {
+                    if (e.code === 'ER_DUP_ENTRY' || e.errno === 1062) {
+                        // Email ya existe en esta barbería, insertar sin email
+                        emailWarning = 'El correo ya está registrado en otro cliente. Se creó la cuenta sin correo.';
+                        result = await dbQuery.run(`
+                            INSERT INTO clientes (nombre, telefono, password_hash, barberia_id)
+                            VALUES (?, ?, ?, ?)
+                        `, [nombre.trim(), telefonoLimpio, passwordHash, barberia_id]);
+                    } else {
+                        throw e;
+                    }
+                }
+            } else {
+                result = await dbQuery.run(`
+                    INSERT INTO clientes (nombre, telefono, password_hash, barberia_id)
+                    VALUES (?, ?, ?, ?)
+                `, [nombre.trim(), telefonoLimpio, passwordHash, barberia_id]);
+            }
 
             cliente = await dbQuery.get('SELECT * FROM clientes WHERE id = ?', [result.lastInsertRowid]);
+            if (emailWarning) {
+                console.warn(`[Auth Cliente] ${emailWarning} barberia_id=${barberia_id} email=${normalizedEmail}`);
+            }
         } else {
+            // Cliente existente: si no tiene email y se proporciona uno, intentar actualizarlo
+            if (!cliente.email && normalizedEmail) {
+                try {
+                    await dbQuery.run('UPDATE clientes SET email = ? WHERE id = ?', [normalizedEmail, cliente.id]);
+                    cliente.email = normalizedEmail;
+                } catch (e) {
+                    if (e.code === 'ER_DUP_ENTRY' || e.errno === 1062) {
+                        console.warn(`[Auth Cliente] Email duplicado al actualizar: ${normalizedEmail}`);
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
             if (!cliente.password_hash) {
                 if (!password) {
                     return res.status(400).json({
@@ -332,6 +392,7 @@ router.post('/cliente', async (req, res) => {
                 id: cliente.id,
                 nombre: cliente.nombre,
                 telefono: cliente.telefono,
+                email: cliente.email || null,
                 rol: 'Cliente',
                 tipo: 'cliente',
                 barberia_id: barberia_id
@@ -347,6 +408,7 @@ router.post('/cliente', async (req, res) => {
                 id: cliente.id,
                 nombre: cliente.nombre,
                 telefono: cliente.telefono,
+                email: cliente.email || null,
                 puntos_lealtad: cliente.puntos_lealtad,
                 ultima_visita: cliente.ultima_visita,
                 rol: 'Cliente',
@@ -561,11 +623,155 @@ router.post('/cambiar-password', verifyToken, async (req, res) => {
 
         // Hashear la nueva contraseña y actualizar
         const nuevoHash = await bcrypt.hash(passwordNueva, 10);
-        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ? WHERE id = ?`, [nuevoHash, userId]);
+        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ?, password_changed_at = NOW() WHERE id = ?`, [nuevoHash, userId]);
+
+        // Invalidación cruzada
+        const tipoOwner = esCliente ? 'cliente' : 'usuario';
+        await dbQuery.run('UPDATE password_resets SET usado = 1 WHERE owner_id = ? AND tipo = ?', [userId, tipoOwner]);
 
         res.json({ message: 'Contraseña actualizada correctamente' });
     } catch (error) {
         console.error('Error cambiando contraseña:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// POST /api/auth/olvide-password
+router.post('/olvide-password', olvidePasswordLimiter, async (req, res) => {
+    try {
+        const { email, tipo, barberia_slug } = req.body;
+        const dbQuery = req.app.locals.dbQuery;
+
+        if (!email || !tipo || !['usuario', 'cliente'].includes(tipo)) {
+            return res.status(400).json({ error: 'Datos incompletos o tipo inválido' });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Buscar owner para chequeo de rate limit por email (máx 3/hora)
+        let ownerId = null;
+        let barberiaId = null;
+        let ownerNombre = '';
+
+        if (tipo === 'cliente') {
+            if (!barberia_slug) {
+                // Responder genérico aunque falte slug (no filtrar info)
+                return res.json({ message: "Si el correo existe, te enviamos un enlace." });
+            }
+            const barb = await dbQuery.get('SELECT id FROM barberias WHERE slug = ?', [barberia_slug]);
+            if (!barb) {
+                return res.json({ message: "Si el correo existe, te enviamos un enlace." });
+            }
+            barberiaId = barb.id;
+
+            const cliente = await dbQuery.get('SELECT id, nombre FROM clientes WHERE email = ? AND barberia_id = ? AND activo = 1', [normalizedEmail, barberiaId]);
+            if (!cliente) {
+                return res.json({ message: "Si el correo existe, te enviamos un enlace." });
+            }
+            ownerId = cliente.id;
+            ownerNombre = cliente.nombre;
+        } else {
+            const usuario = await dbQuery.get('SELECT id, nombre, barberia_id FROM usuarios WHERE email = ? AND activo = 1', [normalizedEmail]);
+            if (!usuario) {
+                return res.json({ message: "Si el correo existe, te enviamos un enlace." });
+            }
+            ownerId = usuario.id;
+            ownerNombre = usuario.nombre;
+            barberiaId = usuario.barberia_id;
+        }
+
+        // Rate limit por email: máx 3 requests en la última hora
+        const recentResets = await dbQuery.get(`
+            SELECT COUNT(*) as cnt FROM password_resets
+            WHERE owner_id = ? AND tipo = ? AND creado_en >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        `, [ownerId, tipo]);
+
+        if (recentResets && recentResets.cnt >= 3) {
+            // Log interno pero respuesta genérica (no filtrar existencia de email)
+            console.warn(`[RateLimit Email] Límite excedido para owner_id=${ownerId} tipo=${tipo}`);
+            return res.json({ message: "Si el correo existe, te enviamos un enlace." });
+        }
+
+        // 1. Responder rápido (fire-and-forget)
+        res.json({ message: "Si el correo existe, te enviamos un enlace." });
+
+        // 2. Proceso en background
+        (async () => {
+            try {
+                // Generar token
+                const token = crypto.randomBytes(32).toString('hex');
+                const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+                // Invalidar previos y cleanup
+                await dbQuery.run('UPDATE password_resets SET usado = 1 WHERE owner_id = ? AND tipo = ? AND usado = 0', [ownerId, tipo]);
+                await dbQuery.run('DELETE FROM password_resets WHERE expira_en < NOW()');
+
+                // Insertar nuevo token
+                await dbQuery.run(`
+                    INSERT INTO password_resets (owner_id, tipo, barberia_id, token_hash, expira_en)
+                    VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))
+                `, [ownerId, tipo, barberiaId, tokenHash]);
+
+                // Enviar correo
+                await enviarCorreoRecuperacion({
+                    dbQuery,
+                    tipo,
+                    ownerId,
+                    barberia_id: barberiaId,
+                    to: normalizedEmail,
+                    token: token,
+                    nombre: ownerNombre
+                });
+
+            } catch (err) {
+                console.error('[Background OlvidePassword] Error:', err);
+            }
+        })();
+
+    } catch (error) {
+        console.error('Error en olvide-password:', error);
+        if (!res.headersSent) res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// POST /api/auth/restablecer-password
+router.post('/restablecer-password', restablecerPasswordLimiter, [
+    body('passwordNueva').isLength({ min: 8 })
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+        }
+
+        const { token, passwordNueva } = req.body;
+        if (!token) return res.status(400).json({ error: 'Token requerido' });
+
+        const dbQuery = req.app.locals.dbQuery;
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        const reset = await dbQuery.get(`
+            SELECT id, owner_id, tipo FROM password_resets 
+            WHERE token_hash = ? AND usado = 0 AND expira_en > NOW()
+        `, [tokenHash]);
+
+        if (!reset) {
+            return res.status(400).json({ error: 'Enlace inválido o expirado.' });
+        }
+
+        const nuevoHash = await bcrypt.hash(passwordNueva, 10);
+        const tabla = reset.tipo === 'cliente' ? 'clientes' : 'usuarios';
+
+        // Actualizar contraseña y password_changed_at
+        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ?, password_changed_at = NOW() WHERE id = ?`, [nuevoHash, reset.owner_id]);
+
+        // Marcar usado y otros tokens del mismo owner
+        await dbQuery.run('UPDATE password_resets SET usado = 1 WHERE owner_id = ? AND tipo = ?', [reset.owner_id, reset.tipo]);
+
+        res.json({ message: 'Contraseña restablecida correctamente. Ya puedes iniciar sesión.' });
+
+    } catch (error) {
+        console.error('Error en restablecer-password:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 });

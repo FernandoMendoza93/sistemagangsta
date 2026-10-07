@@ -3,7 +3,7 @@ import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { publicService } from '../services/api';
-import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle, Store, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Phone, Lock, User, Eye, EyeOff, Scissors, AlertCircle, Store, Info, ChevronDown, ChevronUp, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './ClienteLoginPage.css';
 
@@ -59,6 +59,7 @@ export default function ClienteLoginPage() {
     const [activeTab, setActiveTab] = useState('login');
     const [telefono, setTelefono] = useState('');
     const [nombre, setNombre] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -141,7 +142,8 @@ export default function ClienteLoginPage() {
                 digits,
                 activeTab === 'register' ? nombre : undefined,
                 password,
-                slug
+                slug,
+                activeTab === 'register' ? email.toLowerCase().trim() : undefined
             );
             navigate(`/portal/${slug}/portal`);
         } catch (err) {
@@ -275,6 +277,26 @@ export default function ClienteLoginPage() {
                         </div>
                     )}
 
+                    {activeTab === 'register' && (
+                        <div className="cliente-input-group slide-in">
+                            <div className="cliente-input-icon"><Mail size={20} strokeWidth={1.5} /></div>
+                            <input
+                                type="email"
+                                className="cliente-input"
+                                placeholder="Correo electrónico (opcional)"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                                onFocus={() => setFocusedField('email')}
+                                onBlur={() => setFocusedField(null)}
+                            />
+                            <PremiumTooltip 
+                                text="Opcional: para recuperar tu contraseña" 
+                                visible={showTour && focusedField !== 'email' && !email} 
+                                top="-38px" left="12px" 
+                            />
+                        </div>
+                    )}
+
                     <div className="cliente-input-group">
                         <div className="cliente-input-icon"><Phone size={20} strokeWidth={1.5} /></div>
                             <input
@@ -324,9 +346,28 @@ export default function ClienteLoginPage() {
                     </div>
 
                     {activeTab === 'login' && (
-                        <p className="login-hint" style={{ fontWeight: '500', color: 'var(--accent-primary)', textAlign: 'center', fontSize: '0.9rem' }}>
-                            💡 ¿No tienes cuenta? Toca en "Registrarme" arriba.
-                        </p>
+                        <>
+                            <p className="login-hint" style={{ fontWeight: '500', color: 'var(--accent-primary)', textAlign: 'center', fontSize: '0.9rem' }}>
+                                💡 ¿No tienes cuenta? Toca en "Registrarme" arriba.
+                            </p>
+                            <div style={{ textAlign: 'center', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+                                <a
+                                    href={`/portal/${slug}/recuperar-password`}
+                                    style={{
+                                        color: 'var(--accent-primary)',
+                                        textDecoration: 'underline',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 500,
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    ¿Olvidaste tu contraseña?
+                                </a>
+                            </div>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.25rem', lineHeight: 1.5 }}>
+                                Si no registraste correo, pide a tu barbería que restablezca tu contraseña.
+                            </p>
+                        </>
                     )}
 
                     <button

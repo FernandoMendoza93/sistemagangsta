@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { citasService, clientesService, publicService } from '../services/api';
 import { toast } from 'sonner';
-import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store, Settings, Eye, EyeOff, Instagram } from 'lucide-react';
+import { Calendar, Clock, Star, User, MessageCircle, PlusCircle, X, Scissors, CheckCircle, Gift, QrCode, Crown, Trophy, Store, Settings, Eye, EyeOff, Instagram, Mail } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import heroImg from '../assets/hero-bg.jpg';
 import './ClientePortalPage.css';
@@ -32,6 +32,9 @@ export default function ClientePortalPage() {
     const [showAccountSheet, setShowAccountSheet] = useState(false);
     const [accountSheetView, setAccountSheetView] = useState('menu'); // 'menu' | 'password'
     const [passwordForm, setPasswordForm] = useState({ passwordActual: '', passwordNueva: '', confirmarPassword: '' });
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [emailForm, setEmailForm] = useState({ email: '' });
+    const [emailModalLoading, setEmailModalLoading] = useState(false);
     const [showPass, setShowPass] = useState({ actual: false, nueva: false, confirmar: false });
     const [slotsDisponibles, setSlotsDisponibles] = useState([]);
     const [equipo, setEquipo] = useState([]);
@@ -243,6 +246,48 @@ export default function ClientePortalPage() {
         logout();
         navigate(`/portal/${slug}`);
     }
+
+    async function handleSaveEmail(e) {
+        e.preventDefault();
+        const emailValue = emailForm.email.trim().toLowerCase();
+        if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+            toast.error('Ingresa un correo válido');
+            return;
+        }
+        setEmailModalLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/clientes/me/email', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ email: emailValue })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error guardando email');
+            toast.success('Correo guardado correctamente');
+            setShowEmailModal(false);
+            setEmailForm({ email: '' });
+            // Actualizar user en AuthContext para reflejar el email
+            const { updateUserIdentity } = await import('../context/AuthContext');
+            // Note: can't call hook here, but we can reload or use setUser directly via context
+            // For simplicity, just reload data
+            loadData();
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setEmailModalLoading(false);
+        }
+    }
+
+    // Mostrar modal de email si el cliente no tiene email (una vez por sesión)
+    useEffect(() => {
+        if (user && !user.email && !localStorage.getItem('emailModalDismissed')) {
+            setShowEmailModal(true);
+        }
+    }, [user]);
 
     async function handleChangePassword(e) {
         e.preventDefault();
@@ -961,6 +1006,66 @@ export default function ClientePortalPage() {
                                 </div>
                             </form>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* ========= MODAL EMAIL (NO BLOQUEANTE) ========= */}
+            {showEmailModal && (
+                <div className="modal-overlay" onClick={() => {
+                    localStorage.setItem('emailModalDismissed', 'true');
+                    setShowEmailModal(false);
+                }}>
+                    <div className="modal-content bottom-sheet" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="bottom-sheet-handle"></div>
+                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(var(--accent-primary-rgb), 0.15)', border: '1px solid rgba(var(--accent-primary-rgb), 0.3)', marginBottom: '1rem' }}>
+                                <Mail size={24} color="var(--accent-primary)" strokeWidth={1.5} />
+                            </div>
+                            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', color: 'var(--text-main)' }}>Agrega tu correo</h3>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                                Recibirás enlaces para recuperar tu contraseña y notificaciones importantes.
+                            </p>
+                        </div>
+                        <form onSubmit={handleSaveEmail}>
+                            <div className="form-group">
+                                <label className="form-label">Correo electrónico</label>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type="email"
+                                        className="form-control"
+                                        required
+                                        value={emailForm.email}
+                                        onChange={e => setEmailForm(prev => ({ ...prev, email: e.target.value.toLowerCase() }))}
+                                        placeholder="tu@correo.com"
+                                        style={{ paddingRight: '3rem' }}
+                                        autoComplete="email"
+                                    />
+                                    <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                                        <Mail size={18} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        localStorage.setItem('emailModalDismissed', 'true');
+                                        setShowEmailModal(false);
+                                    }}
+                                    style={{ flex: 1, background: 'var(--bg-hover)', border: 'none', color: 'var(--text-main)', padding: '0.85rem', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
+                                >
+                                    Ahora no
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={emailModalLoading}
+                                    style={{ flex: 1, background: 'var(--accent-primary)', border: 'none', color: 'var(--text-inverse)', padding: '0.85rem', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(var(--accent-primary-rgb), 0.3)', opacity: emailModalLoading ? 0.7 : 1 }}
+                                >
+                                    {emailModalLoading ? 'Guardando...' : 'Guardar correo'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

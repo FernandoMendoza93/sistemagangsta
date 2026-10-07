@@ -233,12 +233,33 @@ router.post('/:id/reset-pin', verifyToken, requireTenant, requireRole(ROLES.ADMI
     }
 });
 
-// PUT /api/clientes/:id - Actualizar cliente
+// PUT /api/clientes/:id - Actualizar cliente (Admin/Encargado/SuperAdmin)
 router.put('/:id', verifyToken, requireTenant, async (req, res) => {
     try {
         const dbQuery = req.app.locals.dbQuery;
         const { id } = req.params;
-        const { nombre, telefono, notas, puntos_lealtad, activo } = req.body;
+        const { nombre, telefono, notas, puntos_lealtad, activo, email } = req.body;
+
+        // Validar email si se proporciona
+        let normalizedEmail = null;
+        if (email !== undefined && email !== null && email.trim()) {
+            normalizedEmail = email.trim().toLowerCase();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+                return res.status(400).json({ error: 'Formato de email inválido' });
+            }
+            // Verificar unicidad por barberia_id
+            const existing = await dbQuery.get(
+                'SELECT id FROM clientes WHERE email = ? AND barberia_id = ? AND id != ?',
+                [normalizedEmail, req.barberia_id, id]
+            );
+            if (existing) {
+                return res.status(409).json({ error: 'Este correo ya está registrado en otro cliente' });
+            }
+        }
+
+        // Leer email previo antes del UPDATE
+        const prev = await dbQuery.get('SELECT email FROM clientes WHERE id = ? AND barberia_id = ?', [id, req.barberia_id]);
+        const prevEmail = prev?.email?.trim?.().toLowerCase?.() ?? null;
 
         await dbQuery.run(`
             UPDATE clientes
@@ -246,13 +267,63 @@ router.put('/:id', verifyToken, requireTenant, async (req, res) => {
                 telefono = COALESCE(?, telefono),
                 notas = COALESCE(?, notas),
                 puntos_lealtad = COALESCE(?, puntos_lealtad),
-                activo = COALESCE(?, activo)
+                activo = COALESCE(?, activo),
+                email = COALESCE(?, email)
             WHERE id = ? AND barberia_id = ?
-        `, [nombre, telefono, notas, puntos_lealtad, activo, id, req.barberia_id]);
+        `, [nombre, telefono, notas, puntos_lealtad, activo, normalizedEmail, id, req.barberia_id]);
+
+        // Si el email cambió (case-insensitive, trimmeado), invalidar tokens pendientes
+        if (normalizedEmail !== null && normalizedEmail !== prevEmail) {
+            await dbQuery.run('UPDATE password_resets SET usado = 1 WHERE owner_id = ? AND tipo = ? AND usado = 0', [id, 'cliente']);
+        }
 
         res.json({ message: 'Cliente actualizado' });
     } catch (error) {
         console.error('Error actualizando cliente:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// PUT /api/clientes/me/email - Cliente autenticado actualiza su propio email
+router.put('/me/email', verifyToken, async (req, res) => {
+    try {
+        if (req.user.rol !== 'Cliente') {
+            return res.status(403).json({ error: 'Solo los clientes pueden usar este endpoint' });
+        }
+
+        const { email } = req.body;
+        if (!email || !email.trim()) {
+            return res.status(400).json({ error: 'Email es requerido' });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Validar formato básico
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            return res.status(400).json({ error: 'Formato de email inválido' });
+        }
+
+        const dbQuery = req.app.locals.dbQuery;
+
+        // Verificar unicidad por barberia_id
+        const existing = await dbQuery.get(
+            'SELECT id FROM clientes WHERE email = ? AND barberia_id = ? AND id != ?',
+            [normalizedEmail, req.barberia_id, req.user.id]
+        );
+
+        if (existing) {
+            return res.status(409).json({ error: 'Este correo ya está registrado en otro cliente' });
+        }
+
+        // Actualizar email del cliente
+        await dbQuery.run('UPDATE clientes SET email = ? WHERE id = ? AND barberia_id = ?', [normalizedEmail, req.user.id, req.barberia_id]);
+
+        // Invalidar tokens pendientes de password_resets de este cliente
+        await dbQuery.run('UPDATE password_resets SET usado = 1 WHERE owner_id = ? AND tipo = ? AND usado = 0', [req.user.id, 'cliente']);
+
+        res.json({ success: true, email: normalizedEmail });
+    } catch (error) {
+        console.error('Error actualizando email del cliente:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });

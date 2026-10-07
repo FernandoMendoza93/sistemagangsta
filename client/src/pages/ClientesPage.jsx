@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { Crown, Trophy, Star, Settings, Copy } from 'lucide-react';
+import { Crown, Trophy, Star, Settings, Copy, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { clientesService } from '../services/api';
@@ -79,7 +79,7 @@ export default function ClientesPage() {
 
     function openCreateModal() {
         setEditingClient(null);
-        setFormData({ nombre: '', telefono: '', notas: '' });
+        setFormData({ nombre: '', telefono: '', notas: '', email: '' });
         setShowModal(true);
     }
 
@@ -88,7 +88,8 @@ export default function ClientesPage() {
         setFormData({
             nombre: cliente.nombre,
             telefono: cliente.telefono || '',
-            notas: cliente.notas || ''
+            notas: cliente.notas || '',
+            email: cliente.email || ''
         });
         setShowModal(true);
     }
@@ -525,6 +526,15 @@ export default function ClientesPage() {
                                         onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                                         placeholder="Preferencias, observaciones..."
                                         rows="3"
+                                    />
+                                </div>
+                                <div className="form-group-pro">
+                                    <label><Icon name="mail" /> Email</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
+                                        placeholder="correo@ejemplo.com"
                                     />
                                 </div>
                                 
