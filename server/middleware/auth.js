@@ -19,9 +19,13 @@ export const verifyToken = async (req, res, next) => {
         const dbQuery = req.app.locals.dbQuery;
         if (dbQuery && decoded.id && decoded.rol) {
             const tabla = decoded.rol === 'Cliente' ? 'clientes' : 'usuarios';
-            const row = await dbQuery.get(`SELECT UNIX_TIMESTAMP(password_changed_at) AS pca FROM ${tabla} WHERE id = ?`, [decoded.id]);
+            const row = await dbQuery.get(
+                `SELECT DATE_FORMAT(password_changed_at, '%Y-%m-%dT%H:%i:%sZ') AS pca FROM ${tabla} WHERE id = ?`,
+                [decoded.id]
+            );
             if (row && row.pca) {
-                if (decoded.iat < (row.pca - 5)) {
+                const pcaEpoch = Math.floor(new Date(row.pca).getTime() / 1000);
+                if (decoded.iat < (pcaEpoch - 5)) {
                     return res.status(401).json({ error: 'Sesión inválida, vuelve a iniciar sesión' });
                 }
             }

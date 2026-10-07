@@ -623,7 +623,7 @@ router.post('/cambiar-password', verifyToken, async (req, res) => {
 
         // Hashear la nueva contraseña y actualizar
         const nuevoHash = await bcrypt.hash(passwordNueva, 10);
-        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ?, password_changed_at = NOW() WHERE id = ?`, [nuevoHash, userId]);
+        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ?, password_changed_at = UTC_TIMESTAMP() WHERE id = ?`, [nuevoHash, userId]);
 
         // Invalidación cruzada
         const tipoOwner = esCliente ? 'cliente' : 'usuario';
@@ -763,7 +763,7 @@ router.post('/restablecer-password', restablecerPasswordLimiter, [
         const tabla = reset.tipo === 'cliente' ? 'clientes' : 'usuarios';
 
         // Actualizar contraseña y password_changed_at
-        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ?, password_changed_at = NOW() WHERE id = ?`, [nuevoHash, reset.owner_id]);
+        await dbQuery.run(`UPDATE ${tabla} SET password_hash = ?, password_changed_at = UTC_TIMESTAMP() WHERE id = ?`, [nuevoHash, reset.owner_id]);
 
         // Marcar usado y otros tokens del mismo owner
         await dbQuery.run('UPDATE password_resets SET usado = 1 WHERE owner_id = ? AND tipo = ?', [reset.owner_id, reset.tipo]);
